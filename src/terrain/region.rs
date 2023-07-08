@@ -1,0 +1,1 @@
+/* A region is a expandable area of space, often cubic, used for vehicals, structures, and ships */
