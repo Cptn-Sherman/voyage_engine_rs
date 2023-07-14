@@ -29,8 +29,8 @@ impl LODPostionTracker {
         format!(
             "Camera Position: [{}, {}, {}]",
             format_value::<i32>(self.cx, None, true),
-            format_value::<i32>(self.cx, None, true),
-            format_value::<i32>(self.cx, None, true)
+            format_value::<i32>(self.cy, None, true),
+            format_value::<i32>(self.cz, None, true)
         )
     }
 }

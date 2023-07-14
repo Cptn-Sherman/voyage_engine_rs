@@ -1,26 +1,32 @@
+mod bevy_mesh;
 mod terrain;
 mod utils;
-mod bevy_mesh;
 
 use std::f32::consts::PI;
 
+use bevy::render::mesh::Mesh as BevyMesh;
+use bevy::render::mesh::Mesh;
+use bevy::render::render_resource::SamplerDescriptor;
+use bevy::render::texture::ImageSampler;
 use bevy::{
-    core_pipeline::{tonemapping::Tonemapping, experimental::taa::{TemporalAntiAliasPlugin, TemporalAntiAliasBundle}},
+    core_pipeline::{
+        experimental::taa::{TemporalAntiAliasBundle, TemporalAntiAliasPlugin},
+        tonemapping::Tonemapping,
+    },
     diagnostic::{Diagnostics, FrameTimeDiagnosticsPlugin},
     pbr::{
         CascadeShadowConfigBuilder, DirectionalLightShadowMap, ScreenSpaceAmbientOcclusionBundle,
     },
-    prelude::*, render::render_resource::{TextureDimension, TextureFormat, Extent3d},
+    prelude::*,
+    render::render_resource::{Extent3d, TextureDimension, TextureFormat},
 };
-use bevy::render::mesh::Mesh as BevyMesh;
-use bevy::render::mesh::Mesh;
 
 use bevy_mesh::{mesh_for_model, Model};
 use terrain::TerrainPlugin;
 
 use bevy_flycam::{FlyCam, NoCameraPlayerPlugin};
 use transvoxel::{transition_sides, voxel_source::Block};
-use utils::{format_value, CHUNK_SIZE_F32_MIDPOINT, CHUNK_SIZE_F32};
+use utils::{format_value, CHUNK_SIZE_F32, CHUNK_SIZE_F32_MIDPOINT};
 
 use crate::utils::CHUNK_SIZE_I32;
 
@@ -32,9 +38,8 @@ fn main() {
         .add_plugins(NoCameraPlayerPlugin)
         .add_systems(Startup, (setup, create_voxel_mesh))
         .add_systems(Update, adjust_directional_light_biases)
-        //.add_systems(frame_time_update_system, pos_update_system)
         .insert_resource(DirectionalLightShadowMap { size: 4098 })
-        .run();
+    .run();
 }
 
 // A unit struct to help identify the FPS UI component, since there may be many Text components
@@ -54,15 +59,23 @@ struct PosText;
 struct Chunk;
 
 fn build_chunk_mesh(cx: i32, cy: i32, cz: i32) -> BevyMesh {
-    let subdivisions = 32;
-    let block = Block::from([cx as f32, cy as f32, cz as f32], CHUNK_SIZE_F32, subdivisions);
+    let block = Block::from(
+        [
+            cx as f32 * CHUNK_SIZE_F32, 
+            cy as f32 * CHUNK_SIZE_F32, 
+            cz as f32 * CHUNK_SIZE_F32
+        ],
+        CHUNK_SIZE_F32,
+        CHUNK_SIZE_I32 as usize,
+    );
     let transition_sides = transition_sides::no_side();
     // Finally, we can run the mesh extraction:
-    mesh_for_model(&Model::Quadrant, false, &block, &transition_sides)
+    mesh_for_model(&Model::Noise, false, &block, &transition_sides)
 }
 
 /// Creates a colorful test pattern
 pub fn uv_debug_texture() -> Image {
+    info!("Generating Debug Texture");
     const TEXTURE_SIZE: usize = 8;
 
     let mut palette: [u8; 32] = [
@@ -77,7 +90,7 @@ pub fn uv_debug_texture() -> Image {
         palette.rotate_right(4);
     }
 
-    Image::new_fill(
+    let mut img = Image::new_fill(
         Extent3d {
             width: TEXTURE_SIZE as u32,
             height: TEXTURE_SIZE as u32,
@@ -86,7 +99,9 @@ pub fn uv_debug_texture() -> Image {
         TextureDimension::D2,
         &texture_data,
         TextureFormat::Rgba8UnormSrgb,
-    )
+    );
+    img.sampler_descriptor = ImageSampler::Descriptor(SamplerDescriptor::default());
+    img
 }
 
 pub fn create_voxel_mesh(
@@ -95,15 +110,13 @@ pub fn create_voxel_mesh(
     mut images: ResMut<Assets<Image>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
-    let radius = 2;
-    let length = radius * 2 + 1;
+    let radius = 3;
+    let length = (radius * 2) + 1;
     let start_x = -radius;
     let start_z = -radius;
 
-    let image = uv_debug_texture();
-
     let debug_material = materials.add(StandardMaterial {
-        base_color_texture: Some(images.add(image)),
+        base_color_texture: Some(images.add(uv_debug_texture())),
         ..default()
     });
 
@@ -112,20 +125,16 @@ pub fn create_voxel_mesh(
             let x = start_x + i;
             let z = start_z + j;
             info!(
-                "building mesh: [{}, {}, {}]",
+                "Building Mesh: [{}, {}, {}]",
                 format_value(x, None, true),
                 format_value(0, None, true),
                 format_value(z, None, true)
             );
             let bevy_mesh = build_chunk_mesh(x, 0, z);
+            // This object does not alter the transform as the transvoxel mesh using this information to sample the noise fields.
             commands.spawn(PbrBundle {
                 mesh: meshes.add(bevy_mesh),
                 material: debug_material.clone(),
-                transform: Transform::from_xyz(
-                    (x * CHUNK_SIZE_I32) as f32,
-                    0.0,
-                    (z * CHUNK_SIZE_I32) as f32,
-                ),
                 ..default()
             });
         }
@@ -135,28 +144,35 @@ pub fn create_voxel_mesh(
 fn setup(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
+    mut images: ResMut<Assets<Image>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     asset_server: Res<AssetServer>,
 ) {
-    commands.spawn((
-        Camera3dBundle {
-            camera: Camera {
-                hdr: true,
-                ..default()
+    let debug_material = materials.add(StandardMaterial {
+        base_color_texture: Some(images.add(uv_debug_texture())),
+        ..default()
+    });
+
+    commands
+        .spawn((
+            Camera3dBundle {
+                camera: Camera {
+                    hdr: true,
+                    ..default()
+                },
+                transform: Transform::from_xyz(16.0, 8.0, 16.0).looking_at(Vec3::ZERO, Vec3::Y),
+                tonemapping: Tonemapping::TonyMcMapface,
+                ..Default::default()
             },
-            transform: Transform::from_xyz(16.0, 8.0, 16.0).looking_at(Vec3::ZERO, Vec3::Y),
-            tonemapping: Tonemapping::ReinhardLuminance,
-            ..Default::default()
-        },
-        FogSettings {
-            color: Color::WHITE,
-            falloff: FogFalloff::Exponential { density: 0.0001 },
-            ..Default::default()
-        },
-        FlyCam,
-    ))
-    .insert(ScreenSpaceAmbientOcclusionBundle::default())
-    .insert(TemporalAntiAliasBundle::default());
+            FogSettings {
+                color: Color::WHITE,
+                falloff: FogFalloff::Exponential { density: 0.0001 },
+                ..Default::default()
+            },
+            FlyCam,
+        ))
+        .insert(ScreenSpaceAmbientOcclusionBundle::default())
+        .insert(TemporalAntiAliasBundle::default());
 
     // plane
     commands.spawn(PbrBundle {
@@ -179,7 +195,7 @@ fn setup(
             EulerRot::ZYX,
             0.0,
             PI / 3.,
-            -PI / 4., 
+            -PI / 4.,
         )),
         cascade_shadow_config: CascadeShadowConfigBuilder {
             num_cascades: 4,
@@ -246,14 +262,18 @@ fn setup(
     });
 
     commands.spawn(PbrBundle {
-        mesh: meshes.add(Mesh::from(shape::UVSphere { radius: 10.0, sectors: 32, stacks: 32 })),
-        material: materials.add(StandardMaterial {
-            base_color: Color::ORANGE.into(),
-            ..default()
-        }),
+        mesh: meshes.add(Mesh::from(shape::UVSphere {
+            radius: 10.0,
+            sectors: 32,
+            stacks: 32,
+        })),
+        material: debug_material,
         transform: Transform::from_xyz(CHUNK_SIZE_F32_MIDPOINT, 0.5, CHUNK_SIZE_F32_MIDPOINT),
         ..default()
     });
+
+    let default_font_path = "fonts/Pixelme.ttf";
+
 
     commands
         .spawn(NodeBundle {
@@ -282,34 +302,34 @@ fn setup(
                     TextSection::new(
                         "fps: ",
                         TextStyle {
-                            font: asset_server.load("fonts/Monocraft.ttf"),
-                            font_size: 14.0,
+                            font: asset_server.load(default_font_path),
+                            font_size: 24.0,
                             color: Color::WHITE,
                         },
                     ),
                     TextSection::from_style(TextStyle {
-                        font: asset_server.load("fonts/Monocraft.ttf"),
-                        font_size: 14.0,
+                        font: asset_server.load(default_font_path),
+                        font_size: 24.0,
                         color: Color::GOLD,
                     }),
                     TextSection::new(
                         "  ",
                         TextStyle {
-                            font: asset_server.load("fonts/Monocraft.ttf"),
-                            font_size: 12.0,
+                            font: asset_server.load(default_font_path),
+                            font_size: 24.0,
                             color: Color::WHITE,
                         },
                     ),
                     TextSection::from_style(TextStyle {
-                        font: asset_server.load("fonts/Monocraft.ttf"),
-                        font_size: 12.0,
+                        font: asset_server.load(default_font_path),
+                        font_size: 24.0,
                         color: Color::YELLOW_GREEN,
                     }),
                     TextSection::new(
                         "ms",
                         TextStyle {
-                            font: asset_server.load("fonts/Monocraft.ttf"),
-                            font_size: 12.0,
+                            font: asset_server.load(default_font_path),
+                            font_size: 24.0,
                             color: Color::WHITE,
                         },
                     ),
@@ -324,14 +344,14 @@ fn setup(
                     TextSection::new(
                         "tps: ",
                         TextStyle {
-                            font: asset_server.load("fonts/Monocraft.ttf"),
-                            font_size: 14.0,
+                            font: asset_server.load(default_font_path),
+                            font_size: 24.0,
                             color: Color::WHITE,
                         },
                     ),
                     TextSection::from_style(TextStyle {
-                        font: asset_server.load("fonts/Monocraft.ttf"),
-                        font_size: 14.0,
+                        font: asset_server.load(default_font_path),
+                        font_size: 24.0,
                         color: Color::PURPLE,
                     }),
                 ]),
@@ -352,14 +372,14 @@ fn setup(
                     TextSection::new(
                         "pos: ",
                         TextStyle {
-                            font: asset_server.load("fonts/Monocraft.ttf"),
-                            font_size: 14.0,
+                            font: asset_server.load(default_font_path),
+                            font_size: 24.0,
                             color: Color::WHITE,
                         },
                     ),
                     TextSection::from_style(TextStyle {
-                        font: asset_server.load("fonts/Monocraft.ttf"),
-                        font_size: 14.0,
+                        font: asset_server.load(default_font_path),
+                        font_size: 24.0,
                         color: Color::GOLD,
                     }),
                 ]),
@@ -421,20 +441,31 @@ fn adjust_directional_light_biases(
     for mut light in &mut query {
         if input.just_pressed(KeyCode::Key5) {
             light.shadow_depth_bias -= depth_bias_step_size;
-            info!("shadow_depth_bias: {}", format!("{:.2}", light.shadow_depth_bias));
+            info!(
+                "shadow_depth_bias: {}",
+                format!("{:.2}", light.shadow_depth_bias)
+            );
         }
         if input.just_pressed(KeyCode::Key6) {
             light.shadow_depth_bias += depth_bias_step_size;
-            info!("shadow_depth_bias: {}", format!("{:.2}", light.shadow_depth_bias));
+            info!(
+                "shadow_depth_bias: {}",
+                format!("{:.2}", light.shadow_depth_bias)
+            );
         }
         if input.just_pressed(KeyCode::Key7) {
             light.shadow_normal_bias -= normal_bias_step_size;
-            info!("shadow_normal_bias: {}", format!("{:.2}", light.shadow_normal_bias));
+            info!(
+                "shadow_normal_bias: {}",
+                format!("{:.2}", light.shadow_normal_bias)
+            );
         }
         if input.just_pressed(KeyCode::Key8) {
             light.shadow_normal_bias += normal_bias_step_size;
-            info!("shadow_normal_bias: {}", format!("{:.2}", light.shadow_normal_bias));
+            info!(
+                "shadow_normal_bias: {}",
+                format!("{:.2}", light.shadow_normal_bias)
+            );
         }
     }
 }
-
