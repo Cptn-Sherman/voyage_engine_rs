@@ -6,7 +6,7 @@ use bevy::{
 };
 use bevy_flycam::FlyCam;
 
-use crate::utils::{convert_to_chunk_coordinate, format_value};
+use crate::utils::{convert_to_chunk_coordinate, format_value_f32};
 
 #[derive(Resource)]
 pub struct TerrainPlugin;
@@ -28,9 +28,9 @@ impl LODPostionTracker {
     fn to_string(&self) -> String {
         format!(
             "Camera Position: [{}, {}, {}]",
-            format_value::<i32>(self.cx, None, true),
-            format_value::<i32>(self.cy, None, true),
-            format_value::<i32>(self.cz, None, true)
+            format_value_f32(self.cx as f32, None, true),
+            format_value_f32(self.cy as f32, None, true),
+            format_value_f32(self.cz as f32, None, true)
         )
     }
 }

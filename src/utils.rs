@@ -1,5 +1,4 @@
-
-pub const CHUNK_SIZE_F32: f32 = 32.0;
+pub const CHUNK_SIZE_F32: f32 = 16.0;
 pub const CHUNK_SIZE_I32: i32 = CHUNK_SIZE_F32 as i32;
 pub const CHUNK_SIZE_F32_MIDPOINT: f32 = CHUNK_SIZE_F32 / 2.0;
 pub const CHUNK_SIZE_I32_MIDPOINT: i32 = CHUNK_SIZE_I32 / 2;
@@ -83,7 +82,8 @@ macro_rules! double_for_loop {
 
 use std::fmt::Write;
 use std::cmp::PartialOrd;
-use num_traits::Zero;
+use bevy::{prelude::{Image, info}, render::{render_resource::{Extent3d, TextureDimension, TextureFormat, SamplerDescriptor}, texture::ImageSampler}};
+use num_traits::{Zero, Float};
 
 /// Formats a value as a string with optional decimal digits and support for negative space formatting.
 ///
@@ -112,26 +112,29 @@ use num_traits::Zero;
 /// let formatted = format_value(-42, None, true);
 /// assert_eq!(formatted, "-42");
 /// ```
-pub fn format_value<T: std::fmt::Display + Zero + PartialOrd>(
-    value: T,
+
+pub fn format_value_f32(
+    value: f32,
     decimal_digits: Option<usize>,
     format_negative_space: bool,
 ) -> String {
     let mut buffer = String::new();
-    let value_str = value.to_string();
-    let num_digits = if value_str == "0" {
+
+    let rounded_value = value as i32;
+
+    let num_digits = if rounded_value == 0 {
         1 // Account for the single digit zero
     } else {
-        value_str.replace(".", "").len() // Calculate the number of digits
+        rounded_value.to_string().len() // Calculate the number of digits
     };
 
-    let width = if value >= T::zero() || !format_negative_space {
+    let width = if rounded_value >= 0 || !format_negative_space {
         num_digits + decimal_digits.unwrap_or(0) // Add one extra space for positive values and decimal digits
     } else {
         num_digits + 1 + decimal_digits.unwrap_or(0) // Add two extra spaces for negative values (including the negative sign) and decimal digits
     };
 
-    if format_negative_space && value >= T::zero() {
+    if format_negative_space && rounded_value >= 0 {
         write!(
             &mut buffer,
             " {:>width$.decimal_width$}",
@@ -143,7 +146,7 @@ pub fn format_value<T: std::fmt::Display + Zero + PartialOrd>(
         write!(
             &mut buffer,
             "{:>width$.decimal_width$}",
-            value,
+            rounded_value,
             width = width,
             decimal_width = decimal_digits.unwrap_or(0)
         )
@@ -152,6 +155,7 @@ pub fn format_value<T: std::fmt::Display + Zero + PartialOrd>(
 
     buffer
 }
+
 
 
 /// Converts a coordinate to a chunk coordinate.
@@ -181,4 +185,55 @@ pub fn convert_to_chunk_coordinate(coord: i32) -> i32 {
     } else {
         coord / CHUNK_SIZE_F32 as i32
     }
+}
+
+
+/// Creates a colorful test pattern.
+///
+/// This function generates a debug texture with a colorful test pattern. It creates an image with a specified size
+/// and fills it with a palette of predefined colors. Each row of the image is filled with a rotated version of the
+/// palette, creating a visually appealing pattern.
+///
+/// # Returns
+///
+/// An `Image` object representing the generated debug texture.
+pub fn uv_debug_texture() -> Image {
+    info!("Generating Debug Texture");
+
+    // Define the size of the texture
+    const TEXTURE_SIZE: usize = 8;
+
+    // Define the palette of colors
+    let mut palette: [u8; 32] = [
+        255, 102, 159, 255, 255, 159, 102, 255, 236, 255, 102, 255, 121, 255, 102, 255, 102, 255,
+        198, 255, 102, 198, 255, 255, 121, 102, 255, 255, 236, 102, 255, 255,
+    ];
+
+    // Create the texture data array to store pixel information
+    let mut texture_data = [0; TEXTURE_SIZE * TEXTURE_SIZE * 4];
+
+    // Generate the test pattern by filling the texture with rotated palette colors
+    for y in 0..TEXTURE_SIZE {
+        let offset = TEXTURE_SIZE * y * 4;
+        texture_data[offset..(offset + TEXTURE_SIZE * 4)].copy_from_slice(&palette);
+        palette.rotate_right(4);
+    }
+
+    // Create an `Image` object with the generated texture data
+    let mut img = Image::new_fill(
+        Extent3d {
+            width: TEXTURE_SIZE as u32,
+            height: TEXTURE_SIZE as u32,
+            depth_or_array_layers: 1,
+        },
+        TextureDimension::D2,
+        &texture_data,
+        TextureFormat::Rgba8UnormSrgb,
+    );
+
+    // Set the sampler descriptor for the image
+    img.sampler_descriptor = ImageSampler::Descriptor(SamplerDescriptor::default());
+
+    // Return the generated image
+    img
 }

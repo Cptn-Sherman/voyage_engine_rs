@@ -1022,6 +1022,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "bevy_mod_standard_material"
+version = "0.1.0"
+source = "git+https://github.com/DGriffin91/bevy_mod_standard_material.git?branch=pcf#fac701e0d2d12037a0be8e9fc1df0301cda149de"
+dependencies = [
+ "bevy 0.11.0",
+]
+
+[[package]]
 name = "bevy_pbr"
 version = "0.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4204,8 +4212,10 @@ version = "0.1.0"
 dependencies = [
  "bevy 0.11.0",
  "bevy_flycam",
+ "bevy_mod_standard_material",
  "bevy_rapier3d",
  "noise",
+ "num-integer",
  "num-traits",
  "transvoxel",
 ]

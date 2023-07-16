@@ -1,9 +1,14 @@
 mod bevy_mesh;
 mod terrain;
 mod utils;
+mod pbr_material;
 
-use std::f32::consts::PI;
+use std::env;
+use std::f32::consts::{PI, FRAC_PI_4};
+use std::time::Duration;
 
+use bevy::asset::ChangeWatcher;
+use bevy::diagnostic::DiagnosticsStore;
 use bevy::render::mesh::Mesh as BevyMesh;
 use bevy::render::mesh::Mesh;
 use bevy::render::render_resource::SamplerDescriptor;
@@ -22,23 +27,28 @@ use bevy::{
 };
 
 use bevy_mesh::{mesh_for_model, Model};
+use pbr_material::CustomStandardMaterial;
 use terrain::TerrainPlugin;
 
 use bevy_flycam::{FlyCam, NoCameraPlayerPlugin};
 use transvoxel::{transition_sides, voxel_source::Block};
-use utils::{format_value, CHUNK_SIZE_F32, CHUNK_SIZE_F32_MIDPOINT};
+use utils::{format_value_f32, CHUNK_SIZE_F32, CHUNK_SIZE_F32_MIDPOINT, uv_debug_texture};
 
 use crate::utils::CHUNK_SIZE_I32;
 
 fn main() {
+ let formatted = format_value_f32(3.142344234234234, Some(2), false);
+ //assert_eq!(formatted, " 3.14");
+    env::set_var("RUST_BACKTRACE", "full");
     App::new()
+        .insert_resource(DirectionalLightShadowMap { size: 4098 })
         .add_plugins((DefaultPlugins, TemporalAntiAliasPlugin))
         .add_plugins(TerrainPlugin)
-        .add_plugins(FrameTimeDiagnosticsPlugin::default())
+        .add_plugins(FrameTimeDiagnosticsPlugin::default())        
         .add_plugins(NoCameraPlayerPlugin)
         .add_systems(Startup, (setup, create_voxel_mesh))
-        .add_systems(Update, adjust_directional_light_biases)
-        .insert_resource(DirectionalLightShadowMap { size: 4098 })
+        .add_plugins(MaterialPlugin::<CustomStandardMaterial>::default())
+        .add_systems(Update, (adjust_directional_light_biases, tps_update_system, pos_update_system, frame_time_update_system, animate_light_direction, swap_standard_material))      
     .run();
 }
 
@@ -73,36 +83,7 @@ fn build_chunk_mesh(cx: i32, cy: i32, cz: i32) -> BevyMesh {
     mesh_for_model(&Model::Noise, false, &block, &transition_sides)
 }
 
-/// Creates a colorful test pattern
-pub fn uv_debug_texture() -> Image {
-    info!("Generating Debug Texture");
-    const TEXTURE_SIZE: usize = 8;
 
-    let mut palette: [u8; 32] = [
-        255, 102, 159, 255, 255, 159, 102, 255, 236, 255, 102, 255, 121, 255, 102, 255, 102, 255,
-        198, 255, 102, 198, 255, 255, 121, 102, 255, 255, 236, 102, 255, 255,
-    ];
-
-    let mut texture_data = [0; TEXTURE_SIZE * TEXTURE_SIZE * 4];
-    for y in 0..TEXTURE_SIZE {
-        let offset = TEXTURE_SIZE * y * 4;
-        texture_data[offset..(offset + TEXTURE_SIZE * 4)].copy_from_slice(&palette);
-        palette.rotate_right(4);
-    }
-
-    let mut img = Image::new_fill(
-        Extent3d {
-            width: TEXTURE_SIZE as u32,
-            height: TEXTURE_SIZE as u32,
-            depth_or_array_layers: 1,
-        },
-        TextureDimension::D2,
-        &texture_data,
-        TextureFormat::Rgba8UnormSrgb,
-    );
-    img.sampler_descriptor = ImageSampler::Descriptor(SamplerDescriptor::default());
-    img
-}
 
 pub fn create_voxel_mesh(
     mut commands: Commands,
@@ -125,10 +106,10 @@ pub fn create_voxel_mesh(
             let x = start_x + i;
             let z = start_z + j;
             info!(
-                "Building Mesh: [{}, {}, {}]",
-                format_value(x, None, true),
-                format_value(0, None, true),
-                format_value(z, None, true)
+                "Building Voxel Mesh @[{}, {}, {}]",
+                format_value_f32(x as f32, None, true),
+                format_value_f32(0.0, None, true),
+                format_value_f32(z as f32, None, true)
             );
             let bevy_mesh = build_chunk_mesh(x, 0, z);
             // This object does not alter the transform as the transvoxel mesh using this information to sample the noise fields.
@@ -140,6 +121,69 @@ pub fn create_voxel_mesh(
         }
     }
 }
+
+fn animate_light_direction(
+    time: Res<Time>,
+    mut query: Query<&mut Transform, With<DirectionalLight>>,
+) {
+    for mut transform in &mut query {
+        transform.rotation = Quat::from_euler(
+            EulerRot::ZYX,
+            0.0,
+            time.elapsed_seconds() * 0.05 * PI / 5.0,
+            -FRAC_PI_4 * 0.5,
+        );
+    }
+}
+
+fn swap_standard_material(
+    mut commands: Commands,
+    mut material_events: EventReader<AssetEvent<StandardMaterial>>,
+    entites: Query<(Entity, &Handle<StandardMaterial>)>,
+    standard_materials: Res<Assets<StandardMaterial>>,
+    mut custom_materials: ResMut<Assets<CustomStandardMaterial>>,
+) {
+    for event in material_events.iter() {
+        let handle = match event {
+            AssetEvent::Created { handle } => handle,
+            _ => continue,
+        };
+        if let Some(material) = standard_materials.get(handle) {
+            let custom_mat_h = custom_materials.add(CustomStandardMaterial {
+                base_color: material.base_color,
+                base_color_texture: material.base_color_texture.clone(),
+                emissive: material.emissive,
+                emissive_texture: material.emissive_texture.clone(),
+                perceptual_roughness: material.perceptual_roughness,
+                metallic: material.metallic,
+                metallic_roughness_texture: material.metallic_roughness_texture.clone(),
+                reflectance: material.reflectance,
+                normal_map_texture: material.normal_map_texture.clone(),
+                flip_normal_map_y: material.flip_normal_map_y,
+                occlusion_texture: material.occlusion_texture.clone(),
+                double_sided: material.double_sided,
+                cull_mode: material.cull_mode,
+                unlit: material.unlit,
+                fog_enabled: material.fog_enabled,
+                alpha_mode: material.alpha_mode,
+                depth_bias: material.depth_bias,
+                depth_map: material.depth_map.clone(),
+                parallax_depth_scale: material.parallax_depth_scale,
+                parallax_mapping_method: material.parallax_mapping_method,
+                max_parallax_layer_count: material.max_parallax_layer_count,
+            });
+            for (entity, entity_mat_h) in entites.iter() {
+                if entity_mat_h == handle {
+                    let mut ecmds = commands.entity(entity);
+                    ecmds.remove::<Handle<StandardMaterial>>();
+                    ecmds.insert(custom_mat_h.clone());
+                }
+            }
+        }
+    }
+}
+
+
 
 fn setup(
     mut commands: Commands,
@@ -164,6 +208,10 @@ fn setup(
                 tonemapping: Tonemapping::TonyMcMapface,
                 ..Default::default()
             },
+            EnvironmentMapLight {
+                diffuse_map: asset_server.load("environment_maps/pisa_diffuse_rgb9e5_zstd.ktx2"),
+                specular_map: asset_server.load("environment_maps/pisa_specular_rgb9e5_zstd.ktx2"),
+            },
             FogSettings {
                 color: Color::WHITE,
                 falloff: FogFalloff::Exponential { density: 0.0001 },
@@ -174,39 +222,61 @@ fn setup(
         .insert(ScreenSpaceAmbientOcclusionBundle::default())
         .insert(TemporalAntiAliasBundle::default());
 
-    // plane
-    commands.spawn(PbrBundle {
-        mesh: meshes.add(shape::Plane::from_size(CHUNK_SIZE_F32).into()),
-        material: materials.add(StandardMaterial {
-            base_color: Color::rgb(0.05, 0.05, 0.05).into(),
+
+    // light
+    commands.spawn((
+        DirectionalLightBundle {
+            directional_light: DirectionalLight {
+                color: Color::rgb(1.0, 0.96, 0.95),
+                shadows_enabled: true,
+                shadow_depth_bias: 0.02,
+                shadow_normal_bias: 1.0,
+                ..default()
+            },
+            transform: Transform::from_rotation(Quat::from_euler(
+                EulerRot::ZYX,
+                0.0,
+                PI / 3.,
+                -PI / 4.,
+            )),
+            // cascade_shadow_config: CascadeShadowConfigBuilder {
+            //     num_cascades: 4,
+            //     minimum_distance: 0.01,
+            //     maximum_distance: 1024.0,
+            //     first_cascade_far_bound: 4.0,
+            //     overlap_proportion: 0.2,
+            // }
+            // .into(),
             ..default()
-        }),
-        transform: Transform::from_xyz(CHUNK_SIZE_F32_MIDPOINT, 0.0, CHUNK_SIZE_F32_MIDPOINT),
+        },
+        Sun
+    ));
+
+    commands.spawn(SceneBundle {
+        scene: asset_server.load("models/FlightHelmet/FlightHelmet.gltf#Scene0"),
+        transform: Transform::from_xyz(-1.0, 0.0, 0.0),
         ..default()
     });
 
-    // light
-    commands.spawn(DirectionalLightBundle {
-        directional_light: DirectionalLight {
-            shadows_enabled: true,
-            ..default()
-        },
-        transform: Transform::from_rotation(Quat::from_euler(
-            EulerRot::ZYX,
-            0.0,
-            PI / 3.,
-            -PI / 4.,
-        )),
-        cascade_shadow_config: CascadeShadowConfigBuilder {
-            num_cascades: 4,
-            minimum_distance: 0.01,
-            maximum_distance: 1024.0,
-            first_cascade_far_bound: 4.0,
-            overlap_proportion: 0.2,
-        }
-        .into(),
-        ..default()
-    });
+
+
+
+    // // plane
+    // commands.spawn(PbrBundle {
+    //     mesh: meshes.add(shape::Plane::from_size(CHUNK_SIZE_F32_MIDPOINT).into()),
+    //     material: materials.add(StandardMaterial {
+    //         base_color_texture: Some(base_color_texture),
+    //         metallic_roughness_texture: Some(metallic_roughness_texture),
+    //         normal_map_texture: Some(normal_map_texture),
+    //         //occlusion_texture: Some(occlusion_map_texture),
+    //         depth_map: Some(depth_map_texture),
+    //         flip_normal_map_y: false,
+    //         metallic: 0.95,
+    //         ..default()
+    //     }),
+    //     transform: Transform::from_xyz(CHUNK_SIZE_F32_MIDPOINT, CHUNK_SIZE_F32_MIDPOINT / 2.0, CHUNK_SIZE_F32_MIDPOINT),
+    //     ..default()
+    // });
 
     // // light
     // commands.spawn(PointLightBundle {
@@ -261,29 +331,43 @@ fn setup(
         ..default()
     });
 
+    let base_color_texture = asset_server.load("textures/dented-metal_albedo.png");
+    let metallic_roughness_texture = asset_server.load("textures/dented-metal_metallic_roughness_packed.png");
+    let normal_map_texture = asset_server.load("textures/dented-metal_normal-ogl.png");
+    let depth_map_texture = asset_server.load("textures/dented-metal_height.png");
+    // let occlusion_map_texture = asset_server.load("textures/OldIron01_4K_AO.png");
+
+     let mut mesh = Mesh::from(shape::Cube {
+        size: 16.0,
+    });
+    mesh.generate_tangents();
+
     commands.spawn(PbrBundle {
-        mesh: meshes.add(Mesh::from(shape::UVSphere {
-            radius: 10.0,
-            sectors: 32,
-            stacks: 32,
-        })),
-        material: debug_material,
-        transform: Transform::from_xyz(CHUNK_SIZE_F32_MIDPOINT, 0.5, CHUNK_SIZE_F32_MIDPOINT),
+        mesh: meshes.add(mesh),
+        material: materials.add(StandardMaterial {
+            base_color_texture: Some(base_color_texture),
+            metallic_roughness_texture: Some(metallic_roughness_texture),
+            normal_map_texture: Some(normal_map_texture),
+            depth_map: Some(depth_map_texture),
+            parallax_depth_scale: 0.05,
+            metallic: 0.7,
+            reflectance: 0.3,
+            perceptual_roughness: 0.3,
+            ..default()
+        }),
+        transform: Transform::from_xyz(CHUNK_SIZE_F32_MIDPOINT, CHUNK_SIZE_F32_MIDPOINT + 8.0, CHUNK_SIZE_F32_MIDPOINT),
         ..default()
     });
 
-    let default_font_path = "fonts/Pixelme.ttf";
-
+    let default_font_path = "fonts/Monocraft.ttf";
+    let default_font_size = 12.0;
 
     commands
         .spawn(NodeBundle {
             style: Style {
                 display: Display::Flex,
-                align_self: AlignSelf::Center,
-                align_content: AlignContent::Center,
+                justify_content: JustifyContent::FlexStart,
                 align_items: AlignItems::FlexStart,
-                justify_self: JustifySelf::Center,
-                justify_content: JustifyContent::Center,
                 flex_direction: FlexDirection::Column,
                 position_type: PositionType::Absolute,
                 margin: UiRect::all(Val::Px(5.0)),
@@ -303,33 +387,33 @@ fn setup(
                         "fps: ",
                         TextStyle {
                             font: asset_server.load(default_font_path),
-                            font_size: 24.0,
+                            font_size: default_font_size,
                             color: Color::WHITE,
                         },
                     ),
                     TextSection::from_style(TextStyle {
                         font: asset_server.load(default_font_path),
-                        font_size: 24.0,
-                        color: Color::GOLD,
+                        font_size: default_font_size,
+                        color: Color::YELLOW_GREEN,
                     }),
                     TextSection::new(
                         "  ",
                         TextStyle {
                             font: asset_server.load(default_font_path),
-                            font_size: 24.0,
+                            font_size: default_font_size,
                             color: Color::WHITE,
                         },
                     ),
                     TextSection::from_style(TextStyle {
                         font: asset_server.load(default_font_path),
-                        font_size: 24.0,
+                        font_size: default_font_size,
                         color: Color::YELLOW_GREEN,
                     }),
                     TextSection::new(
                         "ms",
                         TextStyle {
                             font: asset_server.load(default_font_path),
-                            font_size: 24.0,
+                            font_size: default_font_size,
                             color: Color::WHITE,
                         },
                     ),
@@ -345,24 +429,17 @@ fn setup(
                         "tps: ",
                         TextStyle {
                             font: asset_server.load(default_font_path),
-                            font_size: 24.0,
+                            font_size: default_font_size,
                             color: Color::WHITE,
                         },
                     ),
                     TextSection::from_style(TextStyle {
                         font: asset_server.load(default_font_path),
-                        font_size: 24.0,
-                        color: Color::PURPLE,
+                        font_size: default_font_size,
+                        color: Color::YELLOW_GREEN,
                     }),
                 ]),
                 TpsText,
-            ));
-        })
-        .with_children(|parent| {
-            parent.spawn((
-                // Create a TextBundle that has a Text with a list of sections.
-                TextBundle::from_sections([]),
-                FrameTimeText,
             ));
         })
         .with_children(|parent| {
@@ -373,13 +450,13 @@ fn setup(
                         "pos: ",
                         TextStyle {
                             font: asset_server.load(default_font_path),
-                            font_size: 24.0,
+                            font_size: default_font_size,
                             color: Color::WHITE,
                         },
                     ),
                     TextSection::from_style(TextStyle {
                         font: asset_server.load(default_font_path),
-                        font_size: 24.0,
+                        font_size: default_font_size,
                         color: Color::GOLD,
                     }),
                 ]),
@@ -388,52 +465,46 @@ fn setup(
         });
 }
 
-fn frame_time_update_system(diagnostics: Diagnostics, mut query: Query<&mut Text, With<FpsText>>) {
-    // for mut text in &mut query {
-    //     if let Some(fps) = diagnostics.get(FrameTimeDiagnosticsPlugin::FPS) {
-    //         if let Some(value) = fps.smoothed() {
-    //             // Update the value of the second section
-    //             text.sections[1].value = format!("{value:.2}");
-    //         }
-    //     }
+fn frame_time_update_system(diag: Res<DiagnosticsStore>, mut query: Query<&mut Text, With<FpsText>>) {
+    for mut text in &mut query {
+        let Some(fps) = diag.get(FrameTimeDiagnosticsPlugin::FPS).and_then(|fps| fps.smoothed()) else {
+            return;
+        };
+        let val = format_value_f32(fps as f32, Some(2), true);
+        text.sections[1].value = format_value_f32(fps as f32, Some(2), true);
+        //info!("text is this long {} and val is \"{}\" and the number is [{}]", text.sections[1].value.len(), val, fps);
 
-    //     if let Some(frame_time) = diagnostics.add_measurement(FrameTimeDiagnosticsPlugin::FRAME_TIME) {
-    //         if let Some(value) = frame_time.smoothed() {
-    //             text.sections[3].value = format!("{value:.2}");
-    //         }
-    //     }
-    // }
+        let Some(frame_time) = diag.get(FrameTimeDiagnosticsPlugin::FRAME_TIME).and_then(|frame_time| frame_time.smoothed()) else {
+            return;
+        };
+        text.sections[3].value = format_value_f32(frame_time as f32, Some(2), false);
+    }
 }
 
-fn tps_update_system(diagnostics: Diagnostics, mut query: Query<&mut Text, With<TpsText>>) {
+fn tps_update_system(diag: Res<DiagnosticsStore>, mut query: Query<&mut Text, With<TpsText>>) {
     for mut text in &mut query {
-        // if let Some(fps) = diagnostics.get(FrameTimeDiagnosticsPlugin::FRAME_TIME) {
-        //     if let Some(value) = fps.smoothed() {
-        //         // Update the value of the second section
-        //         text.sections[1].value = format!("{value:.2}");
-        //     }
-        // }
+        text.sections[1].value = format!("idk");
     }
 }
 
 fn pos_update_system(
-    mut camera_query: Query<(&Camera, &Transform, With<FlyCam>)>,
-    mut query: Query<&mut Text, With<PosText>>,
+    camera_query: Query<(&Camera, &Transform, With<FlyCam>)>,
+    mut text_query: Query<&mut Text, With<PosText>>,
 ) {
-    for (camera, transform, ()) in &mut camera_query {
-        for mut text in &mut query {
+    for (_camera, transform, _) in &mut camera_query.into_iter() {
+        for mut text in text_query.iter_mut() {
             text.sections[1].value = format!(
                 "[{}, {}, {}]",
-                format_value(transform.translation.x, Some(2), true),
-                format_value(transform.translation.y, Some(2), true),
-                format_value(transform.translation.z, Some(2), true)
+                format_value_f32(transform.translation.x, Some(2), true),
+                format_value_f32(transform.translation.y, Some(2), true),
+                format_value_f32(transform.translation.z, Some(2), true)
             );
         }
     }
 }
 
 fn adjust_directional_light_biases(
-    input: Res<Input<KeyCode>>,
+  input: Res<Input<KeyCode>>,
     mut query: Query<&mut DirectionalLight>,
 ) {
     let depth_bias_step_size = 0.01;
@@ -467,5 +538,16 @@ fn adjust_directional_light_biases(
                 format!("{:.2}", light.shadow_normal_bias)
             );
         }
+    }
+}
+
+#[derive(Component)]
+struct Sun;
+
+fn rotate_sun(time: Res<Time>, mut query: Query<(&mut DirectionalLight, &mut Transform, With<Sun>)>) {
+    for (mut _light, mut transform, _) in query.iter_mut() {
+        // Rotate the sun around the Y-axis
+        let rotation_speed = 0.5; // Adjust this value to control the rotation speed
+        transform.rotate(Quat::from_rotation_x(rotation_speed * time.delta_seconds()));
     }
 }
