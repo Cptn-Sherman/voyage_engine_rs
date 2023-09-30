@@ -41,15 +41,17 @@ pub fn check_lod_position(
     mut tracked_pos: ResMut<LODPostionTracker>,
     camera_query: Query<(&Camera, &Transform, With<FlyCam>)>,
 ) {
+    // guard: timer hasn't finished, return early.
     if !timer.0.tick(time.delta()).just_finished() {
-        return; // Timer hasn't just finished, early return
+        return; 
     }
 
+    // check that only one camera is in the scene, return if this is false.
     if camera_query.iter().len() > 1 {
         warn!("Query found more than one camera! Tracking will not work until resolved.");
-        return;
-    }
+        return;    }
 
+    // iterate over each camera and update the tracked position. Expects there to be only one camera in the scene.
     for (_camera, transform, ()) in camera_query.iter() {
         let cur_position = LODPostionTracker {
             cx: convert_to_chunk_coordinate(transform.translation.x as i32),

@@ -89,11 +89,14 @@ where
 use bevy::prelude::Transform;
 use bevy::prelude::Vec3;
 use bevy::render::mesh::Mesh as BevyMesh;
+use bevy::render::mesh::Mesh;
 use bevy::render::mesh::VertexAttributeValues;
+use bevy::render::render_resource::PrimitiveTopology::{LineList, TriangleList};
 use transvoxel::mesh_builder::GridPoint;
 use transvoxel::mesh_builder::MeshBuilder;
 use transvoxel::mesh_builder::VertexIndex;
 use transvoxel::shrink_if_needed;
+use transvoxel::traits::Density;
 use transvoxel::traits::VoxelData;
 use transvoxel::transition_sides::*;
 use transvoxel::voxel_source::Block;
@@ -102,9 +105,6 @@ use transvoxel::{
     voxel_coordinates::{HighResolutionVoxelDelta, TransitionCellIndex},
     voxel_source::WorldMappingVoxelSource,
 };
-use bevy::render::render_resource::PrimitiveTopology::{LineList, TriangleList};
-use bevy::render::mesh::Mesh;
-use transvoxel::traits::Density;
 
 pub fn mesh_for_model(
     model: &Model,

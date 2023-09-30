@@ -361,6 +361,7 @@ fn setup(
 
     let default_font_path = "fonts/Monocraft.ttf";
     let default_font_size = 12.0;
+    let crosshair_texture_handle = asset_server.load("textures/white_square_crosshair.png");
 
     commands
         .spawn(NodeBundle {
@@ -410,7 +411,7 @@ fn setup(
                         color: Color::YELLOW_GREEN,
                     }),
                     TextSection::new(
-                        "ms",
+                        " ms/frame",
                         TextStyle {
                             font: asset_server.load(default_font_path),
                             font_size: default_font_size,
@@ -463,14 +464,47 @@ fn setup(
                 PosText,
             ));
         });
+
+        let cursor_size: f32 = 6.0;
+        // Spawn in the crosshair
+        commands
+        .spawn(NodeBundle {
+            style: Style {
+                width: Val::Percent(100.0),
+                top: Val::Percent(50.0),
+                position_type: PositionType::Absolute,
+                justify_content: JustifyContent::Center,
+                align_items: AlignItems::FlexStart,
+                ..default()
+            },
+            ..default()
+        }).with_children(|parent| {
+            parent
+                .spawn((
+                NodeBundle {
+                    style: Style {
+                        width: Val::Px(cursor_size),
+                        height: Val::Px(cursor_size),
+                        ..default()
+                    },
+                    // a `NodeBundle` is transparent by default, so to see the image we have to its color to `WHITE`
+                    background_color: Color::WHITE.into(),
+                    ..default()
+                },
+                UiImage::new(crosshair_texture_handle.into())
+            ));
+        });
+
+
 }
+
+struct Crosshair;
 
 fn frame_time_update_system(diag: Res<DiagnosticsStore>, mut query: Query<&mut Text, With<FpsText>>) {
     for mut text in &mut query {
         let Some(fps) = diag.get(FrameTimeDiagnosticsPlugin::FPS).and_then(|fps| fps.smoothed()) else {
             return;
         };
-        let val = format_value_f32(fps as f32, Some(2), true);
         text.sections[1].value = format_value_f32(fps as f32, Some(2), true);
         //info!("text is this long {} and val is \"{}\" and the number is [{}]", text.sections[1].value.len(), val, fps);
 
