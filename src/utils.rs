@@ -109,8 +109,14 @@ use num_traits::{Zero, Float};
 /// Formatting a negative value without any decimal places:
 ///
 /// ```rust
-/// let formatted = format_value(-42, None, true);
-/// assert_eq!(formatted, "-42");
+/// let neg_formatted_neg_buffered = format_value(-42, None, true);
+/// assert_eq!(neg_formatted_neg_buffered, "-42");
+/// let pos_formatted_neg_buffered = format_value(42, None, true);
+/// assert_eq!(pos_formatted_neg_buffered, " 42");
+/// let neg_formatted_unbuffered = format_value(-42, None, false);
+/// assert_eq!(neg_formatted_neg_buffered, "-42");
+/// let pos_formatted_unbuffered = format_value(42, None, false);
+/// assert_eq!(pos_formatted_neg_buffered, "42");
 /// ```
 
 pub fn format_value_f32(
@@ -151,7 +157,7 @@ pub fn format_value_f32(
             decimal_width = decimal_digits.unwrap_or(0)
         )
     }
-    .expect("Failed to write to buffer");
+    .expect("Failed to write to buffer while formatting value as string!");
 
     buffer
 }

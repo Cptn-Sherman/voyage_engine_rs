@@ -466,6 +466,7 @@ fn setup(
         });
 
         let cursor_size: f32 = 6.0;
+        let cursor_color: BackgroundColor  = BackgroundColor(Color::BLUE);
         // Spawn in the crosshair
         commands
         .spawn(NodeBundle {
@@ -488,7 +489,7 @@ fn setup(
                         ..default()
                     },
                     // a `NodeBundle` is transparent by default, so to see the image we have to its color to `WHITE`
-                    background_color: Color::WHITE.into(),
+                    background_color: cursor_color.into(),
                     ..default()
                 },
                 UiImage::new(crosshair_texture_handle.into())
