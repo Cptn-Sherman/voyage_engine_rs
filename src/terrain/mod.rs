@@ -80,7 +80,7 @@ impl Plugin for TerrainPlugin {
         // add things to your app here
         info!("Initializing terrain plugin");
         app.insert_resource(LODRecalculateTimer(Timer::from_seconds(
-            0.5,
+            3.0 / 8.0, // this value is arbitrary, but it should be a multiple of 1/8th of a second.
             TimerMode::Repeating,
         )))
         .insert_resource(LODPostionTracker {

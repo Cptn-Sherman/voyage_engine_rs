@@ -1,10 +1,10 @@
 mod bevy_mesh;
+mod pbr_material;
 mod terrain;
 mod utils;
-mod pbr_material;
 
 use std::env;
-use std::f32::consts::{PI, FRAC_PI_4};
+use std::f32::consts::{FRAC_PI_4, PI};
 use std::time::Duration;
 
 use bevy::asset::ChangeWatcher;
@@ -32,24 +32,36 @@ use terrain::TerrainPlugin;
 
 use bevy_flycam::{FlyCam, NoCameraPlayerPlugin};
 use transvoxel::{transition_sides, voxel_source::Block};
-use utils::{format_value_f32, CHUNK_SIZE_F32, CHUNK_SIZE_F32_MIDPOINT, uv_debug_texture};
+use utils::{format_value_f32, uv_debug_texture, CHUNK_SIZE_F32, CHUNK_SIZE_F32_MIDPOINT};
 
 use crate::utils::CHUNK_SIZE_I32;
 
 fn main() {
- let formatted = format_value_f32(3.142344234234234, Some(2), false);
- //assert_eq!(formatted, " 3.14");
     env::set_var("RUST_BACKTRACE", "full");
     App::new()
         .insert_resource(DirectionalLightShadowMap { size: 4098 })
         .add_plugins((DefaultPlugins, TemporalAntiAliasPlugin))
         .add_plugins(TerrainPlugin)
-        .add_plugins(FrameTimeDiagnosticsPlugin::default())        
+        .add_plugins(FrameTimeDiagnosticsPlugin::default())
         .add_plugins(NoCameraPlayerPlugin)
         .add_systems(Startup, (setup, create_voxel_mesh))
         .add_plugins(MaterialPlugin::<CustomStandardMaterial>::default())
-        .add_systems(Update, (adjust_directional_light_biases, tps_update_system, pos_update_system, frame_time_update_system, animate_light_direction, swap_standard_material))      
-    .run();
+        .add_systems(
+            Update,
+            (
+                adjust_directional_light_biases,
+                tps_update_system,
+                pos_update_system,
+                frame_time_update_system,
+                animate_light_direction,
+                swap_standard_material,
+            ),
+        )
+        .insert_resource(FPSUpdateUITimer(Timer::from_seconds(
+            1.0,
+            TimerMode::Repeating,
+        )))
+        .run();
 }
 
 // A unit struct to help identify the FPS UI component, since there may be many Text components
@@ -69,11 +81,11 @@ struct PosText;
 struct Chunk;
 
 fn build_chunk_mesh(cx: i32, cy: i32, cz: i32) -> BevyMesh {
-    let block = Block::from(
+    let block: Block<f32> = Block::from(
         [
-            cx as f32 * CHUNK_SIZE_F32, 
-            cy as f32 * CHUNK_SIZE_F32, 
-            cz as f32 * CHUNK_SIZE_F32
+            cx as f32 * CHUNK_SIZE_F32,
+            cy as f32 * CHUNK_SIZE_F32,
+            cz as f32 * CHUNK_SIZE_F32,
         ],
         CHUNK_SIZE_F32,
         CHUNK_SIZE_I32 as usize,
@@ -82,8 +94,6 @@ fn build_chunk_mesh(cx: i32, cy: i32, cz: i32) -> BevyMesh {
     // Finally, we can run the mesh extraction:
     mesh_for_model(&Model::Noise, false, &block, &transition_sides)
 }
-
-
 
 pub fn create_voxel_mesh(
     mut commands: Commands,
@@ -183,8 +193,6 @@ fn swap_standard_material(
     }
 }
 
-
-
 fn setup(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
@@ -222,7 +230,6 @@ fn setup(
         .insert(ScreenSpaceAmbientOcclusionBundle::default())
         .insert(TemporalAntiAliasBundle::default());
 
-
     // light
     commands.spawn((
         DirectionalLightBundle {
@@ -249,7 +256,7 @@ fn setup(
             // .into(),
             ..default()
         },
-        Sun
+        Sun,
     ));
 
     commands.spawn(SceneBundle {
@@ -257,9 +264,6 @@ fn setup(
         transform: Transform::from_xyz(-1.0, 0.0, 0.0),
         ..default()
     });
-
-
-
 
     // // plane
     // commands.spawn(PbrBundle {
@@ -332,14 +336,13 @@ fn setup(
     });
 
     let base_color_texture = asset_server.load("textures/dented-metal_albedo.png");
-    let metallic_roughness_texture = asset_server.load("textures/dented-metal_metallic_roughness_packed.png");
+    let metallic_roughness_texture =
+        asset_server.load("textures/dented-metal_metallic_roughness_packed.png");
     let normal_map_texture = asset_server.load("textures/dented-metal_normal-ogl.png");
     let depth_map_texture = asset_server.load("textures/dented-metal_height.png");
     // let occlusion_map_texture = asset_server.load("textures/OldIron01_4K_AO.png");
 
-     let mut mesh = Mesh::from(shape::Cube {
-        size: 16.0,
-    });
+    let mut mesh = Mesh::from(shape::Cube { size: 16.0 });
     mesh.generate_tangents();
 
     commands.spawn(PbrBundle {
@@ -355,7 +358,11 @@ fn setup(
             perceptual_roughness: 0.3,
             ..default()
         }),
-        transform: Transform::from_xyz(CHUNK_SIZE_F32_MIDPOINT, CHUNK_SIZE_F32_MIDPOINT + 8.0, CHUNK_SIZE_F32_MIDPOINT),
+        transform: Transform::from_xyz(
+            CHUNK_SIZE_F32_MIDPOINT,
+            CHUNK_SIZE_F32_MIDPOINT + 8.0,
+            CHUNK_SIZE_F32_MIDPOINT,
+        ),
         ..default()
     });
 
@@ -465,10 +472,10 @@ fn setup(
             ));
         });
 
-        let cursor_size: f32 = 6.0;
-        let cursor_color: BackgroundColor  = BackgroundColor(Color::BLUE);
-        // Spawn in the crosshair
-        commands
+    let cursor_size: f32 = 6.0;
+    let cursor_color: BackgroundColor = BackgroundColor(Color::BLUE);
+    // Spawn in the crosshair
+    commands
         .spawn(NodeBundle {
             style: Style {
                 width: Val::Percent(100.0),
@@ -479,9 +486,9 @@ fn setup(
                 ..default()
             },
             ..default()
-        }).with_children(|parent| {
-            parent
-                .spawn((
+        })
+        .with_children(|parent| {
+            parent.spawn((
                 NodeBundle {
                     style: Style {
                         width: Val::Px(cursor_size),
@@ -492,21 +499,31 @@ fn setup(
                     background_color: cursor_color.into(),
                     ..default()
                 },
-                UiImage::new(crosshair_texture_handle.into())
+                UiImage::new(crosshair_texture_handle.into()),
             ));
         });
-
-
 }
 
 struct Crosshair;
+#[derive(Resource)]
+pub struct FPSUpdateUITimer(Timer);
 
-fn frame_time_update_system(diag: Res<DiagnosticsStore>, mut query: Query<&mut Text, With<FpsText>>) {
+fn frame_time_update_system(
+    time: Res<Time>,
+    diag: Res<DiagnosticsStore>,
+    mut query: Query<&mut Text, With<FpsText>>,
+    mut timer: ResMut<FPSUpdateUITimer>,
+) {
+    // guard: timer hasn't finished, return early.
+    if !timer.0.tick(time.delta()).just_finished() {
+        return;
+    }
+
     for mut text in &mut query {
         let Some(fps) = diag.get(FrameTimeDiagnosticsPlugin::FPS).and_then(|fps| fps.smoothed()) else {
             return;
         };
-        text.sections[1].value = format_value_f32(fps as f32, Some(2), true);
+        text.sections[1].value = format_value_f32(fps as f32, Some(2), false);
         //info!("text is this long {} and val is \"{}\" and the number is [{}]", text.sections[1].value.len(), val, fps);
 
         let Some(frame_time) = diag.get(FrameTimeDiagnosticsPlugin::FRAME_TIME).and_then(|frame_time| frame_time.smoothed()) else {
@@ -529,7 +546,7 @@ fn pos_update_system(
     for (_camera, transform, _) in &mut camera_query.into_iter() {
         for mut text in text_query.iter_mut() {
             text.sections[1].value = format!(
-                "[{}, {}, {}]",
+                "[{},{},{}]",
                 format_value_f32(transform.translation.x, Some(2), true),
                 format_value_f32(transform.translation.y, Some(2), true),
                 format_value_f32(transform.translation.z, Some(2), true)
@@ -539,7 +556,7 @@ fn pos_update_system(
 }
 
 fn adjust_directional_light_biases(
-  input: Res<Input<KeyCode>>,
+    input: Res<Input<KeyCode>>,
     mut query: Query<&mut DirectionalLight>,
 ) {
     let depth_bias_step_size = 0.01;
@@ -579,7 +596,10 @@ fn adjust_directional_light_biases(
 #[derive(Component)]
 struct Sun;
 
-fn rotate_sun(time: Res<Time>, mut query: Query<(&mut DirectionalLight, &mut Transform, With<Sun>)>) {
+fn rotate_sun(
+    time: Res<Time>,
+    mut query: Query<(&mut DirectionalLight, &mut Transform, With<Sun>)>,
+) {
     for (mut _light, mut transform, _) in query.iter_mut() {
         // Rotate the sun around the Y-axis
         let rotation_speed = 0.5; // Adjust this value to control the rotation speed

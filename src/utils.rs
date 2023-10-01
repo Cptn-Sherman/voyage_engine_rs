@@ -81,16 +81,14 @@ macro_rules! double_for_loop {
 
 
 use std::fmt::Write;
-use std::cmp::PartialOrd;
 use bevy::{prelude::{Image, info}, render::{render_resource::{Extent3d, TextureDimension, TextureFormat, SamplerDescriptor}, texture::ImageSampler}};
-use num_traits::{Zero, Float};
 
 /// Formats a value as a string with optional decimal digits and support for negative space formatting.
 ///
 /// # Arguments
 ///
 /// * `value` - The value to format.
-/// * `decimal_digits` - The number of decimal digits to include. Pass `Some(digits)` for a specific number of digits, or `None` for no decimal digits.
+/// * `decimal_digits` - The number of decimal digits to include. Pass `Some(digits)` for a specific number of digits, or `None` for no decimal digits or `Some(0)`.
 /// * `format_negative_space` - Determines whether negative values should be padded with a leading space.
 ///
 /// # Returns
@@ -109,13 +107,13 @@ use num_traits::{Zero, Float};
 /// Formatting a negative value without any decimal places:
 ///
 /// ```rust
-/// let neg_formatted_neg_buffered = format_value(-42, None, true);
+/// let neg_formatted_neg_buffered = format_value_f32(-42.0, None, true);
 /// assert_eq!(neg_formatted_neg_buffered, "-42");
-/// let pos_formatted_neg_buffered = format_value(42, None, true);
+/// let pos_formatted_neg_buffered = format_value_f32(42.0, None, true);
 /// assert_eq!(pos_formatted_neg_buffered, " 42");
-/// let neg_formatted_unbuffered = format_value(-42, None, false);
+/// let neg_formatted_unbuffered = format_value_f32(-42.0, None, false);
 /// assert_eq!(neg_formatted_neg_buffered, "-42");
-/// let pos_formatted_unbuffered = format_value(42, None, false);
+/// let pos_formatted_unbuffered = format_value_f32(42.0, None, false);
 /// assert_eq!(pos_formatted_neg_buffered, "42");
 /// ```
 
@@ -152,7 +150,7 @@ pub fn format_value_f32(
         write!(
             &mut buffer,
             "{:>width$.decimal_width$}",
-            rounded_value,
+            value,
             width = width,
             decimal_width = decimal_digits.unwrap_or(0)
         )
