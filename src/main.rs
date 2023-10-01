@@ -37,7 +37,6 @@ use utils::{format_value_f32, uv_debug_texture, CHUNK_SIZE_F32, CHUNK_SIZE_F32_M
 use crate::utils::CHUNK_SIZE_I32;
 
 fn main() {
-    env::set_var("RUST_BACKTRACE", "full");
     App::new()
         .insert_resource(DirectionalLightShadowMap { size: 4098 })
         .add_plugins((DefaultPlugins, TemporalAntiAliasPlugin))
