@@ -132,16 +132,16 @@ pub fn format_value_f32(
         rounded_value.to_string().len() // Calculate the number of digits
     };
 
-    let width = if rounded_value >= 0 || !format_negative_space {
+    let width = if value >= 0.0 || !format_negative_space {
         num_digits + decimal_digits.unwrap_or(0) // Add one extra space for positive values and decimal digits
     } else {
-        num_digits + 1 + decimal_digits.unwrap_or(0) // Add two extra spaces for negative values (including the negative sign) and decimal digits
+        num_digits + decimal_digits.unwrap_or(0) // Add two extra spaces for negative values (including the negative sign) and decimal digits
     };
 
-    if format_negative_space && rounded_value >= 0 {
+    if format_negative_space && value >= 0.0 {
         write!(
             &mut buffer,
-            " {:>width$.decimal_width$}",
+            " {:>width$.decimal_width$}", // <--- this line has a single extra space, its hard to see :)
             value,
             width = width,
             decimal_width = decimal_digits.unwrap_or(0)
