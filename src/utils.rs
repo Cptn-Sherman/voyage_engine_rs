@@ -132,11 +132,7 @@ pub fn format_value_f32(
         rounded_value.to_string().len() // Calculate the number of digits
     };
 
-    let width = if value >= 0.0 || !format_negative_space {
-        num_digits + decimal_digits.unwrap_or(0) // Add one extra space for positive values and decimal digits
-    } else {
-        num_digits + decimal_digits.unwrap_or(0) // Add two extra spaces for negative values (including the negative sign) and decimal digits
-    };
+    let width = num_digits + decimal_digits.unwrap_or(0);
 
     if format_negative_space && value >= 0.0 {
         write!(
@@ -160,8 +156,6 @@ pub fn format_value_f32(
     buffer
 }
 
-
-
 /// Converts a coordinate to a chunk coordinate.
 ///
 /// Chunks are square regions in a 2D grid. This function takes a coordinate
@@ -178,7 +172,7 @@ pub fn format_value_f32(
 ///
 /// # Examples
 ///
-/// ```
+/// ```rust
 /// let coord = -15;
 /// let chunk_coord = convert_to_chunk_coordinate(coord);
 /// assert_eq!(chunk_coord, -1);
