@@ -42,7 +42,6 @@ fn main() {
             DebugInterfacePlugin,
             TerrainPlugin,
             NoCameraPlayerPlugin,
-            FrameTimeDiagnosticsPlugin::default(),
             MaterialPlugin::<CustomStandardMaterial>::default(),
         ))
         .add_systems(Startup, (setup, create_voxel_mesh))

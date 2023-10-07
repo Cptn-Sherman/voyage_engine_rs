@@ -156,6 +156,20 @@ pub fn format_value_f32(
     buffer
 }
 
+pub fn format_percentage_f32(value: Option<f32>) -> Option<String> {
+    match value {
+        Some(v) if v >= 0.0 && v <= 100.0 => Some(format!("{: >5.1}%", v)),
+        _ => None,
+    }
+}
+
+pub fn format_percentage_f64(value: Option<f64>) -> Option<String> {
+    match value {
+        Some(v) if v >= 0.0 && v <= 100.0 => Some(format!("{: >5.1}%", v)),
+        _ => None,
+    }
+}
+
 /// Converts a coordinate to a chunk coordinate.
 ///
 /// Chunks are square regions in a 2D grid. This function takes a coordinate
