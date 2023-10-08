@@ -165,7 +165,7 @@ pub fn create_debug_interface(
                                 default_font.clone(),
                             ),
                             gen_text_section(
-                                Some("  ".to_string()),
+                                Some(" | ".to_string()),
                                 None,
                                 Some(Color::WHITE),
                                 default_font.clone(),
