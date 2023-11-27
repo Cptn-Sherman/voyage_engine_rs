@@ -6,8 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-bevy = { version = "0.11.0", features = ["dynamic_linking"] }
-bevy_mod_standard_material = {git = "https://github.com/DGriffin91/bevy_mod_standard_material.git", branch = "pcf"}
+bevy = { version = "0.12.0", features = ["dynamic_linking"] }
 bevy_flycam = { git = "https://github.com/etam/bevy_flycam.git", branch = "bevy_0.11" }  # Old link, main branch is not up to date { git = "https://github.com/sburris0/bevy_flycam" }
 bevy_rapier3d = "0.21.0"
 noise = "0.8.2"

@@ -13,14 +13,11 @@ use bevy::{
         tonemapping::Tonemapping,
     },
     diagnostic::FrameTimeDiagnosticsPlugin,
-    pbr::{
-        DirectionalLightShadowMap, ScreenSpaceAmbientOcclusionBundle,
-    },
+    pbr::{DirectionalLightShadowMap, ScreenSpaceAmbientOcclusionBundle, ShadowFilteringMethod},
     prelude::*,
 };
 
 use std::f32::consts::{FRAC_PI_4, PI};
-
 
 use bevy_mesh::{mesh_for_model, Model};
 use pbr_material::CustomStandardMaterial;
@@ -193,6 +190,7 @@ fn setup(
                     hdr: true,
                     ..default()
                 },
+
                 transform: Transform::from_xyz(16.0, 8.0, 16.0).looking_at(Vec3::ZERO, Vec3::Y),
                 tonemapping: Tonemapping::TonyMcMapface,
                 ..Default::default()
@@ -203,12 +201,13 @@ fn setup(
             },
             FogSettings {
                 color: Color::WHITE,
-                falloff: FogFalloff::Exponential { density: 0.0001 },
+                falloff: FogFalloff::Exponential { density: 0.005 },
                 ..Default::default()
             },
             FlyCam,
         ))
         .insert(ScreenSpaceAmbientOcclusionBundle::default())
+        .insert(ShadowFilteringMethod::Jimenez14)
         .insert(TemporalAntiAliasBundle::default());
 
     // light
@@ -227,14 +226,6 @@ fn setup(
                 PI / 3.,
                 -PI / 4.,
             )),
-            // cascade_shadow_config: CascadeShadowConfigBuilder {
-            //     num_cascades: 4,
-            //     minimum_distance: 0.01,
-            //     maximum_distance: 1024.0,
-            //     first_cascade_far_bound: 4.0,
-            //     overlap_proportion: 0.2,
-            // }
-            // .into(),
             ..default()
         },
         Sun,
