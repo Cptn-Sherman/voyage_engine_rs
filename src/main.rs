@@ -1,5 +1,4 @@
 mod bevy_mesh;
-mod pbr_material;
 mod terrain;
 mod user_interface;
 mod utils;
@@ -20,7 +19,6 @@ use bevy::{
 use std::f32::consts::{FRAC_PI_4, PI};
 
 use bevy_mesh::{mesh_for_model, Model};
-use pbr_material::CustomStandardMaterial;
 use terrain::TerrainPlugin;
 
 use bevy_flycam::{FlyCam, NoCameraPlayerPlugin};
@@ -39,7 +37,6 @@ fn main() {
             DebugInterfacePlugin,
             TerrainPlugin,
             NoCameraPlayerPlugin,
-            MaterialPlugin::<CustomStandardMaterial>::default(),
         ))
         .add_systems(Startup, (setup, create_voxel_mesh))
         .add_systems(
@@ -47,7 +44,6 @@ fn main() {
             (
                 adjust_directional_light_biases,
                 animate_light_direction,
-                swap_standard_material,
             ),
         )
         .run();
@@ -121,53 +117,6 @@ fn animate_light_direction(
             time.elapsed_seconds() * 0.05 * PI / 5.0,
             -FRAC_PI_4 * 0.5,
         );
-    }
-}
-
-fn swap_standard_material(
-    mut commands: Commands,
-    mut material_events: EventReader<AssetEvent<StandardMaterial>>,
-    entites: Query<(Entity, &Handle<StandardMaterial>)>,
-    standard_materials: Res<Assets<StandardMaterial>>,
-    mut custom_materials: ResMut<Assets<CustomStandardMaterial>>,
-) {
-    for event in material_events.iter() {
-        let handle = match event {
-            AssetEvent::Created { handle } => handle,
-            _ => continue,
-        };
-        if let Some(material) = standard_materials.get(handle) {
-            let custom_mat_h = custom_materials.add(CustomStandardMaterial {
-                base_color: material.base_color,
-                base_color_texture: material.base_color_texture.clone(),
-                emissive: material.emissive,
-                emissive_texture: material.emissive_texture.clone(),
-                perceptual_roughness: material.perceptual_roughness,
-                metallic: material.metallic,
-                metallic_roughness_texture: material.metallic_roughness_texture.clone(),
-                reflectance: material.reflectance,
-                normal_map_texture: material.normal_map_texture.clone(),
-                flip_normal_map_y: material.flip_normal_map_y,
-                occlusion_texture: material.occlusion_texture.clone(),
-                double_sided: material.double_sided,
-                cull_mode: material.cull_mode,
-                unlit: material.unlit,
-                fog_enabled: material.fog_enabled,
-                alpha_mode: material.alpha_mode,
-                depth_bias: material.depth_bias,
-                depth_map: material.depth_map.clone(),
-                parallax_depth_scale: material.parallax_depth_scale,
-                parallax_mapping_method: material.parallax_mapping_method,
-                max_parallax_layer_count: material.max_parallax_layer_count,
-            });
-            for (entity, entity_mat_h) in entites.iter() {
-                if entity_mat_h == handle {
-                    let mut ecmds = commands.entity(entity);
-                    ecmds.remove::<Handle<StandardMaterial>>();
-                    ecmds.insert(custom_mat_h.clone());
-                }
-            }
-        }
     }
 }
 
