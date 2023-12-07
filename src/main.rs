@@ -11,7 +11,6 @@ use bevy::{
         experimental::taa::{TemporalAntiAliasBundle, TemporalAntiAliasPlugin},
         tonemapping::Tonemapping,
     },
-    diagnostic::FrameTimeDiagnosticsPlugin,
     pbr::{DirectionalLightShadowMap, ScreenSpaceAmbientOcclusionBundle, ShadowFilteringMethod},
     prelude::*,
 };
@@ -24,8 +23,8 @@ use terrain::TerrainPlugin;
 use bevy_flycam::{FlyCam, NoCameraPlayerPlugin};
 use transvoxel::{transition_sides, voxel_source::Block};
 use user_interface::DebugInterfacePlugin;
-use utils::{format_value_f32, uv_debug_texture, CHUNK_SIZE_F32, CHUNK_SIZE_F32_MIDPOINT};
-
+use utils::{format_value_f32, CHUNK_SIZE_F32, CHUNK_SIZE_F32_MIDPOINT};
+use bevy_kira_audio::prelude::*;
 use crate::utils::CHUNK_SIZE_I32;
 
 fn main() {
@@ -33,12 +32,13 @@ fn main() {
         .insert_resource(DirectionalLightShadowMap { size: 4098 })
         .add_plugins((
             DefaultPlugins,
+            AudioPlugin,
             TemporalAntiAliasPlugin,
             DebugInterfacePlugin,
             TerrainPlugin,
             NoCameraPlayerPlugin,
         ))
-        .add_systems(Startup, (setup, create_voxel_mesh))
+        .add_systems(Startup, (setup, create_voxel_mesh, start_background_audio))
         .add_systems(
             Update,
             (
@@ -47,6 +47,10 @@ fn main() {
             ),
         )
         .run();
+}
+
+fn start_background_audio(asset_server: Res<AssetServer>, audio: Res<Audio>) {
+    audio.play(asset_server.load("audio/liminal-spaces-ambient-432hz-114635.mp3")).looped();
 }
 
 // A unit struct to help identify the FPS UI component, since there may be many Text components
@@ -75,20 +79,20 @@ pub fn create_voxel_mesh(
     mut images: ResMut<Assets<Image>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
-    let radius = 3;
-    let length = (radius * 2) + 1;
+    let radius = 4;
+    let length = radius;
     let start_x = -radius;
     let start_z = -radius;
 
-    let debug_material = materials.add(StandardMaterial {
-        base_color_texture: Some(images.add(uv_debug_texture())),
-        ..default()
-    });
+    // let debug_material = materials.add(StandardMaterial {
+    //     base_color_texture: Some(images.add(uv_debug_texture())),
+    //     ..default()
+    // });
 
-    for i in 0..length {
-        for j in 0..length {
-            let x = start_x + i;
-            let z = start_z + j;
+    for i in start_x..length {
+        for j in start_z..length {
+            let x = i;
+            let z = j;
             info!(
                 "Building Voxel Mesh @[{}, {}, {}]",
                 format_value_f32(x as f32, None, true),
@@ -99,7 +103,10 @@ pub fn create_voxel_mesh(
             // This object does not alter the transform as the transvoxel mesh using this information to sample the noise fields.
             commands.spawn(PbrBundle {
                 mesh: meshes.add(bevy_mesh),
-                material: debug_material.clone(),
+                material: materials.add(StandardMaterial {
+                    base_color: Color::WHITE.into(),
+                    ..default()
+                }),
                 ..default()
             });
         }
@@ -127,10 +134,10 @@ fn setup(
     mut materials: ResMut<Assets<StandardMaterial>>,
     asset_server: Res<AssetServer>,
 ) {
-    let debug_material = materials.add(StandardMaterial {
-        base_color_texture: Some(images.add(uv_debug_texture())),
-        ..default()
-    });
+    // let debug_material = materials.add(StandardMaterial {
+    //     base_color_texture: Some(images.add(uv_debug_texture())),
+    //     ..default()
+    // });
 
     commands
         .spawn((

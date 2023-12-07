@@ -81,7 +81,7 @@ macro_rules! double_for_loop {
 
 
 use std::fmt::Write;
-use bevy::{prelude::{Image, info}, render::{render_resource::{Extent3d, TextureDimension, TextureFormat, SamplerDescriptor}, texture::ImageSampler}};
+use bevy::{prelude::{Image, info}, render::{render_resource::{Extent3d, TextureDimension, TextureFormat, SamplerDescriptor, TextureDescriptor}, texture::{ImageSampler, ImageSamplerDescriptor}}};
 
 /// Formats a value as a string with optional decimal digits and support for negative space formatting.
 ///
@@ -244,7 +244,7 @@ pub fn uv_debug_texture() -> Image {
     );
 
     // Set the sampler descriptor for the image
-    img.sampler_descriptor = ImageSampler::Descriptor(SamplerDescriptor::default());
+    //img.texture_descriptor = TextureDescriptor::Descriptor(ImageSamplerDescriptor::default());
 
     // Return the generated image
     img

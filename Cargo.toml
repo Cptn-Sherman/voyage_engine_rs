@@ -7,12 +7,15 @@ edition = "2021"
 
 [dependencies]
 bevy = { version = "0.12.0", features = ["dynamic_linking"] }
-bevy_flycam = { git = "https://github.com/etam/bevy_flycam.git", branch = "bevy_0.11" }  # Old link, main branch is not up to date { git = "https://github.com/sburris0/bevy_flycam" }
+bevy_flycam = { git = "https://github.com/sburris0/bevy_flycam" }
 bevy_rapier3d = "0.21.0"
 noise = "0.8.2"
 transvoxel = "1.0.0"
 num-traits = "0.2.14"
 num-integer = "0.1.45"
+bevy_mod_picking = "0.17.0"
+bevy_kira_audio = "0.18.0"
+acacia = "0.2.0"
 
 # Enable a small amount of optimization in debug mode
 [profile.dev]

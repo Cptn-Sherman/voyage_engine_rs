@@ -42,9 +42,6 @@ impl Plugin for DebugInterfacePlugin {
 
 pub fn create_debug_interface(
     mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut images: ResMut<Assets<Image>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
     asset_server: Res<AssetServer>,
 ) {
     // setup the default font
@@ -55,6 +52,7 @@ pub fn create_debug_interface(
     let cursor_color: BackgroundColor = BackgroundColor(Color::WHITE);
     let crosshair_texture_handle = asset_server.load("textures/white_square_crosshair.png");
 
+    // Center Look UI
     commands
         .spawn(NodeBundle {
             style: Style {
@@ -117,6 +115,9 @@ pub fn create_debug_interface(
                 });
         });
 
+    // Engine and System Information
+
+    // System State
     commands
         .spawn(NodeBundle {
             style: Style {
@@ -124,7 +125,7 @@ pub fn create_debug_interface(
                 height: Val::Percent(100.0),
                 display: Display::Flex,
                 flex_direction: FlexDirection::Column,
-                justify_content: JustifyContent::FlexStart,
+                justify_content: JustifyContent::FlexEnd,
                 align_items: AlignItems::FlexStart,
                 position_type: PositionType::Absolute,
                 ..default()
@@ -202,7 +203,6 @@ pub fn create_debug_interface(
                         ]),
                         TpsText,
                     ));
-
                     parent.spawn((
                         TextBundle::from_sections([
                             gen_text_section(
@@ -499,7 +499,8 @@ pub fn create_debug_interface(
                             Some(Color::WHITE),
                             default_font.clone(),
                         ),
-                    ]),));
+                    ]),
+                ));
 
                     // ? not sure if global time is needed, but it could be useful for debugging?
                     parent.spawn((TextBundle::from_sections([
