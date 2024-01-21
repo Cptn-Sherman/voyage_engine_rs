@@ -1,6 +1,7 @@
 mod bevy_mesh;
 mod terrain;
 mod user_interface;
+mod player_controller;
 mod utils;
 
 use bevy::render::mesh::Mesh as BevyMesh;
@@ -14,20 +15,27 @@ use bevy::{
     pbr::{DirectionalLightShadowMap, ScreenSpaceAmbientOcclusionBundle, ShadowFilteringMethod},
     prelude::*,
 };
+use bevy_xpbd_3d::components::{RigidBody, Collider};
+use bevy_xpbd_3d::plugins::PhysicsPlugins;
+
+
 
 use std::f32::consts::{FRAC_PI_4, PI};
 
 use bevy_mesh::{mesh_for_model, Model};
 use terrain::TerrainPlugin;
 
+use crate::utils::CHUNK_SIZE_I32;
 use bevy_flycam::{FlyCam, NoCameraPlayerPlugin};
+use bevy_kira_audio::prelude::*;
 use transvoxel::{transition_sides, voxel_source::Block};
 use user_interface::DebugInterfacePlugin;
-use utils::{format_value_f32, CHUNK_SIZE_F32, CHUNK_SIZE_F32_MIDPOINT};
-use bevy_kira_audio::prelude::*;
-use crate::utils::CHUNK_SIZE_I32;
+use player_controller::FirstPersonPlayerControllerPlugin;
+use utils::{format_value_f32, CHUNK_SIZE_F32};
 
 fn main() {
+    color_eyre::install().unwrap();
+
     App::new()
         .insert_resource(DirectionalLightShadowMap { size: 4098 })
         .add_plugins((
@@ -37,20 +45,22 @@ fn main() {
             DebugInterfacePlugin,
             TerrainPlugin,
             NoCameraPlayerPlugin,
+            PhysicsPlugins::default(),
+            FirstPersonPlayerControllerPlugin,
+
         ))
-        .add_systems(Startup, (setup, create_voxel_mesh, start_background_audio))
+        .add_systems(Startup, (setup, start_background_audio))
         .add_systems(
             Update,
-            (
-                adjust_directional_light_biases,
-                animate_light_direction,
-            ),
+            (adjust_directional_light_biases, animate_light_direction),
         )
         .run();
 }
 
 fn start_background_audio(asset_server: Res<AssetServer>, audio: Res<Audio>) {
-    audio.play(asset_server.load("audio/liminal-spaces-ambient-432hz-114635.mp3")).looped();
+    audio
+        .play(asset_server.load("audio/liminal-spaces-ambient-432hz-114635.mp3"))
+        .looped();
 }
 
 // A unit struct to help identify the FPS UI component, since there may be many Text components
@@ -69,7 +79,6 @@ fn build_chunk_mesh(cx: i32, cy: i32, cz: i32) -> BevyMesh {
         CHUNK_SIZE_I32 as usize,
     );
     let transition_sides = transition_sides::no_side();
-    // Finally, we can run the mesh extraction:
     mesh_for_model(&Model::Noise, false, &block, &transition_sides)
 }
 
@@ -134,10 +143,18 @@ fn setup(
     mut materials: ResMut<Assets<StandardMaterial>>,
     asset_server: Res<AssetServer>,
 ) {
-    // let debug_material = materials.add(StandardMaterial {
-    //     base_color_texture: Some(images.add(uv_debug_texture())),
-    //     ..default()
-    // });
+    // Plane
+    let plane_size = 128.0;
+    let plane_thickness = 0.002;
+    commands.spawn((
+        RigidBody::Static,
+        Collider::cuboid(plane_size, plane_thickness, plane_size),
+        PbrBundle {
+            mesh: meshes.add(Mesh::from(shape::Plane::from_size(plane_size))),
+            material: materials.add(Color::rgb(0.3, 0.5, 0.3).into()),
+            ..default()
+        },
+    ));
 
     commands
         .spawn((
@@ -146,24 +163,19 @@ fn setup(
                     hdr: true,
                     ..default()
                 },
-
                 transform: Transform::from_xyz(16.0, 8.0, 16.0).looking_at(Vec3::ZERO, Vec3::Y),
                 tonemapping: Tonemapping::TonyMcMapface,
                 ..Default::default()
             },
-            EnvironmentMapLight {
-                diffuse_map: asset_server.load("environment_maps/pisa_diffuse_rgb9e5_zstd.ktx2"),
-                specular_map: asset_server.load("environment_maps/pisa_specular_rgb9e5_zstd.ktx2"),
-            },
             FogSettings {
                 color: Color::WHITE,
-                falloff: FogFalloff::Exponential { density: 0.005 },
+                falloff: FogFalloff::Exponential { density: 0.0005 },
                 ..Default::default()
             },
+            ShadowFilteringMethod::Jimenez14,
             FlyCam,
         ))
         .insert(ScreenSpaceAmbientOcclusionBundle::default())
-        .insert(ShadowFilteringMethod::Jimenez14)
         .insert(TemporalAntiAliasBundle::default());
 
     // light
@@ -190,107 +202,6 @@ fn setup(
     commands.spawn(SceneBundle {
         scene: asset_server.load("models/FlightHelmet/FlightHelmet.gltf#Scene0"),
         transform: Transform::from_xyz(-1.0, 0.0, 0.0),
-        ..default()
-    });
-
-    // // plane
-    // commands.spawn(PbrBundle {
-    //     mesh: meshes.add(shape::Plane::from_size(CHUNK_SIZE_F32_MIDPOINT).into()),
-    //     material: materials.add(StandardMaterial {
-    //         base_color_texture: Some(base_color_texture),
-    //         metallic_roughness_texture: Some(metallic_roughness_texture),
-    //         normal_map_texture: Some(normal_map_texture),
-    //         //occlusion_texture: Some(occlusion_map_texture),
-    //         depth_map: Some(depth_map_texture),
-    //         flip_normal_map_y: false,
-    //         metallic: 0.95,
-    //         ..default()
-    //     }),
-    //     transform: Transform::from_xyz(CHUNK_SIZE_F32_MIDPOINT, CHUNK_SIZE_F32_MIDPOINT / 2.0, CHUNK_SIZE_F32_MIDPOINT),
-    //     ..default()
-    // });
-
-    // // light
-    // commands.spawn(PointLightBundle {
-    //     point_light: PointLight {
-    //         intensity: 2500.0,
-    //         shadows_enabled: true,
-    //         ..default()
-    //     },
-    //     transform: Transform::from_xyz(4.0, 8.0, 4.0),
-    //     ..default()
-    // });
-
-    let corners = [
-        (0.0, 0.0, 0.0),
-        (1.0, 0.0, 0.0),
-        (0.0, 1.0, 0.0),
-        (1.0, 1.0, 0.0),
-        (0.0, 0.0, 1.0),
-        (1.0, 0.0, 1.0),
-        (0.0, 1.0, 1.0),
-        (1.0, 1.0, 1.0),
-    ];
-
-    for corner in corners.iter() {
-        let (x, y, z) = *corner;
-        let corner_shape_size = 1.0;
-
-        commands.spawn(PbrBundle {
-            mesh: meshes.add(Mesh::from(shape::Cube {
-                size: corner_shape_size,
-            })),
-            material: materials.add(StandardMaterial {
-                base_color: Color::ORANGE.into(),
-                ..default()
-            }),
-            transform: Transform::from_xyz(
-                x * CHUNK_SIZE_F32,
-                y * CHUNK_SIZE_F32 + (corner_shape_size / 2.0),
-                z * CHUNK_SIZE_F32,
-            ),
-            ..default()
-        });
-    }
-
-    commands.spawn(PbrBundle {
-        mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
-        material: materials.add(StandardMaterial {
-            base_color: Color::ORANGE.into(),
-            ..default()
-        }),
-        transform: Transform::from_xyz(CHUNK_SIZE_F32_MIDPOINT, 0.5, CHUNK_SIZE_F32_MIDPOINT),
-        ..default()
-    });
-
-    let base_color_texture = asset_server.load("textures/dented-metal_albedo.png");
-    let metallic_roughness_texture =
-        asset_server.load("textures/dented-metal_metallic_roughness_packed.png");
-    let normal_map_texture = asset_server.load("textures/dented-metal_normal-ogl.png");
-    let depth_map_texture = asset_server.load("textures/dented-metal_height.png");
-    // let occlusion_map_texture = asset_server.load("textures/OldIron01_4K_AO.png");
-
-    let mut mesh = Mesh::from(shape::Cube { size: 16.0 });
-    mesh.generate_tangents();
-
-    commands.spawn(PbrBundle {
-        mesh: meshes.add(mesh),
-        material: materials.add(StandardMaterial {
-            base_color_texture: Some(base_color_texture),
-            metallic_roughness_texture: Some(metallic_roughness_texture),
-            normal_map_texture: Some(normal_map_texture),
-            depth_map: Some(depth_map_texture),
-            parallax_depth_scale: 0.05,
-            metallic: 0.7,
-            reflectance: 0.3,
-            perceptual_roughness: 0.3,
-            ..default()
-        }),
-        transform: Transform::from_xyz(
-            CHUNK_SIZE_F32_MIDPOINT,
-            CHUNK_SIZE_F32_MIDPOINT + 8.0,
-            CHUNK_SIZE_F32_MIDPOINT,
-        ),
         ..default()
     });
 }
@@ -342,7 +253,7 @@ fn rotate_sun(
 ) {
     for (mut _light, mut transform, _) in query.iter_mut() {
         // Rotate the sun around the Y-axis
-        let rotation_speed = 0.5; // Adjust this value to control the rotation speed
+        let rotation_speed = 0.25; // Adjust this value to control the rotation speed
         transform.rotate(Quat::from_rotation_x(rotation_speed * time.delta_seconds()));
     }
 }

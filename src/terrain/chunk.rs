@@ -1,5 +1,4 @@
 
-#[derive(Component)]
 pub struct Chunk {
     cx: u32, 
     cy: u32,
@@ -9,3 +8,7 @@ pub struct Chunk {
     biome: String,
     voxels: Vec<Vec<Vec<u32>>>, // 3d Array of voxel id's
 }
+
+imple getVoxel for Chunk {}
+
+trait getVoxel() -> u32;

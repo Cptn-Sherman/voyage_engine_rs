@@ -7,9 +7,8 @@ use bevy::{
     prelude::*,
 };
 use bevy_flycam::FlyCam;
-use transvoxel::mesh_builder::Position;
 
-use crate::utils::{format_percentage_f32, format_percentage_f64, format_value_f32};
+use crate::utils::{format_percentage_f64, format_value_f32};
 
 const DEFAULT_FONT_PATH: &str = "fonts/Monocraft.ttf";
 const DEFAULT_FONT_SIZE: f32 = 13.0;
@@ -19,9 +18,11 @@ pub struct DebugInterfacePlugin;
 
 impl Plugin for DebugInterfacePlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(FrameTimeDiagnosticsPlugin::default());
-        app.add_plugins(SystemInformationDiagnosticsPlugin::default());
-        app.add_plugins(EntityCountDiagnosticsPlugin::default());
+        app.add_plugins((
+            FrameTimeDiagnosticsPlugin::default(),
+            SystemInformationDiagnosticsPlugin::default(),
+            EntityCountDiagnosticsPlugin::default(),
+        ));
         app.add_systems(Startup, create_debug_interface);
         app.add_systems(
             Update,
@@ -40,10 +41,7 @@ impl Plugin for DebugInterfacePlugin {
     }
 }
 
-pub fn create_debug_interface(
-    mut commands: Commands,
-    asset_server: Res<AssetServer>,
-) {
+pub fn create_debug_interface(mut cmd: Commands, asset_server: Res<AssetServer>) {
     // setup the default font
     let default_font = asset_server.load(DEFAULT_FONT_PATH);
 
@@ -53,7 +51,7 @@ pub fn create_debug_interface(
     let crosshair_texture_handle = asset_server.load("textures/white_square_crosshair.png");
 
     // Center Look UI
-    commands
+    cmd
         .spawn(NodeBundle {
             style: Style {
                 width: Val::Percent(100.0),
@@ -118,7 +116,7 @@ pub fn create_debug_interface(
     // Engine and System Information
 
     // System State
-    commands
+    cmd
         .spawn(NodeBundle {
             style: Style {
                 width: Val::Percent(100.0),
@@ -499,8 +497,7 @@ pub fn create_debug_interface(
                             Some(Color::WHITE),
                             default_font.clone(),
                         ),
-                    ]),
-                ));
+                    ]),));
 
                     // ? not sure if global time is needed, but it could be useful for debugging?
                     parent.spawn((TextBundle::from_sections([
@@ -644,12 +641,18 @@ fn frame_time_update_system(
     }
 
     for mut text in &mut query {
-        let Some(fps) = diag.get(FrameTimeDiagnosticsPlugin::FPS).and_then(|fps| fps.smoothed()) else {
+        let Some(fps) = diag
+            .get(FrameTimeDiagnosticsPlugin::FPS)
+            .and_then(|fps| fps.smoothed())
+        else {
             return;
         };
         text.sections[1].value = format_value_f32(fps as f32, Some(2), false);
 
-        let Some(frame_time) = diag.get(FrameTimeDiagnosticsPlugin::FRAME_TIME).and_then(|frame_time| frame_time.smoothed()) else {
+        let Some(frame_time) = diag
+            .get(FrameTimeDiagnosticsPlugin::FRAME_TIME)
+            .and_then(|frame_time| frame_time.smoothed())
+        else {
             return;
         };
         text.sections[3].value = format_value_f32(frame_time as f32, Some(2), false);

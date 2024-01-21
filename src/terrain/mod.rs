@@ -1,8 +1,8 @@
 use bevy::{
     prelude::{
-        info, warn, App, Camera, Plugin, Query, Res, ResMut, Resource, Transform, Update, With,
+         App, Camera, Plugin, Query, Res, ResMut, Resource, Transform, Update, With,
     },
-    time::{Time, Timer, TimerMode},
+    time::{Time, Timer, TimerMode}, log::{warn, info},
 };
 use bevy_flycam::FlyCam;
 
@@ -11,8 +11,31 @@ use crate::utils::{convert_to_chunk_coordinate, format_value_f32};
 #[derive(Resource)]
 pub struct TerrainPlugin;
 
+pub struct Voxel {
+    is_occupied: bool,
+}
+
+// Define the Octree node
+enum OctreeNode {
+    // Children nodes and voxel data
+    Internal {
+        children: [Option<Box<OctreeNode>>; 8],
+    },
+    Leaf {
+        voxel: Voxel,
+    },
+    Empty,
+}
+
+// Define the Octree structure
+struct Octree {
+    root: OctreeNode,
+}
+
 #[derive(Resource)]
-pub struct TerrainResource {}
+pub struct TerrainData {
+    octree: Octree
+}
 
 #[derive(Resource)]
 pub struct LODRecalculateTimer(Timer);
@@ -24,10 +47,27 @@ pub struct LODPostionTracker {
     cz: i32,
 }
 
+impl Plugin for TerrainPlugin {
+    fn build(&self, app: &mut App) {
+        // add things to your app here
+        info!("Initializing terrain plugin");
+        app.insert_resource(LODRecalculateTimer(Timer::from_seconds(
+            3.0 / 8.0, // this value is arbitrary, but it should be a multiple of 1/8th of a second.
+            TimerMode::Repeating,
+        )))
+        .insert_resource(LODPostionTracker {
+            cx: 0,
+            cy: 0,
+            cz: 0,
+        })
+        .add_systems(Update, check_lod_position);
+    }
+}
+
 impl LODPostionTracker {
     fn to_string(&self) -> String {
         format!(
-            "Camera Position: [{}, {}, {}]",
+            "[{}, {}, {}]",
             format_value_f32(self.cx as f32, None, true),
             format_value_f32(self.cy as f32, None, true),
             format_value_f32(self.cz as f32, None, true)
@@ -64,7 +104,7 @@ pub fn check_lod_position(
             || cur_position.cz != tracked_pos.cz
         {
             info!(
-                "You moved! from: {} to: {}",
+                "You moved from chunk: {} to: {}",
                 tracked_pos.to_string(),
                 cur_position.to_string()
             );
@@ -72,22 +112,5 @@ pub fn check_lod_position(
         } else {
             //info!("You did not move! from: {} to: {}", tracked_pos.to_string(), cur_position.to_string());
         }
-    }
-}
-
-impl Plugin for TerrainPlugin {
-    fn build(&self, app: &mut App) {
-        // add things to your app here
-        info!("Initializing terrain plugin");
-        app.insert_resource(LODRecalculateTimer(Timer::from_seconds(
-            3.0 / 8.0, // this value is arbitrary, but it should be a multiple of 1/8th of a second.
-            TimerMode::Repeating,
-        )))
-        .insert_resource(LODPostionTracker {
-            cx: 0,
-            cy: 0,
-            cz: 0,
-        })
-        .add_systems(Update, check_lod_position);
     }
 }
