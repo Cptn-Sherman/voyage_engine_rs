@@ -33,11 +33,18 @@ use user_interface::DebugInterfacePlugin;
 use player_controller::FirstPersonPlayerControllerPlugin;
 use utils::{format_value_f32, CHUNK_SIZE_F32};
 
+#[derive(Resource)]
+struct EngineSettings {
+    show_debug_hud: bool,
+    show_player_controller_raycasts: bool,
+}
+
 fn main() {
     color_eyre::install().unwrap();
 
     App::new()
         .insert_resource(DirectionalLightShadowMap { size: 4098 })
+        .insert_resource(EngineSettings { show_debug_hud: true, show_player_controller_raycasts: true})
         .add_plugins((
             DefaultPlugins,
             AudioPlugin,
