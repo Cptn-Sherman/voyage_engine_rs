@@ -44,15 +44,17 @@ impl Plugin for FirstPersonPlayerControllerPlugin {
     }
 }
 
-const GRAVITY_SCALE_SPEED_FACTOR: f32 = 2.0;
+const GRAVITY_SCALE_SPEED_FACTOR: f32 = 1.0;
 
 const RIDE_HEIGHT: f32 = 1.5;
-const DOWNWARD_RAY_LENGTH_MAX: f32 = 1.0 + RIDE_HEIGHT;
+const RAY_LENGTH_OFFSET: f32 = 0.5;
+const DOWNWARD_RAY_LENGTH_MAX: f32 = RAY_LENGTH_OFFSET + RIDE_HEIGHT;
 const RIDE_SPRING_STRENGTH: f32 = 800.0;
 const RIDE_SPRING_DAMPER: f32 = 75.0;
 
-const JUMP_STRENGTH: f32 = 180.0;
-const JUMP_COOLDOWN_LENGTH: f32 = 0.65;
+const DEFAULT_STANCE_LOCKOUT: f32 = 0.25;
+
+const JUMP_STRENGTH: f32 = 80.0;
 
 #[derive(Bundle)]
 pub struct PlayerBundle {
@@ -66,15 +68,15 @@ pub struct PlayerBundle {
 
 #[derive(Component)]
 pub struct PlayerData {
-    jump_cooldown: f32,
     gravity_scale: f32,
-    is_grounded: bool,
     current_stance: PlayerStance,
-    target_stance: PlayerStance,
+    stance_lockout: f32,
 }
-
+#[derive(Debug, PartialEq, Clone)]
 enum PlayerStance {
     Standing,
+    Landing,
+    Jumping,
     Crouched,
     Prone,
     Seated,
@@ -101,102 +103,92 @@ fn spawn_player_system(
                 ..default()
             },
             data: PlayerData {
-                jump_cooldown: 0.0,
                 gravity_scale: 1.0,
-                is_grounded: false,
                 current_stance: PlayerStance::Falling,
-                target_stance: PlayerStance::Falling,
+                stance_lockout: 0.0,
             },
         },
         RayCaster::new(Vec3::ZERO, Vec3::NEG_Y),
     ));
 }
 
+fn determine_stance(
+    keys: &Res<Input<KeyCode>>,
+    ray: &RayCaster,
+    hits: &RayHits,
+    data: &PlayerData,
+) -> PlayerStance {
+    
+    let is_locked_out: bool = data.stance_lockout > 0.0;
+    let previous_stance: PlayerStance = data.current_stance.clone();
+    let mut next_stance: PlayerStance = data.current_stance.clone();
+
+    // If your locked in you cannot change state.
+    if !is_locked_out {
+        if let Some(hit) = hits.iter_sorted().next() {
+            // Get the length of the ray to the first position we hit.
+            let ray_distance: f32 = Vec3::length(ray.direction * hit.time_of_impact);
+            let abs_ray_distance: f32 = f32::abs(ray_distance);
+
+            if abs_ray_distance < RIDE_HEIGHT {
+                next_stance = PlayerStance::Standing;
+            } else if previous_stance != PlayerStance::Standing
+                && abs_ray_distance < DOWNWARD_RAY_LENGTH_MAX
+            {
+                next_stance = PlayerStance::Landing;
+            } else if abs_ray_distance > DOWNWARD_RAY_LENGTH_MAX {
+                next_stance = PlayerStance::Falling;
+            }
+        } else {
+            next_stance = PlayerStance::Falling;
+        }
+    }
+
+    if next_stance != previous_stance {
+        info!(
+            "Detected Stance Change:{:#?} -> {:#?}",
+            previous_stance, next_stance
+        );
+    }
+
+    return next_stance;
+}
+
 fn update_player_data_system(
     time: Res<Time>,
-    engine_settings: Res<EngineSettings>,
     keys: Res<Input<KeyCode>>,
     mut query: Query<(
         &RayCaster,
         &RayHits,
-        &LinearVelocity,
+        &mut LinearVelocity,
         &mut GravityScale,
         &mut ExternalForce,
         &mut ExternalImpulse,
         &mut PlayerData,
     )>,
 ) {
-    for (ray, hits, vel, mut gravity, mut external_force, mut external_impulse, mut data) in
+    for (ray, hits, mut vel, mut gravity, mut external_force, mut external_impulse, mut data) in
         &mut query
     {
         // what was I doing last frame, update that state.
+
         // We update the state of the jump_cooldown
-        data.jump_cooldown -= time.delta_seconds();
-        data.jump_cooldown = f32::clamp(data.jump_cooldown, 0.0, 1.0);
+        data.stance_lockout -= time.delta_seconds();
+        data.stance_lockout = f32::clamp(data.stance_lockout, 0.0, 1.0);
 
-        data.stance = determine_stance(); // write a function which determines which stance we are in. or break this into two parts,
-        // the system which determines which stance a entity is based on these collision checks.
-        // Followed by a 
-
-        match &data.stance {
-            PlayerStance::Standing => {
-
-            },
-            PlayerStance::Falling => {},
-            PlayerStance::Jumping => {},
+        let mut ray_distance: f32 = 0.0;
+        if let Some(hit) = hits.iter_sorted().next() {
+            ray_distance = Vec3::length(ray.direction * hit.time_of_impact);
         }
 
-        // what am I doing this frame, Standing, Jumping, or Falling.
+        let mut next_stance: PlayerStance = determine_stance(&keys, ray, hits, &data);
 
-        // Have I become grounded this frame?
-        if let Some(hit) = hits.iter_sorted().next() {
-            // Get the length of the ray to the first position we hit.
-            let ray_distance: f32 = Vec3::length(ray.direction * hit.time_of_impact);
-            // if this ray is longer than the DOWNWARD_RAY_LENGTH_MAX we do not apply the spring force.
-            if f32::abs(ray_distance) > DOWNWARD_RAY_LENGTH_MAX {
-                // -- Falling --
-                data.is_grounded = false;
+        match next_stance {
+            PlayerStance::Landing => {
+                // Set the gravity scale to zero.
+                data.gravity_scale = 0.0;
 
-                // Progress the jump cooldown and set is_grounded to false.
-                data.jump_cooldown -= time.delta_seconds();
-
-                // Increase the impact of gravity to zero over time based on GRAVITY_SCALE_SPEED_FACTOR, Capped at 1.0.
-                data.gravity_scale += GRAVITY_SCALE_SPEED_FACTOR * time.delta_seconds();
-                data.gravity_scale = f32::clamp(data.gravity_scale, 0.0, 1.0);
-
-                // info!(
-                //     "jump_cooldown {}, is_grounded {}",
-                //     data.jump_cooldown, data.is_grounded
-                // );
-            } else {
-                // --- STANDING ---
-
-                if !data.is_grounded {
-                    // JUST GROUNDED THIS TICK DO LANDING SHIT.
-                    info!("Standing!");
-                }
-                data.is_grounded = true;
-
-                data.jump_cooldown -= time.delta_seconds();
-
-                // Reduce the impact of gravity to zero over time based on GRAVITY_SCALE_SPEED_FACTOR, Capped at 0.0.
-                data.gravity_scale -= GRAVITY_SCALE_SPEED_FACTOR * time.delta_seconds();
-                data.gravity_scale = f32::clamp(data.gravity_scale, 0.0, 1.0);
-
-                // --- STANDING: CHECK FOR JUMP ACTION ---
-
-                if data.jump_cooldown <= 0.0 && keys.pressed(KeyCode::X) {
-                    data.is_grounded = false;
-                    data.jump_cooldown = JUMP_COOLDOWN_LENGTH;
-
-                    // remove any previous impulse on the object.
-                    external_impulse.clear();
-                    external_impulse.apply_impulse(Vec3::from((0.0, JUMP_STRENGTH, 0.0)).into());
-                    info!("Jumping!");
-                    continue;
-                }
-
-                // --- STANDING: APPLY SPRING FORCE ---
+                // --- STANDING: APPLY STANDING SPRING FORCE ---
 
                 // Find the diference between how close the capsule is to the surface beneath it.
                 // Compute this value by subtracting the ray length from the set ride height to find the diference in position.
@@ -207,25 +199,88 @@ fn update_player_data_system(
                 /* Now we apply our spring force vector in the direction to return the bodies distance from the ground towards RIDE_HEIGHT. */
                 external_force.clear();
                 external_force.apply_force(Vec3::from((0.0, -spring_force, 0.0)));
-
-                /* -- DEBUG OUTPUT FOR STANDING SPRING FORCE --
-                info!(
-                    "ray_direction {},
-                    ray distance {},
-                    spring_offset {},
-                    spring_force {}",
-                    ray.direction,
-                    ray_distance,
-                    spring_offset,
-                    spring_force
-                );
-                */
             }
+            PlayerStance::Standing => {
+                // Set the gravity scale to zero.
+                data.gravity_scale = 0.0;
 
-            // info!(
-            //     "jump_cooldown {}, is_grounded {}",
-            //     data.jump_cooldown, data.is_grounded
-            // );
+                // Check to see if the player is jumping.
+                if data.stance_lockout <= 0.0 && keys.pressed(KeyCode::X) {
+                    // we have to clear the velocity when we jump.
+                    vel.y = 0.0;
+
+                    // Apply the jump cooldown now that we are jumping
+                    data.stance_lockout = DEFAULT_STANCE_LOCKOUT;
+                    next_stance = PlayerStance::Jumping;
+
+                    // This calculation is not very accurate, ideally we would use the amount the downward ray extends past RIDE_HEIGHT subtracted from the total possible difference.
+                    // todo: Allowing a jump from the absolute bottom to be the full jump strength. BUT I dont want to spend more time on that so ... later.
+                    let inverse_spring_offset_factor = DOWNWARD_RAY_LENGTH_MAX - f32::abs(ray_distance);
+                    let half_default_jump_strength = JUMP_STRENGTH / 2.0;
+                    let scaled_jump_strength: f32 = half_default_jump_strength
+                        + (half_default_jump_strength * inverse_spring_offset_factor);
+
+                    //remove any previous impulse on the object.
+                    external_impulse.clear();
+                    external_force.clear();
+                    external_impulse
+                        .apply_impulse(Vec3::from((0.0, scaled_jump_strength, 0.0)).into());
+
+                    info!(
+                        "Detected Stance Change:{:#?} -> {:#?}, cleared velocity, forces, and impulse.",
+                        data.current_stance, next_stance
+                    );
+
+                    info!(
+                        "\tJumped with {}/{} due to distance to ground",
+                        scaled_jump_strength, JUMP_STRENGTH
+                    );
+                } else {
+                    // Clear any persisting forces on the rigid body.
+                    external_force.clear();
+
+                    // todo: This Apply Standing Spring Force needs to be broken into a method however, the logic breaks when passing the external_force outside this function.
+                    // --- STANDING: APPLY STANDING SPRING FORCE ---
+
+                    // Find the diference between how close the capsule is to the surface beneath it.
+                    // Compute this value by subtracting the ray length from the set ride height to find the diference in position.
+                    let spring_offset = f32::abs(ray_distance) - RIDE_HEIGHT;
+                    let spring_force =
+                        (spring_offset * RIDE_SPRING_STRENGTH) - (-vel.y * RIDE_SPRING_DAMPER);
+
+                    /* Now we apply our spring force vector in the direction to return the bodies distance from the ground towards RIDE_HEIGHT. */
+                    external_force.clear();
+                    external_force.apply_force(Vec3::from((0.0, -spring_force, 0.0)));
+                }
+            }
+            PlayerStance::Falling => {
+                // Set the gravity scale to zero.
+                data.gravity_scale = 1.0;
+
+                // Clear any persisting forces on the rigid body.
+                external_force.clear();
+            }
+            PlayerStance::Jumping => {
+                // Set the gravity scale to zero.
+                data.gravity_scale = 1.0;
+
+                // Clear any persisting forces on the rigid body.
+                external_force.clear();
+            }
+            PlayerStance::Crouched => todo!(),
+            PlayerStance::Prone => todo!(),
+            PlayerStance::Seated => todo!(),
+            PlayerStance::Laying => todo!(),
         }
+
+        gravity.0 = data.gravity_scale;
+        data.current_stance = next_stance.clone();
+
+        // info!(
+        //     "Stance: {:#?}, lockout {}, gravity_scale {}",
+        //     next_stance, data.stance_lockout, data.gravity_scale
+        // )
     }
 }
+
+fn apply_spring_force(ray_distance: f32, velocity_y: f32, mut force: ExternalForce) {}
