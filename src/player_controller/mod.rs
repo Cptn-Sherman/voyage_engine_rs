@@ -118,7 +118,6 @@ fn determine_stance(
     hits: &RayHits,
     data: &PlayerData,
 ) -> PlayerStance {
-    
     let is_locked_out: bool = data.stance_lockout > 0.0;
     let previous_stance: PlayerStance = data.current_stance.clone();
     let mut next_stance: PlayerStance = data.current_stance.clone();
@@ -170,17 +169,17 @@ fn update_player_data_system(
     for (ray, hits, mut vel, mut gravity, mut external_force, mut external_impulse, mut data) in
         &mut query
     {
-        // what was I doing last frame, update that state.
-
-        // We update the state of the jump_cooldown
+        // We update stance_lockout.
         data.stance_lockout -= time.delta_seconds();
         data.stance_lockout = f32::clamp(data.stance_lockout, 0.0, 1.0);
 
-        let mut ray_distance: f32 = 0.0;
+        // Compute the ray_length to a hit, if we don't hit anything we assume the ground is infinitly far away.
+        let mut ray_length: f32 = f32::INFINITY;
         if let Some(hit) = hits.iter_sorted().next() {
-            ray_distance = Vec3::length(ray.direction * hit.time_of_impact);
+            ray_length = Vec3::length(ray.direction * hit.time_of_impact);
         }
 
+        // Compute the next stance for the player.
         let mut next_stance: PlayerStance = determine_stance(&keys, ray, hits, &data);
 
         match next_stance {
@@ -188,17 +187,7 @@ fn update_player_data_system(
                 // Set the gravity scale to zero.
                 data.gravity_scale = 0.0;
 
-                // --- STANDING: APPLY STANDING SPRING FORCE ---
-
-                // Find the diference between how close the capsule is to the surface beneath it.
-                // Compute this value by subtracting the ray length from the set ride height to find the diference in position.
-                let spring_offset = f32::abs(ray_distance) - RIDE_HEIGHT;
-                let spring_force =
-                    (spring_offset * RIDE_SPRING_STRENGTH) - (-vel.y * RIDE_SPRING_DAMPER);
-
-                /* Now we apply our spring force vector in the direction to return the bodies distance from the ground towards RIDE_HEIGHT. */
-                external_force.clear();
-                external_force.apply_force(Vec3::from((0.0, -spring_force, 0.0)));
+                apply_spring_force(ray_length, vel.y, &mut external_force);
             }
             PlayerStance::Standing => {
                 // Set the gravity scale to zero.
@@ -215,10 +204,14 @@ fn update_player_data_system(
 
                     // This calculation is not very accurate, ideally we would use the amount the downward ray extends past RIDE_HEIGHT subtracted from the total possible difference.
                     // todo: Allowing a jump from the absolute bottom to be the full jump strength. BUT I dont want to spend more time on that so ... later.
-                    let inverse_spring_offset_factor = DOWNWARD_RAY_LENGTH_MAX - f32::abs(ray_distance);
-                    let half_default_jump_strength = JUMP_STRENGTH / 2.0;
-                    let scaled_jump_strength: f32 = half_default_jump_strength
-                        + (half_default_jump_strength * inverse_spring_offset_factor);
+                    let one_quarter_default_jump_strength: f32 = JUMP_STRENGTH / 4.0;
+                    let three_quarter_default_jump_stength: f32 = one_quarter_default_jump_strength * 3.0;
+                    
+                    let inverse_spring_offset_factor: f32 = 0.5 / f32::clamp(f32::abs(ray_length) - 1.0, 0.1, 0.5);
+                    
+                    
+                    let scaled_jump_strength: f32 = one_quarter_default_jump_strength
+                        + (three_quarter_default_jump_stength * f32::clamp(inverse_spring_offset_factor, 0.1, 1.0));
 
                     //remove any previous impulse on the object.
                     external_impulse.clear();
@@ -232,25 +225,18 @@ fn update_player_data_system(
                     );
 
                     info!(
-                        "\tJumped with {}/{} due to distance to ground",
-                        scaled_jump_strength, JUMP_STRENGTH
+                        "\tJumped with {}/{} due to distance to ground, spring_factor {}",
+                        scaled_jump_strength, JUMP_STRENGTH, inverse_spring_offset_factor
+                    );
+                    info!(
+                        "\t ray_length {} ",
+                        ray_length
                     );
                 } else {
                     // Clear any persisting forces on the rigid body.
                     external_force.clear();
 
-                    // todo: This Apply Standing Spring Force needs to be broken into a method however, the logic breaks when passing the external_force outside this function.
-                    // --- STANDING: APPLY STANDING SPRING FORCE ---
-
-                    // Find the diference between how close the capsule is to the surface beneath it.
-                    // Compute this value by subtracting the ray length from the set ride height to find the diference in position.
-                    let spring_offset = f32::abs(ray_distance) - RIDE_HEIGHT;
-                    let spring_force =
-                        (spring_offset * RIDE_SPRING_STRENGTH) - (-vel.y * RIDE_SPRING_DAMPER);
-
-                    /* Now we apply our spring force vector in the direction to return the bodies distance from the ground towards RIDE_HEIGHT. */
-                    external_force.clear();
-                    external_force.apply_force(Vec3::from((0.0, -spring_force, 0.0)));
+                    apply_spring_force(ray_length, vel.y, &mut external_force);
                 }
             }
             PlayerStance::Falling => {
@@ -283,4 +269,13 @@ fn update_player_data_system(
     }
 }
 
-fn apply_spring_force(ray_distance: f32, velocity_y: f32, mut force: ExternalForce) {}
+fn apply_spring_force(ray_length: f32, velocity_y: f32, force: &mut ExternalForce) {
+    // Find the diference between how close the capsule is to the surface beneath it.
+    // Compute this value by subtracting the ray length from the set ride height to find the diference in position.
+    let spring_offset = f32::abs(ray_length) - RIDE_HEIGHT;
+    let spring_force = (spring_offset * RIDE_SPRING_STRENGTH) - (-velocity_y * RIDE_SPRING_DAMPER);
+
+    /* Now we apply our spring force vector in the direction to return the bodies distance from the ground towards RIDE_HEIGHT. */
+    force.clear();
+    force.apply_force(Vec3::from((0.0, -spring_force, 0.0)));
+}
