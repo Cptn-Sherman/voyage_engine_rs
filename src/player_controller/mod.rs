@@ -199,7 +199,7 @@ fn determine_stance(
             next_stance = PlayerStance::Falling;
         } else if previous_stance == PlayerStance::Standing
             && data.stance_lockout <= 0.0
-            && keys.pressed(KeyCode::Space)
+            && keys.pressed(KeyCode::C)
         {
             next_stance = PlayerStance::Jumping;
         } else if ray_length < RIDE_HEIGHT {
@@ -237,8 +237,7 @@ fn apply_jump_force(data: &mut PlayerData, impulse: &mut ExternalImpulse, ray_le
     // Apply the stance cooldown now that we are jumping
     data.stance_lockout = DEFAULT_STANCE_LOCKOUT;
 
-    let one_quarter_jump_strength: f32 = JUMP_STRENGTH / 4.0;
-    let three_quarter_jump_strength: f32 = one_quarter_jump_strength * 3.0;
+    let half_jump_strength: f32 = JUMP_STRENGTH / 2.0;
     let jump_factor = compute_clamped_jump_force_factor(ray_length, data.previous_jump_factor);
 
     // update the previous value
@@ -248,7 +247,7 @@ fn apply_jump_force(data: &mut PlayerData, impulse: &mut ExternalImpulse, ray_le
 
 
     let dynamic_jump_strength: f32 =
-        one_quarter_jump_strength + (three_quarter_jump_strength * jump_factor);
+    half_jump_strength + (half_jump_strength * jump_factor);
 
     //remove any previous impulse on the object.
     impulse.clear();
