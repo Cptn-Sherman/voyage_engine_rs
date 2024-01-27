@@ -32,8 +32,6 @@ use bevy_xpbd_3d::{
     plugins::spatial_query::{RayCaster, RayHits, ShapeCaster},
 };
 
-use crate::EngineSettings;
-
 const CAPSULE_HEIGHT: f32 = 1.0;
 const RIDE_HEIGHT: f32 = 1.5;
 const RAY_LENGTH_OFFSET: f32 = 0.5;
@@ -41,7 +39,10 @@ const DOWNWARD_RAY_LENGTH_MAX: f32 = RAY_LENGTH_OFFSET + RIDE_HEIGHT;
 const RIDE_SPRING_STRENGTH: f32 = 800.0;
 const RIDE_SPRING_DAMPER: f32 = 75.0;
 const DEFAULT_STANCE_LOCKOUT: f32 = 0.25;
-const JUMP_STRENGTH: f32 = 80.0;
+const JUMP_STRENGTH: f32 = 65.0;
+
+const MOVEMENT_SPEED: f32 = 50.0;
+const MOVEMENT_DECAY: f32 = 0.95;
 
 pub struct FirstPersonPlayerControllerPlugin;
 
@@ -68,7 +69,6 @@ pub struct PlayerData {
     gravity_scale: f32,
     current_stance: PlayerStance,
     stance_lockout: f32,
-    previous_jump_factor: f32,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -101,7 +101,6 @@ fn spawn_player_system(
                 gravity_scale: 1.0,
                 current_stance: PlayerStance::Falling,
                 stance_lockout: 0.0,
-                previous_jump_factor: 0.0,
             },
         },
         RayCaster::new(Vec3::ZERO, Vec3::NEG_Y),
@@ -176,6 +175,36 @@ fn update_player_data_system(
             }
         }
 
+
+        // --- Movement ---
+
+        // Perform the movement checks.
+        // Move Forward.
+        if keys.pressed(KeyCode::Up) {
+            vel.x += MOVEMENT_SPEED * time.delta_seconds();
+        } 
+        
+        // Move Backwards.
+         if keys.pressed(KeyCode::Down) {
+            vel.x -= MOVEMENT_SPEED * time.delta_seconds();
+        } 
+        
+        // Strafe Left
+         if keys.pressed(KeyCode::Left) {
+            vel.z -= MOVEMENT_SPEED * time.delta_seconds();
+        } 
+        
+        // Strafe Right
+        if keys.pressed(KeyCode::Right) {
+            vel.z += MOVEMENT_SPEED * time.delta_seconds();
+        }
+
+        // Appy decay to Linear Velocity on the X and Z directions.
+        vel.x *= MOVEMENT_DECAY;
+        vel.z *= MOVEMENT_DECAY;
+
+        // --- State Update ---
+
         // Update the gravity scale.
         gravity.0 = data.gravity_scale;
 
@@ -224,7 +253,8 @@ fn determine_stance(
 
 fn apply_spring_force(force: &mut ExternalForce, ray_length: f32, velocity_y: f32) {
     // Find the diference between how close the capsule is to the surface beneath it.
-    // Compute this value by subtracting the ray length from the set ride height to find the diference in position.
+    // Compute this value by subtracting the ray length from the set ride height 
+    // to find the diference in position.
     let spring_offset = f32::abs(ray_length) - RIDE_HEIGHT;
     let spring_force = (spring_offset * RIDE_SPRING_STRENGTH) - (-velocity_y * RIDE_SPRING_DAMPER);
 
@@ -238,16 +268,15 @@ fn apply_jump_force(data: &mut PlayerData, impulse: &mut ExternalImpulse, ray_le
     data.stance_lockout = DEFAULT_STANCE_LOCKOUT;
 
     let half_jump_strength: f32 = JUMP_STRENGTH / 2.0;
-    let jump_factor = compute_clamped_jump_force_factor(ray_length, data.previous_jump_factor);
+    let jump_factor: f32 = compute_clamped_jump_force_factor(ray_length);
 
-    // update the previous value
-
-
-    data.previous_jump_factor = jump_factor - delta_time;
-
-
+    // make this value changable.
     let dynamic_jump_strength: f32 =
     half_jump_strength + (half_jump_strength * jump_factor);
+
+    // todo: right now we are applying this jump force directly up, this needs to consider the original movement velocities. 
+    // maybe instead of half the strength getting added to the up we added it directionally only so you always jump x height but can 
+    // use more of the timing to aid in forward momentum.
 
     //remove any previous impulse on the object.
     impulse.clear();
@@ -279,7 +308,7 @@ fn apply_jump_force(data: &mut PlayerData, impulse: &mut ExternalImpulse, ray_le
 /// let jump_force_factor = compute_clamped_jump_force_factor(ray_length);
 /// println!("Jump Force Factor: {}", jump_force_factor);
 /// ```
-fn compute_clamped_jump_force_factor(ray_length: f32, previous_val: f32) -> f32 {
+fn compute_clamped_jump_force_factor(ray_length: f32) -> f32 {
     // Constants defined elsewhere in the code
     let full_standing_ray_length: f32 = RIDE_HEIGHT;
     let half_standing_ray_length = RIDE_HEIGHT - (CAPSULE_HEIGHT / 4.0);
@@ -299,8 +328,6 @@ fn compute_clamped_jump_force_factor(ray_length: f32, previous_val: f32) -> f32 
     // Ensure the output is within the range [0.0, 1.0]
     let clamped_result = f32::clamp(result, 0.0, 1.0);
 
-    let final_result = f32::max(clamped_result, previous_val / 2.0);
-
     // Return the final result
-    final_result
+    clamped_result
 }
