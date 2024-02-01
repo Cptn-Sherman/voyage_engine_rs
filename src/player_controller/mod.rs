@@ -3,11 +3,12 @@ use std::{num, ops::Sub};
 use bevy::{
     app::{App, Plugin, Startup, Update},
     asset::{AssetServer, Assets},
+    core_pipeline::{core_3d::Camera3dBundle, tonemapping::Tonemapping},
     ecs::{
         bundle::Bundle,
         component::Component,
         entity::Entity,
-        query::With,
+        query::{With, Without},
         system::{Commands, Query, Res, ResMut},
     },
     input::{keyboard::KeyCode, Input},
@@ -15,13 +16,16 @@ use bevy::{
     math::{Ray, Vec3},
     pbr::{MaterialMeshBundle, PbrBundle, StandardMaterial},
     render::{
-        camera::Camera,
+        camera::{self, Camera},
         color::Color,
         mesh::{shape, Mesh},
         texture::Image,
     },
     time::Time,
-    transform::components::Transform,
+    transform::{
+        self,
+        components::{GlobalTransform, Transform},
+    },
     utils::default,
 };
 use bevy_xpbd_3d::{
@@ -31,6 +35,8 @@ use bevy_xpbd_3d::{
     parry::{query::RayCast, simba::scalar::SupersetOf},
     plugins::spatial_query::{RayCaster, RayHits, ShapeCaster},
 };
+
+use crate::CameraThing;
 
 const CAPSULE_HEIGHT: f32 = 1.0;
 const RIDE_HEIGHT: f32 = 1.5;
@@ -50,7 +56,7 @@ impl Plugin for FirstPersonPlayerControllerPlugin {
     fn build(&self, app: &mut App) {
         info!("Initializing player controller plugin");
         app.add_systems(Startup, spawn_player_system);
-        app.add_systems(Update, update_player_data_system);
+        app.add_systems(Update, (update_player_data_system, attached_camera_system));
     }
 }
 
@@ -69,6 +75,7 @@ pub struct PlayerData {
     gravity_scale: f32,
     current_stance: PlayerStance,
     stance_lockout: f32,
+    movement_vec: Vec3,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -84,7 +91,7 @@ fn spawn_player_system(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
-    println!("spawning player contorller");
+    println!("Spawning player contorller...");
     commands.spawn((
         PlayerBundle {
             rigid_body: RigidBody::Dynamic,
@@ -95,12 +102,14 @@ fn spawn_player_system(
                 mesh: meshes.add(Mesh::from(shape::Capsule::default())),
                 material: materials.add(Color::rgb(1.0, 0.0, 0.0).into()),
                 transform: Transform::from_xyz(0.0, 8.0, 0.0),
+
                 ..default()
             },
             data: PlayerData {
                 gravity_scale: 1.0,
                 current_stance: PlayerStance::Falling,
                 stance_lockout: 0.0,
+                movement_vec: Vec3::new(0.0, 0.0, 0.0),
             },
         },
         RayCaster::new(Vec3::ZERO, Vec3::NEG_Y),
@@ -170,38 +179,44 @@ fn update_player_data_system(
                     // we have to clear the velocity when we jump.
                     vel.y = 0.0;
 
-                    apply_jump_force(&mut data, &mut external_impulse, ray_length, time.delta_seconds());
+                    apply_jump_force(&mut data, &mut external_impulse, ray_length);
                 }
             }
         }
 
-
-        // --- Movement ---
-
-        // Perform the movement checks.
-        // Move Forward.
-        if keys.pressed(KeyCode::Up) {
-            vel.x += MOVEMENT_SPEED * time.delta_seconds();
-        } 
         
-        // Move Backwards.
-         if keys.pressed(KeyCode::Down) {
-            vel.x -= MOVEMENT_SPEED * time.delta_seconds();
-        } 
-        
-        // Strafe Left
-         if keys.pressed(KeyCode::Left) {
-            vel.z -= MOVEMENT_SPEED * time.delta_seconds();
-        } 
-        
-        // Strafe Right
-        if keys.pressed(KeyCode::Right) {
-            vel.z += MOVEMENT_SPEED * time.delta_seconds();
-        }
 
-        // Appy decay to Linear Velocity on the X and Z directions.
-        vel.x *= MOVEMENT_DECAY;
-        vel.z *= MOVEMENT_DECAY;
+        // // --- Movement ---
+
+        // // Perform the movement checks.
+        // // Move Forward.
+        // if keys.pressed(KeyCode::Up) {
+        //     data.movement_vec.x += MOVEMENT_SPEED * time.delta_seconds();
+        // }
+
+        // // Move Backwards.
+        // if keys.pressed(KeyCode::Down) {
+        //     data.movement_vec.x -= MOVEMENT_SPEED * time.delta_seconds();
+        // }
+
+        // // Strafe Left
+        // if keys.pressed(KeyCode::Left) {
+        //     data.movement_vec.z -= MOVEMENT_SPEED * time.delta_seconds();
+        // }
+
+        // // Strafe Right
+        // if keys.pressed(KeyCode::Right) {
+        //     data.movement_vec.z += MOVEMENT_SPEED * time.delta_seconds();
+        // }
+
+        // // Appy decay to Linear Velocity on the X and Z directions.
+        // data.movement_vec.x *= MOVEMENT_DECAY;
+        // data.movement_vec.z *= MOVEMENT_DECAY;
+        // //
+
+        // //
+        // vel.x = data.movement_vec.x;
+        // vel.z = data.movement_vec.z;
 
         // --- State Update ---
 
@@ -211,6 +226,28 @@ fn update_player_data_system(
         // Update the current stance.
         data.current_stance = next_stance.clone();
     }
+}
+
+fn attached_camera_system(
+    player_query: Query<&mut Transform, With<PlayerData>>,
+    mut camera_query: Query<(&mut Transform, With<Camera>, Without<PlayerData>)>,
+) {
+    if camera_query.is_empty()
+        || camera_query.iter().len() > 1
+        || player_query.is_empty()
+        || player_query.iter().len() > 1
+    {
+        info!("The camera attach system did not recieve 1 player and 1 camera.");
+    }
+
+    for (mut camera_transform, _, _) in &mut camera_query {
+        for player_transform in &player_query {
+            camera_transform.translation = player_transform.translation.clone();
+            camera_transform.rotation = player_transform.rotation.clone();
+        }
+    }
+
+    
 }
 
 fn determine_stance(
@@ -253,7 +290,7 @@ fn determine_stance(
 
 fn apply_spring_force(force: &mut ExternalForce, ray_length: f32, velocity_y: f32) {
     // Find the diference between how close the capsule is to the surface beneath it.
-    // Compute this value by subtracting the ray length from the set ride height 
+    // Compute this value by subtracting the ray length from the set ride height
     // to find the diference in position.
     let spring_offset = f32::abs(ray_length) - RIDE_HEIGHT;
     let spring_force = (spring_offset * RIDE_SPRING_STRENGTH) - (-velocity_y * RIDE_SPRING_DAMPER);
@@ -263,7 +300,7 @@ fn apply_spring_force(force: &mut ExternalForce, ray_length: f32, velocity_y: f3
     force.apply_force(Vec3::from((0.0, -spring_force, 0.0)));
 }
 
-fn apply_jump_force(data: &mut PlayerData, impulse: &mut ExternalImpulse, ray_length: f32, delta_time: f32) {
+fn apply_jump_force(data: &mut PlayerData, impulse: &mut ExternalImpulse, ray_length: f32) {
     // Apply the stance cooldown now that we are jumping
     data.stance_lockout = DEFAULT_STANCE_LOCKOUT;
 
@@ -271,11 +308,10 @@ fn apply_jump_force(data: &mut PlayerData, impulse: &mut ExternalImpulse, ray_le
     let jump_factor: f32 = compute_clamped_jump_force_factor(ray_length);
 
     // make this value changable.
-    let dynamic_jump_strength: f32 =
-    half_jump_strength + (half_jump_strength * jump_factor);
+    let dynamic_jump_strength: f32 = half_jump_strength + (half_jump_strength * jump_factor);
 
-    // todo: right now we are applying this jump force directly up, this needs to consider the original movement velocities. 
-    // maybe instead of half the strength getting added to the up we added it directionally only so you always jump x height but can 
+    // todo: right now we are applying this jump force directly up, this needs to consider the original movement velocities.
+    // maybe instead of half the strength getting added to the up we added it directionally only so you always jump x height but can
     // use more of the timing to aid in forward momentum.
 
     //remove any previous impulse on the object.
@@ -289,7 +325,6 @@ fn apply_jump_force(data: &mut PlayerData, impulse: &mut ExternalImpulse, ray_le
 
     info!("\t ray_length {} ", ray_length);
 }
-
 
 /// Computes a clamped jump force factor based on the provided ray length.
 ///
@@ -320,7 +355,8 @@ fn compute_clamped_jump_force_factor(ray_length: f32) -> f32 {
     // Apply the linear transformation
 
     // Step 1: Normalize clamped_ray_length to a value between 0.0 and 1.0
-    let normalized_distance = (clamped_ray_length - half_standing_ray_length) / standing_ray_length_range;
+    let normalized_distance =
+        (clamped_ray_length - half_standing_ray_length) / standing_ray_length_range;
 
     // Step 2: Subtract the normalized distance from CAPSULE_HEIGHT
     let result: f32 = CAPSULE_HEIGHT - normalized_distance;

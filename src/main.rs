@@ -33,8 +33,17 @@ use user_interface::DebugInterfacePlugin;
 use player_controller::FirstPersonPlayerControllerPlugin;
 use utils::{format_value_f32, CHUNK_SIZE_F32};
 
+
+enum CameraState {
+    FreeCamera,
+    FirstPerson,
+    ThirdPerson,
+    PanOrbit,
+}
+
 #[derive(Resource)]
-struct EngineSettings {
+struct EngineState {
+    camera_state: CameraState,
     show_debug_hud: bool,
     show_player_controller_raycasts: bool,
 }
@@ -44,7 +53,6 @@ fn main() {
 
     App::new()
         .insert_resource(DirectionalLightShadowMap { size: 4098 })
-        .insert_resource(EngineSettings { show_debug_hud: true, show_player_controller_raycasts: true})
         .add_plugins((
             DefaultPlugins,
             AudioPlugin,
@@ -143,6 +151,9 @@ fn animate_light_direction(
     }
 }
 
+#[derive(Component)]
+struct CameraThing;
+
 fn setup(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
@@ -180,7 +191,7 @@ fn setup(
                 ..Default::default()
             },
             ShadowFilteringMethod::Jimenez14,
-            FlyCam,
+            CameraThing,
         ))
         .insert(ScreenSpaceAmbientOcclusionBundle::default())
         .insert(TemporalAntiAliasBundle::default());
