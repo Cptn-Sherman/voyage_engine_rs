@@ -26,7 +26,6 @@ use bevy_mesh::{mesh_for_model, Model};
 use terrain::TerrainPlugin;
 
 use crate::utils::CHUNK_SIZE_I32;
-use bevy_flycam::{FlyCam, NoCameraPlayerPlugin};
 use bevy_kira_audio::prelude::*;
 use transvoxel::{transition_sides, voxel_source::Block};
 use user_interface::DebugInterfacePlugin;
@@ -59,7 +58,6 @@ fn main() {
             TemporalAntiAliasPlugin,
             DebugInterfacePlugin,
             TerrainPlugin,
-            NoCameraPlayerPlugin,
             PhysicsPlugins::default(),
             FirstPersonPlayerControllerPlugin,
 
@@ -265,13 +263,3 @@ fn adjust_directional_light_biases(
 #[derive(Component)]
 struct Sun;
 
-fn rotate_sun(
-    time: Res<Time>,
-    mut query: Query<(&mut DirectionalLight, &mut Transform, With<Sun>)>,
-) {
-    for (mut _light, mut transform, _) in query.iter_mut() {
-        // Rotate the sun around the Y-axis
-        let rotation_speed = 0.25; // Adjust this value to control the rotation speed
-        transform.rotate(Quat::from_rotation_x(rotation_speed * time.delta_seconds()));
-    }
-}

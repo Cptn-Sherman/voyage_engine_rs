@@ -169,16 +169,15 @@ fn update_player_data_system(
                 external_force.clear();
             }
             PlayerStance::Jumping => {
-                // Set the gravity scale to zero.
+                // set the gravity scale to zero.
                 data.gravity_scale = 1.0;
 
-                // Clear any persisting forces on the rigid body.
+                // clear any persisting forces on the rigid body.
                 external_force.clear();
-
+                
+                // check if the stance has changed.
                 if data.current_stance != PlayerStance::Jumping {
-                    // we have to clear the velocity when we jump.
-                    vel.y = 0.0;
-
+                    vel.y = 0.0; // clear the jump velocity.
                     apply_jump_force(&mut data, &mut external_impulse, ray_length);
                 }
             }
@@ -186,37 +185,37 @@ fn update_player_data_system(
 
         
 
-        // // --- Movement ---
+        // --- Movement ---
 
-        // // Perform the movement checks.
-        // // Move Forward.
-        // if keys.pressed(KeyCode::Up) {
-        //     data.movement_vec.x += MOVEMENT_SPEED * time.delta_seconds();
-        // }
+        // Perform the movement checks.
+        // Move Forward.
+        if keys.pressed(KeyCode::Up) {
+            data.movement_vec.x += MOVEMENT_SPEED * time.delta_seconds();
+        }
 
-        // // Move Backwards.
-        // if keys.pressed(KeyCode::Down) {
-        //     data.movement_vec.x -= MOVEMENT_SPEED * time.delta_seconds();
-        // }
+        // Move Backwards.
+        if keys.pressed(KeyCode::Down) {
+            data.movement_vec.x -= MOVEMENT_SPEED * time.delta_seconds();
+        }
 
-        // // Strafe Left
-        // if keys.pressed(KeyCode::Left) {
-        //     data.movement_vec.z -= MOVEMENT_SPEED * time.delta_seconds();
-        // }
+        // Strafe Left
+        if keys.pressed(KeyCode::Left) {
+            data.movement_vec.z -= MOVEMENT_SPEED * time.delta_seconds();
+        }
 
-        // // Strafe Right
-        // if keys.pressed(KeyCode::Right) {
-        //     data.movement_vec.z += MOVEMENT_SPEED * time.delta_seconds();
-        // }
+        // Strafe Right
+        if keys.pressed(KeyCode::Right) {
+            data.movement_vec.z += MOVEMENT_SPEED * time.delta_seconds();
+        }
 
-        // // Appy decay to Linear Velocity on the X and Z directions.
-        // data.movement_vec.x *= MOVEMENT_DECAY;
-        // data.movement_vec.z *= MOVEMENT_DECAY;
-        // //
+        // Appy decay to Linear Velocity on the X and Z directions.
+        data.movement_vec.x *= MOVEMENT_DECAY;
+        data.movement_vec.z *= MOVEMENT_DECAY;
+        //
 
-        // //
-        // vel.x = data.movement_vec.x;
-        // vel.z = data.movement_vec.z;
+        //
+        vel.x = data.movement_vec.x;
+        vel.z = data.movement_vec.z;
 
         // --- State Update ---
 
@@ -243,11 +242,21 @@ fn attached_camera_system(
     for (mut camera_transform, _, _) in &mut camera_query {
         for player_transform in &player_query {
             camera_transform.translation = player_transform.translation.clone();
-            camera_transform.rotation = player_transform.rotation.clone();
         }
-    }
+    } 
+}
 
+fn camera_look_system(
+    mut camera_query: Query<(&mut Transform, With<Camera>)>,
+) {
+    // figure out how much the mouse has moved.
     
+    for mut transform in camera_query.into_iter() {
+        // apply this rotation to the camera in the up-down dir.
+        // apply this rotation to the player capsule in the left-right.
+        // free look without player turn 
+        // lerp back on free look release
+    }
 }
 
 fn determine_stance(
@@ -346,7 +355,7 @@ fn apply_jump_force(data: &mut PlayerData, impulse: &mut ExternalImpulse, ray_le
 fn compute_clamped_jump_force_factor(ray_length: f32) -> f32 {
     // Constants defined elsewhere in the code
     let full_standing_ray_length: f32 = RIDE_HEIGHT;
-    let half_standing_ray_length = RIDE_HEIGHT - (CAPSULE_HEIGHT / 4.0);
+    let half_standing_ray_length: f32 = RIDE_HEIGHT - (CAPSULE_HEIGHT / 4.0);
     let standing_ray_length_range: f32 = full_standing_ray_length - half_standing_ray_length;
 
     // Ensure the input is within the specified range

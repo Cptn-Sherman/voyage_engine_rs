@@ -1,7 +1,3 @@
-/*
-
-*/
-
 struct Plate {
     crust_type: CrustType, // Xc
     crust_thickness: f32, // e
