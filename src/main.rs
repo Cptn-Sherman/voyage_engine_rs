@@ -1,9 +1,10 @@
 mod bevy_mesh;
+mod player_controller;
 mod terrain;
 mod user_interface;
-mod player_controller;
 mod utils;
 
+use bevy::audio::Volume;
 use bevy::render::mesh::Mesh as BevyMesh;
 use bevy::render::mesh::Mesh;
 
@@ -15,37 +16,23 @@ use bevy::{
     pbr::{DirectionalLightShadowMap, ScreenSpaceAmbientOcclusionBundle, ShadowFilteringMethod},
     prelude::*,
 };
-use bevy_xpbd_3d::components::{RigidBody, Collider};
+use bevy_xpbd_3d::components::{Collider, RigidBody};
 use bevy_xpbd_3d::plugins::PhysicsPlugins;
 
-
-
 use std::f32::consts::{FRAC_PI_4, PI};
+use std::time::Duration;
 
 use bevy_mesh::{mesh_for_model, Model};
-use terrain::TerrainPlugin;
 
 use crate::utils::CHUNK_SIZE_I32;
 use bevy_kira_audio::prelude::*;
+use player_controller::FirstPersonPlayerControllerPlugin;
 use transvoxel::{transition_sides, voxel_source::Block};
 use user_interface::DebugInterfacePlugin;
-use player_controller::FirstPersonPlayerControllerPlugin;
 use utils::{format_value_f32, CHUNK_SIZE_F32};
 
-
-enum CameraState {
-    FreeCamera,
-    FirstPerson,
-    ThirdPerson,
-    PanOrbit,
-}
-
-#[derive(Resource)]
-struct EngineState {
-    camera_state: CameraState,
-    show_debug_hud: bool,
-    show_player_controller_raycasts: bool,
-}
+#[derive(Component)]
+struct Sun;
 
 fn main() {
     color_eyre::install().unwrap();
@@ -54,30 +41,27 @@ fn main() {
         .insert_resource(DirectionalLightShadowMap { size: 4098 })
         .add_plugins((
             DefaultPlugins,
-            AudioPlugin,
             TemporalAntiAliasPlugin,
             DebugInterfacePlugin,
-            TerrainPlugin,
+            AudioPlugin,
             PhysicsPlugins::default(),
             FirstPersonPlayerControllerPlugin,
-
         ))
         .add_systems(Startup, (setup, start_background_audio))
-        .add_systems(
-            Update,
-            (adjust_directional_light_biases, animate_light_direction),
-        )
+        .add_systems(Update, animate_light_direction)
         .run();
 }
 
 fn start_background_audio(asset_server: Res<AssetServer>, audio: Res<Audio>) {
+    // this file is for internal testing only, DO NOT DISTRIBUTE!
     audio
-        .play(asset_server.load("audio/liminal-spaces-ambient-432hz-114635.mp3"))
+        .play(asset_server.load("audio\\liminal-spaces-ambient.ogg"))
+        .with_volume(0.15)
+        .fade_in(AudioTween::linear(Duration::new(1, 500)))
         .looped();
 }
 
 // A unit struct to help identify the FPS UI component, since there may be many Text components
-
 #[derive(Component)]
 struct Chunk;
 
@@ -98,7 +82,6 @@ fn build_chunk_mesh(cx: i32, cy: i32, cz: i32) -> BevyMesh {
 pub fn create_voxel_mesh(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
-    mut images: ResMut<Assets<Image>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
     let radius = 4;
@@ -155,13 +138,13 @@ struct CameraThing;
 fn setup(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
-    mut images: ResMut<Assets<Image>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     asset_server: Res<AssetServer>,
 ) {
     // Plane
-    let plane_size = 128.0;
-    let plane_thickness = 0.002;
+    let plane_size: f32 = 128.0;
+    let plane_thickness: f32 = 0.002;
+
     commands.spawn((
         RigidBody::Static,
         Collider::cuboid(plane_size, plane_thickness, plane_size),
@@ -221,45 +204,3 @@ fn setup(
         ..default()
     });
 }
-
-fn adjust_directional_light_biases(
-    input: Res<Input<KeyCode>>,
-    mut query: Query<&mut DirectionalLight>,
-) {
-    let depth_bias_step_size = 0.01;
-    let normal_bias_step_size = 0.1;
-    for mut light in &mut query {
-        if input.just_pressed(KeyCode::Key5) {
-            light.shadow_depth_bias -= depth_bias_step_size;
-            info!(
-                "shadow_depth_bias: {}",
-                format!("{:.2}", light.shadow_depth_bias)
-            );
-        }
-        if input.just_pressed(KeyCode::Key6) {
-            light.shadow_depth_bias += depth_bias_step_size;
-            info!(
-                "shadow_depth_bias: {}",
-                format!("{:.2}", light.shadow_depth_bias)
-            );
-        }
-        if input.just_pressed(KeyCode::Key7) {
-            light.shadow_normal_bias -= normal_bias_step_size;
-            info!(
-                "shadow_normal_bias: {}",
-                format!("{:.2}", light.shadow_normal_bias)
-            );
-        }
-        if input.just_pressed(KeyCode::Key8) {
-            light.shadow_normal_bias += normal_bias_step_size;
-            info!(
-                "shadow_normal_bias: {}",
-                format!("{:.2}", light.shadow_normal_bias)
-            );
-        }
-    }
-}
-
-#[derive(Component)]
-struct Sun;
-
