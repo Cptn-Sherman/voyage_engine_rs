@@ -6,7 +6,7 @@ use bevy::{
 };
 use bevy_flycam::FlyCam;
 
-use crate::utils::{convert_to_chunk_coordinate, format_value_f32};
+use crate::{utils::{convert_to_chunk_coordinate, format_value_f32}, CameraThing};
 
 #[derive(Resource)]
 pub struct TerrainPlugin;
@@ -79,7 +79,7 @@ pub fn check_lod_position(
     time: Res<Time>,
     mut timer: ResMut<LODRecalculateTimer>,
     mut tracked_pos: ResMut<LODPostionTracker>,
-    camera_query: Query<(&Camera, &Transform, With<FlyCam>)>,
+    camera_query: Query<(&Camera, &Transform, With<CameraThing>)>,
 ) {
     // guard: timer hasn't finished, return early.
     if !timer.0.tick(time.delta()).just_finished() {

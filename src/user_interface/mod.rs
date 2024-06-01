@@ -8,7 +8,7 @@ use bevy::{
 };
 use bevy_flycam::FlyCam;
 
-use crate::utils::{format_percentage_f64, format_value_f32};
+use crate::{utils::{format_percentage_f64, format_value_f32}, CameraThing};
 
 const DEFAULT_FONT_PATH: &str = "fonts/Monocraft.ttf";
 const DEFAULT_FONT_SIZE: f32 = 13.0;
@@ -719,7 +719,7 @@ fn cpu_info_update_system(diag: Res<DiagnosticsStore>, mut query: Query<&mut Tex
 }
 
 fn pos_debug_update_system(
-    camera_query: Query<(&Camera, &Transform, With<FlyCam>)>,
+    camera_query: Query<(&Camera, &Transform, With<CameraThing>)>,
     mut query: Query<&mut Text, With<PosText>>,
 ) {
     for (_camera, transform, _) in &mut camera_query.into_iter() {

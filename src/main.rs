@@ -4,10 +4,10 @@ mod terrain;
 mod user_interface;
 mod utils;
 
-use bevy::audio::Volume;
 use bevy::render::mesh::Mesh as BevyMesh;
 use bevy::render::mesh::Mesh;
 
+use bevy::window::{CursorGrabMode, PrimaryWindow};
 use bevy::{
     core_pipeline::{
         experimental::taa::{TemporalAntiAliasBundle, TemporalAntiAliasPlugin},
@@ -16,6 +16,7 @@ use bevy::{
     pbr::{DirectionalLightShadowMap, ScreenSpaceAmbientOcclusionBundle, ShadowFilteringMethod},
     prelude::*,
 };
+
 use bevy_xpbd_3d::components::{Collider, RigidBody};
 use bevy_xpbd_3d::plugins::PhysicsPlugins;
 
@@ -34,6 +35,32 @@ use utils::{format_value_f32, CHUNK_SIZE_F32};
 #[derive(Component)]
 struct Sun;
 
+/// Key configuration
+#[derive(Resource)]
+pub struct KeyBindings {
+    pub move_forward: KeyCode,
+    pub move_backward: KeyCode,
+    pub move_left: KeyCode,
+    pub move_right: KeyCode,
+    pub move_ascend: KeyCode,
+    pub move_descend: KeyCode,
+    pub toggle_grab_cursor: KeyCode,
+}
+
+impl Default for KeyBindings {
+    fn default() -> Self {
+        Self {
+            move_forward: KeyCode::W,
+            move_backward: KeyCode::S,
+            move_left: KeyCode::A,
+            move_right: KeyCode::D,
+            move_ascend: KeyCode::Space,
+            move_descend: KeyCode::ShiftLeft,
+            toggle_grab_cursor: KeyCode::Escape,
+        }
+    }
+}
+
 fn main() {
     color_eyre::install().unwrap();
 
@@ -47,8 +74,8 @@ fn main() {
             PhysicsPlugins::default(),
             FirstPersonPlayerControllerPlugin,
         ))
-        .add_systems(Startup, (setup, start_background_audio))
-        .add_systems(Update, animate_light_direction)
+        .add_systems(Startup, (setup, initial_grab_cursor, start_background_audio))
+        .add_systems(Update, (animate_light_direction, cursor_grab))
         .run();
 }
 
@@ -56,8 +83,8 @@ fn start_background_audio(asset_server: Res<AssetServer>, audio: Res<Audio>) {
     // this file is for internal testing only, DO NOT DISTRIBUTE!
     audio
         .play(asset_server.load("audio\\liminal-spaces-ambient.ogg"))
+        .fade_in(AudioTween::new(Duration::from_millis(1500), AudioEasing::OutPowi(2)))
         .with_volume(0.15)
-        .fade_in(AudioTween::linear(Duration::new(1, 500)))
         .looped();
 }
 
@@ -155,6 +182,7 @@ fn setup(
         },
     ));
 
+
     commands
         .spawn((
             Camera3dBundle {
@@ -172,7 +200,7 @@ fn setup(
                 ..Default::default()
             },
             ShadowFilteringMethod::Jimenez14,
-            CameraThing,
+            CameraThing
         ))
         .insert(ScreenSpaceAmbientOcclusionBundle::default())
         .insert(TemporalAntiAliasBundle::default());
@@ -203,4 +231,42 @@ fn setup(
         transform: Transform::from_xyz(-1.0, 0.0, 0.0),
         ..default()
     });
+}
+
+
+/// Grabs the cursor when game first starts
+fn initial_grab_cursor(mut primary_window: Query<&mut Window, With<PrimaryWindow>>) {
+    if let Ok(mut window) = primary_window.get_single_mut() {
+        toggle_grab_cursor(&mut window);
+    } else {
+        warn!("Primary window not found for `initial_grab_cursor`!");
+    }
+}
+
+/// Grabs/ungrabs mouse cursor
+fn toggle_grab_cursor(window: &mut Window) {
+    match window.cursor.grab_mode {
+        CursorGrabMode::None => {
+            window.cursor.grab_mode = CursorGrabMode::Confined;
+            window.cursor.visible = false;
+        }
+        _ => {
+            window.cursor.grab_mode = CursorGrabMode::None;
+            window.cursor.visible = true;
+        }
+    }
+}
+
+fn cursor_grab(
+    keys: Res<Input<KeyCode>>,
+    key_bindings: Res<KeyBindings>,
+    mut primary_window: Query<&mut Window, With<PrimaryWindow>>,
+) {
+    if let Ok(mut window) = primary_window.get_single_mut() {
+        if keys.just_pressed(key_bindings.toggle_grab_cursor) {
+            toggle_grab_cursor(&mut window);
+        }
+    } else {
+        warn!("Primary window not found for `cursor_grab`!");
+    }
 }
