@@ -7,6 +7,7 @@ mod utils;
 use bevy::render::mesh::Mesh as BevyMesh;
 use bevy::render::mesh::Mesh;
 
+use bevy::render::view::screenshot::ScreenshotManager;
 use bevy::window::{CursorGrabMode, PrimaryWindow};
 use bevy::{
     core_pipeline::{
@@ -16,6 +17,8 @@ use bevy::{
     pbr::{DirectionalLightShadowMap, ScreenSpaceAmbientOcclusionBundle, ShadowFilteringMethod},
     prelude::*,
 };
+
+use chrono::{DateTime, Local, Utc};
 
 use bevy_xpbd_3d::components::{Collider, RigidBody};
 use bevy_xpbd_3d::plugins::PhysicsPlugins;
@@ -74,8 +77,11 @@ fn main() {
             PhysicsPlugins::default(),
             FirstPersonPlayerControllerPlugin,
         ))
-        .add_systems(Startup, (setup, initial_grab_cursor, start_background_audio))
-        .add_systems(Update, (animate_light_direction, cursor_grab))
+        .add_systems(
+            Startup,
+            (setup, initial_grab_cursor, start_background_audio),
+        )
+        .add_systems(Update, (animate_light_direction, screenshot_on_equals, cursor_grab))
         .run();
 }
 
@@ -83,7 +89,10 @@ fn start_background_audio(asset_server: Res<AssetServer>, audio: Res<Audio>) {
     // this file is for internal testing only, DO NOT DISTRIBUTE!
     audio
         .play(asset_server.load("audio\\liminal-spaces-ambient.ogg"))
-        .fade_in(AudioTween::new(Duration::from_millis(1500), AudioEasing::OutPowi(2)))
+        .fade_in(AudioTween::new(
+            Duration::from_millis(1500),
+            AudioEasing::OutPowi(2),
+        ))
         .with_volume(0.15)
         .looped();
 }
@@ -182,7 +191,6 @@ fn setup(
         },
     ));
 
-
     commands
         .spawn((
             Camera3dBundle {
@@ -200,7 +208,7 @@ fn setup(
                 ..Default::default()
             },
             ShadowFilteringMethod::Jimenez14,
-            CameraThing
+            CameraThing,
         ))
         .insert(ScreenSpaceAmbientOcclusionBundle::default())
         .insert(TemporalAntiAliasBundle::default());
@@ -232,7 +240,6 @@ fn setup(
         ..default()
     });
 }
-
 
 /// Grabs the cursor when game first starts
 fn initial_grab_cursor(mut primary_window: Query<&mut Window, With<PrimaryWindow>>) {
@@ -268,5 +275,23 @@ fn cursor_grab(
         }
     } else {
         warn!("Primary window not found for `cursor_grab`!");
+    }
+}
+
+/** This system was yonked from the screenshot example: https://bevyengine.org/examples/Window/screenshot/ */
+// FIXME: filename timestamp fails if two screenshots occur in the same second, also formatting standards... idk.
+fn screenshot_on_equals(
+    keys: Res<Input<KeyCode>>,
+    main_window: Query<Entity, With<PrimaryWindow>>,
+    mut screenshot_manager: ResMut<ScreenshotManager>,
+) {
+    if keys.just_pressed(KeyCode::Equals) {
+        let date: DateTime<Local> = Local::now();
+        let formated_date = date.format("%Y-%m-%d_%H-%M-%S");
+        let path: String = format!("./voyage_screenshot-{}.png", formated_date.to_string());
+        info!("saved screenshot: {}", path);
+        screenshot_manager
+            .save_screenshot_to_disk(main_window.single(), path)
+            .unwrap();
     }
 }
