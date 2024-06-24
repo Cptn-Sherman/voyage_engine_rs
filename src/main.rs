@@ -1,8 +1,8 @@
 mod bevy_mesh;
-mod player_controller;
 mod terrain;
 mod user_interface;
 mod utils;
+mod character;
 
 use bevy::render::mesh::Mesh as BevyMesh;
 use bevy::render::mesh::Mesh;
@@ -18,7 +18,8 @@ use bevy::{
     prelude::*,
 };
 
-use chrono::{DateTime, Local, Utc};
+use character::CharacterPlugin;
+use chrono::{DateTime, Local};
 
 use bevy_xpbd_3d::components::{Collider, RigidBody};
 use bevy_xpbd_3d::plugins::PhysicsPlugins;
@@ -30,7 +31,6 @@ use bevy_mesh::{mesh_for_model, Model};
 
 use crate::utils::CHUNK_SIZE_I32;
 use bevy_kira_audio::prelude::*;
-use player_controller::FirstPersonPlayerControllerPlugin;
 use transvoxel::{transition_sides, voxel_source::Block};
 use user_interface::DebugInterfacePlugin;
 use utils::{format_value_f32, CHUNK_SIZE_F32};
@@ -74,8 +74,8 @@ fn main() {
             TemporalAntiAliasPlugin,
             DebugInterfacePlugin,
             AudioPlugin,
+            CharacterPlugin,
             PhysicsPlugins::default(),
-            FirstPersonPlayerControllerPlugin,
         ))
         .add_systems(
             Startup,

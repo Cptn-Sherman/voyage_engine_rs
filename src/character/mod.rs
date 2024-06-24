@@ -1,0 +1,185 @@
+mod body;
+mod focus;
+mod motion;
+pub mod stance;
+
+use bevy::{
+    app::{App, Plugin, Startup, Update},
+    asset::Assets,
+    ecs::event::ManualEventReader,
+    input::mouse::MouseMotion,
+    log::{info, warn},
+    math::Vec3,
+    pbr::{PbrBundle, StandardMaterial},
+    prelude::{
+        default, Added, Bundle, Commands, Component, Entity, Query, ResMut, Resource, With,
+        Without,
+    },
+    render::{
+        camera::Camera,
+        color::Color,
+        mesh::{shape, Mesh},
+    },
+    transform::components::Transform,
+    window::{PrimaryWindow, Window},
+};
+use bevy_xpbd_3d::{
+    components::{Collider, GravityScale, Mass, RigidBody},
+    prelude::RayCaster,
+};
+use body::Body;
+use focus::{camera_look_system, Focus};
+use motion::{update_player_motion, Motion};
+use stance::{update_player_stance, Stance, StanceType};
+
+use crate::toggle_grab_cursor;
+
+pub struct CharacterPlugin;
+
+impl Plugin for CharacterPlugin {
+    fn build(&self, app: &mut App) {
+        info!("Initializing Character plugin...");
+        app.insert_resource(Config::default()); // later we will load from some toml file
+        app.add_systems(Startup, spawn_player_system);
+        app.add_systems(
+            Update,
+            (
+                attached_camera_system,
+                update_player_stance,
+                update_player_motion,
+                camera_look_system,
+            ),
+        );
+        info!("Actor plugin successfully initialized!");
+    }
+}
+
+#[derive(Resource)]
+pub struct Config {
+    capsule_height: f32,
+    ride_height: f32,
+    ray_length_offset: f32,
+    downward_ray_length_max: f32,
+    ride_spring_strength: f32,
+    ride_spring_damper: f32,
+    stance_lockout: f32,
+    jump_strength: f32,
+    movement_speed: f32,
+    movement_decay: f32,
+    look_sensitivity: f32,
+}
+
+impl Default for Config {
+    fn default() -> Self {
+        Self {
+            capsule_height: 1.0,
+            ride_height: 1.5,
+            ray_length_offset: 0.5,
+            downward_ray_length_max: 0.5 + 1.5, // this returns ride_height + ray_length_offset.
+            ride_spring_strength: 800.0,
+            ride_spring_damper: 75.0,
+            stance_lockout: 0.25,
+            jump_strength: 130.0,
+            movement_speed: 50.0,
+            movement_decay: 0.95,
+            look_sensitivity: 0.00012, // This value was taken from bevy_flycam.
+        }
+    }
+}
+
+#[derive(Resource, Default)]
+pub struct InputState {
+    reader_motion: ManualEventReader<MouseMotion>,
+}
+
+// todo: create this one later
+// #[derive(Bundle)]
+// pub struct ActorBundle {
+//     body: CharacterBody,
+// }
+
+#[derive(Component)]
+pub struct Player;
+
+#[derive(Bundle)]
+pub struct PlayerBundle {
+    body: Body,
+    motion: Motion,
+    focus: Focus,
+    stance: Stance,
+    _player: Player,
+}
+
+fn spawn_player_system(
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+) {
+    commands.spawn((PlayerBundle {
+        body: Body {
+            body_scale: 1.0,
+            rigid_body: RigidBody::Dynamic,
+            mass: Mass(20.0),
+            gravity_scale: GravityScale(1.0),
+            collider: Collider::capsule(1.0, 0.5),
+            mat_mesh_bundle: PbrBundle {
+                mesh: meshes.add(Mesh::from(shape::Capsule::default())),
+                material: materials.add(Color::rgb(1.0, 0.0, 0.0).into()),
+                transform: Transform::from_xyz(0.0, 8.0, 0.0),
+                ..default()
+            },
+            downward_ray: RayCaster::new(Vec3::ZERO, Vec3::NEG_Y),
+        },
+        motion: Motion {
+            movement_vec: Vec3::from_array([0.0, 0.0, 0.0]),
+        },
+        focus: Focus {
+            point_of_focus: Vec3::from_array([0.0, 0.0, 0.0]),
+            face_direction: Vec3::from_array([0.0, 0.0, 0.0]),
+            free_look: false,
+        },
+        stance: Stance {
+            current: StanceType::Standing,
+            lockout: 0.0,
+        },
+        _player: Player,
+    },));
+    info!("Spawned Player Actor");
+}
+
+fn attached_camera_system(
+    player_query: Query<&mut Transform, With<Player>>,
+    mut camera_query: Query<(&mut Transform, With<Camera>, Without<Player>)>,
+) {
+    if camera_query.is_empty()
+        || camera_query.iter().len() > 1
+        || player_query.is_empty()
+        || player_query.iter().len() > 1
+    {
+        info!("The camera attach system did not recieve 1 player and 1 camera.");
+    }
+
+    for (mut camera_transform, _, _) in &mut camera_query {
+        for player_transform in &player_query {
+            camera_transform.translation = player_transform.translation.clone();
+            //camera_transform.rotation = player_transform.rotation.into();
+        }
+    }
+}
+
+// Grab cursor when an entity with FlyCam is added
+fn initial_grab_window_focus_on_player_spawn(
+    mut primary_window: Query<&mut Window, With<PrimaryWindow>>,
+    query_added: Query<Entity, Added<Player>>,
+) {
+    if query_added.is_empty() {
+        return;
+    }
+
+    if let Ok(window) = &mut primary_window.get_single_mut() {
+        toggle_grab_cursor(window);
+        info!("Cursor was grabbed!");
+    } else {
+        warn!("Primary window not found for `initial_grab_cursor`!");
+    }
+}

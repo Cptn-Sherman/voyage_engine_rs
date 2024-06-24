@@ -38,7 +38,6 @@ macro_rules! ternary {
     };
 }
 
-
 /// Macro for creating a double for loop with a function callback.
 ///
 /// # Examples
@@ -79,9 +78,10 @@ macro_rules! double_for_loop {
     };
 }
 
-
+use bevy::{
+    log::info, prelude::Image, render::render_resource::{Extent3d, TextureDimension, TextureFormat}
+};
 use std::fmt::Write;
-use bevy::{prelude::{Image, info}, render::{render_resource::{Extent3d, TextureDimension, TextureFormat, SamplerDescriptor, TextureDescriptor}, texture::{ImageSampler, ImageSamplerDescriptor}}};
 
 /// Formats a value as a string with optional decimal digits and support for negative space formatting.
 ///
@@ -199,7 +199,6 @@ pub fn convert_to_chunk_coordinate(coord: i32) -> i32 {
     }
 }
 
-
 /// Creates a colorful test pattern.
 ///
 /// This function generates a debug texture with a colorful test pattern. It creates an image with a specified size
@@ -232,7 +231,7 @@ pub fn uv_debug_texture() -> Image {
     }
 
     // Create an `Image` object with the generated texture data
-    let mut img = Image::new_fill(
+    let img = Image::new_fill(
         Extent3d {
             width: TEXTURE_SIZE as u32,
             height: TEXTURE_SIZE as u32,

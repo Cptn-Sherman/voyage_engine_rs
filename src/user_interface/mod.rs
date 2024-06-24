@@ -6,9 +6,9 @@ use bevy::{
     },
     prelude::*,
 };
-use bevy_flycam::FlyCam;
 
-use crate::{utils::{format_percentage_f64, format_value_f32}, CameraThing};
+
+use crate::{character::InputState, utils::{format_percentage_f64, format_value_f32}, CameraThing, KeyBindings};
 
 const DEFAULT_FONT_PATH: &str = "fonts/Monocraft.ttf";
 const DEFAULT_FONT_SIZE: f32 = 13.0;
@@ -18,6 +18,8 @@ pub struct DebugInterfacePlugin;
 
 impl Plugin for DebugInterfacePlugin {
     fn build(&self, app: &mut App) {
+        app.init_resource::<InputState>();
+        app.init_resource::<KeyBindings>();
         app.add_plugins((
             FrameTimeDiagnosticsPlugin::default(),
             SystemInformationDiagnosticsPlugin::default(),
