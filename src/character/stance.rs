@@ -66,7 +66,7 @@ pub fn update_player_stance(
 
         // Compute the next stance for the player.
         let next_stance: StanceType = determine_next_stance(&keys, &config, &stance, ray_length);
-        let mut next_gravity_scale: f32 = 1.0;
+        let next_gravity_scale: f32;
 
         match next_stance {
             StanceType::Landing => {
