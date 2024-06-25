@@ -10,10 +10,9 @@ use bevy::{
     input::mouse::MouseMotion,
     log::{info, warn},
     math::Vec3,
-    pbr::{PbrBundle, StandardMaterial},
+    pbr::{MaterialMeshBundle, PbrBundle, StandardMaterial},
     prelude::{
-        default, Added, Bundle, Commands, Component, Entity, Query, ResMut, Resource, With,
-        Without,
+        default, Added, Bundle, Commands, Component, Entity, Query, ResMut, Resource, With, Without,
     },
     render::{
         camera::Camera,
@@ -24,8 +23,10 @@ use bevy::{
     window::{PrimaryWindow, Window},
 };
 use bevy_xpbd_3d::{
-    components::{Collider, GravityScale, Mass, RigidBody},
-    prelude::RayCaster,
+    components::{
+        Collider, ExternalForce, ExternalImpulse, GravityScale, LinearVelocity, Mass, RigidBody,
+    },
+    prelude::{RayCaster, RayHits},
 };
 use body::Body;
 use focus::{camera_look_system, Focus};
@@ -99,15 +100,24 @@ pub struct InputState {
 // }
 
 #[derive(Component)]
-pub struct Player;
+pub struct PlayerControl;
 
 #[derive(Bundle)]
 pub struct PlayerBundle {
+    linear_vel: LinearVelocity,
+    external_force: ExternalForce,
+    external_impulse: ExternalImpulse,
+    rigid_body: RigidBody,
+    mass: Mass,
+    gravity_scale: GravityScale,
+    collider: Collider,
+    mat_mesh_bundle: MaterialMeshBundle<StandardMaterial>,
+    downward_ray: RayCaster,
+    ray_hits: RayHits,
     body: Body,
     motion: Motion,
     focus: Focus,
     stance: Stance,
-    _player: Player,
 }
 
 fn spawn_player_system(
@@ -115,9 +125,11 @@ fn spawn_player_system(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
-    commands.spawn((PlayerBundle {
-        body: Body {
-            body_scale: 1.0,
+    commands.spawn((
+        PlayerBundle {
+            linear_vel: LinearVelocity::ZERO,
+            external_force: ExternalForce::new([0.0, 0.0, 0.0].into()),
+            external_impulse: ExternalImpulse::new([0.0, 0.0, 0.0].into()),
             rigid_body: RigidBody::Dynamic,
             mass: Mass(20.0),
             gravity_scale: GravityScale(1.0),
@@ -129,40 +141,43 @@ fn spawn_player_system(
                 ..default()
             },
             downward_ray: RayCaster::new(Vec3::ZERO, Vec3::NEG_Y),
+            ray_hits: RayHits::default(),
+            body: Body {
+                body_scale: 1.0,
+            },
+            motion: Motion {
+                movement_vec: Vec3::from_array([0.0, 0.0, 0.0]),
+            },
+            focus: Focus {
+                point_of_focus: Vec3::from_array([0.0, 0.0, 0.0]),
+                face_direction: Vec3::from_array([0.0, 0.0, 0.0]),
+                free_look: false,
+            },
+            stance: Stance {
+                current: StanceType::Standing,
+                lockout: 0.0,
+            },
         },
-        motion: Motion {
-            movement_vec: Vec3::from_array([0.0, 0.0, 0.0]),
-        },
-        focus: Focus {
-            point_of_focus: Vec3::from_array([0.0, 0.0, 0.0]),
-            face_direction: Vec3::from_array([0.0, 0.0, 0.0]),
-            free_look: false,
-        },
-        stance: Stance {
-            current: StanceType::Standing,
-            lockout: 0.0,
-        },
-        _player: Player,
-    },));
+        PlayerControl,
+    )); // it doesn't find thiss thing... maybe it needs to be in the inner objct
     info!("Spawned Player Actor");
 }
 
 fn attached_camera_system(
-    player_query: Query<&mut Transform, With<Player>>,
-    mut camera_query: Query<(&mut Transform, With<Camera>, Without<Player>)>,
+    mut player_query: Query<&mut Transform, With<PlayerControl>>,
+    mut camera_query: Query<(&mut Transform, With<Camera>, Without<PlayerControl>)>,
 ) {
     if camera_query.is_empty()
         || camera_query.iter().len() > 1
         || player_query.is_empty()
         || player_query.iter().len() > 1
     {
-        info!("The camera attach system did not recieve 1 player and 1 camera.");
+        info!("The camera attach system did not recieve 1 player and 1 camera. Found {} cameras, and {} players", camera_query.iter().len(), player_query.iter().len());
     }
 
-    for (mut camera_transform, _, _) in &mut camera_query {
-        for player_transform in &player_query {
-            camera_transform.translation = player_transform.translation.clone();
-            //camera_transform.rotation = player_transform.rotation.into();
+    for player_transfrom in &mut player_query {
+        for (mut camera_transform, _, _) in &mut camera_query {
+            camera_transform.translation = player_transfrom.translation.clone();
         }
     }
 }
@@ -170,7 +185,7 @@ fn attached_camera_system(
 // Grab cursor when an entity with FlyCam is added
 fn initial_grab_window_focus_on_player_spawn(
     mut primary_window: Query<&mut Window, With<PrimaryWindow>>,
-    query_added: Query<Entity, Added<Player>>,
+    query_added: Query<Entity, Added<PlayerControl>>,
 ) {
     if query_added.is_empty() {
         return;

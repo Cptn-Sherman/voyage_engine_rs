@@ -73,9 +73,9 @@ fn main() {
             DefaultPlugins,
             TemporalAntiAliasPlugin,
             DebugInterfacePlugin,
+            PhysicsPlugins::default(),
             AudioPlugin,
             CharacterPlugin,
-            PhysicsPlugins::default(),
         ))
         .add_systems(
             Startup,
@@ -256,7 +256,7 @@ fn toggle_grab_cursor(window: &mut Window) {
         CursorGrabMode::None => {
             window.cursor.grab_mode = CursorGrabMode::Confined;
             window.cursor.visible = false;
-        }
+        },
         _ => {
             window.cursor.grab_mode = CursorGrabMode::None;
             window.cursor.visible = true;

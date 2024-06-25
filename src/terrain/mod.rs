@@ -4,7 +4,6 @@ use bevy::{
     },
     time::{Time, Timer, TimerMode}, log::{warn, info},
 };
-use bevy_flycam::FlyCam;
 
 use crate::{utils::{convert_to_chunk_coordinate, format_value_f32}, CameraThing};
 

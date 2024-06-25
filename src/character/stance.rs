@@ -1,8 +1,8 @@
 use bevy::{
     input::Input,
-    log::info,
+    log::{info, warn},
     math::Vec3,
-    prelude::{Component, KeyCode, Query, Res},
+    prelude::{Component, KeyCode, Query, Res, With},
     time::Time,
 };
 use bevy_xpbd_3d::{
@@ -13,8 +13,9 @@ use bevy_xpbd_3d::{
 use crate::KeyBindings;
 
 use super::{
+    body::Body,
     motion::{apply_jump_force, apply_spring_force},
-    Config,
+    Config, PlayerControl,
 };
 
 #[derive(Debug, PartialEq, Clone)]
@@ -43,64 +44,61 @@ pub fn update_player_stance(
     time: Res<Time>,
     keys: Res<Input<KeyCode>>,
     config: Res<Config>,
-    mut query: Query<(
-        &RayCaster,
-        &RayHits,
-        &mut LinearVelocity,
-        &mut GravityScale,
-        &mut ExternalForce,
-        &mut ExternalImpulse,
-        &mut Stance,
-    )>,
+    mut query: Query<(&mut LinearVelocity, &mut ExternalForce, &mut ExternalImpulse, &mut GravityScale, &mut RayCaster, &RayHits, &mut Stance), With<PlayerControl>>,
 ) {
-    for (ray, hits, mut vel, mut gravity, mut external_force, mut external_impulse, mut stance) in
-    &mut query
-    {
+    if query.is_empty() || query.iter().len() > 1 {
+        warn!(
+            "Update Player Stance System found {} players, expected 1.",
+            query.iter().len()
+        );
+    }
+
+    for (mut linear_vel, mut external_force, mut external_impulse, mut gravity_scale, mut caster, ray_hits, mut stance) in &mut query {
         // We update stance_lockout.
         stance.lockout -= time.delta_seconds();
         stance.lockout = f32::clamp(stance.lockout, 0.0, 1.0);
         
         // Compute the ray_length to a hit, if we don't hit anything we assume the ground is infinitly far away.
         let mut ray_length: f32 = f32::INFINITY;
-        if let Some(hit) = hits.iter_sorted().next() {
-            ray_length = Vec3::length(ray.direction * hit.time_of_impact);
+        if let Some(hit) = ray_hits.iter_sorted().next() {
+            ray_length = Vec3::length(caster.direction * hit.time_of_impact);
         }
-        
+
         // Compute the next stance for the player.
         let next_stance: StanceType = determine_next_stance(&keys, &config, &stance, ray_length);
-        let mut gravity_scale = 1.0;
-        
+        let mut next_gravity_scale: f32 = 1.0;
+
         match next_stance {
             StanceType::Landing => {
                 // Set the gravity scale to zero.
-                gravity_scale = 0.0;
-                apply_spring_force(&config, &mut external_force, ray_length, vel.y);
+                next_gravity_scale = 0.0;
+                apply_spring_force(&config, &mut linear_vel, &mut external_force, ray_length);
             }
             StanceType::Standing => {
                 // Set the gravity scale to zero.
-                gravity_scale = 0.0;
+                next_gravity_scale = 0.0;
 
                 // Clear any persisting forces on the rigid body.
                 external_force.clear();
 
-                apply_spring_force(&config, &mut external_force, ray_length, vel.y);
+                apply_spring_force(&config, &mut linear_vel, &mut external_force, ray_length);
             }
             StanceType::Airborne => {
-                gravity_scale = 1.0;
+                next_gravity_scale = 1.0;
 
                 // Clear any persisting forces on the rigid body.
                 external_force.clear();
             }
             StanceType::Jumping => {
                 // set the gravity scale to zero.
-                gravity_scale = 1.0;
+                next_gravity_scale = 1.0;
 
                 // clear any persisting forces on the rigid body.
                 external_force.clear();
 
                 // check if the stance has changed.
                 if stance.current != StanceType::Jumping {
-                    vel.y = 0.0; // clear the jump velocity.
+                    linear_vel.y = 0.0; // clear the jump velocity.
                     apply_jump_force(&config, &mut stance, &mut external_impulse, ray_length);
                 }
             }
@@ -114,7 +112,7 @@ pub fn update_player_stance(
         }
 
         // Update the gravity scale.
-        gravity.0 = gravity_scale;
+        gravity_scale.0 = next_gravity_scale;
 
         // Update the current stance.
         stance.current = next_stance.clone();
