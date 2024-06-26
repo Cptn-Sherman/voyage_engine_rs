@@ -18,8 +18,7 @@ pub struct DebugInterfacePlugin;
 
 impl Plugin for DebugInterfacePlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<InputState>();
-        app.init_resource::<KeyBindings>();
+    
         app.add_plugins((
             FrameTimeDiagnosticsPlugin::default(),
             SystemInformationDiagnosticsPlugin::default(),

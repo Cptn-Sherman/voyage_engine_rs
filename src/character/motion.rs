@@ -1,5 +1,5 @@
 use bevy::{
-    input::Input, log::info, math::Vec3, prelude::{Component, KeyCode, Query, Res, With, Without}, render::camera::{self, Camera}, time::Time, transform::components::Transform
+    input::Input, log::{info, warn}, math::Vec3, prelude::{Component, KeyCode, Query, Res, With, Without}, render::camera::{self, Camera}, time::Time, transform::components::Transform
 };
 use bevy_xpbd_3d::components::{ExternalForce, ExternalImpulse, LinearVelocity};
 
@@ -28,7 +28,7 @@ pub fn update_player_motion(
         || query.is_empty()
         || query.iter().len() > 1
     {
-        info!("The player motion system did not recieve 1 player and 1 camera. Found {} cameras, and {} players", camera_query.iter().len(), query.iter().len());
+        warn!("Player Motion System did not expected 1 camera(s) recieved {}, and 1 player(s) recieved {}", camera_query.iter().len(), query.iter().len());
     }
 
     for (camera_transform, _, _) in camera_query.iter() {
@@ -42,7 +42,6 @@ pub fn update_player_motion(
             ]);
     
             if keys.pressed(key_bindings.move_forward) {
-                info!("FORWARD UNTO THE BREACH");
                 movement_vector += camera_transform.forward();
             }
             if keys.pressed(key_bindings.move_backward) {

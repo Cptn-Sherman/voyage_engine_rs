@@ -1,8 +1,8 @@
 mod bevy_mesh;
+mod character;
 mod terrain;
 mod user_interface;
 mod utils;
-mod character;
 
 use bevy::render::mesh::Mesh as BevyMesh;
 use bevy::render::mesh::Mesh;
@@ -18,7 +18,7 @@ use bevy::{
     prelude::*,
 };
 
-use character::CharacterPlugin;
+use character::{CharacterPlugin, InputState};
 use chrono::{DateTime, Local};
 
 use bevy_xpbd_3d::components::{Collider, RigidBody};
@@ -68,12 +68,14 @@ fn main() {
     color_eyre::install().unwrap();
 
     App::new()
+        .init_resource::<InputState>()
+        .init_resource::<KeyBindings>()
         .insert_resource(DirectionalLightShadowMap { size: 4098 })
         .add_plugins((
             DefaultPlugins,
             TemporalAntiAliasPlugin,
-            DebugInterfacePlugin,
             PhysicsPlugins::default(),
+            DebugInterfacePlugin,
             AudioPlugin,
             CharacterPlugin,
         ))
@@ -81,7 +83,10 @@ fn main() {
             Startup,
             (setup, initial_grab_cursor, start_background_audio),
         )
-        .add_systems(Update, (animate_light_direction, screenshot_on_equals, cursor_grab))
+        .add_systems(
+            Update,
+            (animate_light_direction, screenshot_on_equals, cursor_grab),
+        )
         .run();
 }
 
@@ -256,7 +261,7 @@ fn toggle_grab_cursor(window: &mut Window) {
         CursorGrabMode::None => {
             window.cursor.grab_mode = CursorGrabMode::Confined;
             window.cursor.visible = false;
-        },
+        }
         _ => {
             window.cursor.grab_mode = CursorGrabMode::None;
             window.cursor.visible = true;
