@@ -1,17 +1,26 @@
 use bevy::{
-    input::Input, log::{info, warn}, math::Vec3, prelude::{Component, KeyCode, Query, Res, With, Without}, render::camera::{self, Camera}, time::Time, transform::components::Transform
+    input::Input,
+    log::{info, warn},
+    math::Vec3,
+    prelude::{Component, KeyCode, Query, Res, With, Without},
+    render::camera::{self, Camera},
+    time::Time,
+    transform::components::Transform,
 };
 use bevy_xpbd_3d::components::{ExternalForce, ExternalImpulse, LinearVelocity};
 
-use crate::KeyBindings;
+use crate::{ternary, KeyBindings};
 
 use super::{
-    body::{self, Body}, stance::Stance, Config, PlayerControl
+    body::{self, Body},
+    stance::Stance,
+    Config, PlayerControl,
 };
 
 #[derive(Component)]
 pub struct Motion {
     pub(crate) movement_vec: Vec3,
+    pub(crate) sprinting: bool,
 }
 
 pub fn update_player_motion(
@@ -20,9 +29,13 @@ pub fn update_player_motion(
     config: Res<Config>,
     key_bindings: Res<KeyBindings>,
     camera_query: Query<(&mut Transform, With<Camera>, Without<PlayerControl>)>,
-    mut query: Query<(&mut LinearVelocity, &mut Motion, &mut Stance, With<PlayerControl>)>,
+    mut query: Query<(
+        &mut LinearVelocity,
+        &mut Motion,
+        &mut Stance,
+        With<PlayerControl>,
+    )>,
 ) {
-
     if camera_query.is_empty()
         || camera_query.iter().len() > 1
         || query.is_empty()
@@ -35,12 +48,17 @@ pub fn update_player_motion(
         for (mut linear_vel, mut motion, mut stance, _) in &mut query {
             // Perform the movement checks.
             let mut movement_vector: Vec3 = Vec3::ZERO.clone();
-            let speed_vector: Vec3 = Vec3::from([
-                config.movement_speed,
-                config.movement_speed,
-                config.movement_speed,
-            ]);
-    
+
+            // todo: this could be cleaned up by producing a Option if the key is down and unwrapping to the value or zero.
+            let mut computed_speed: f32 = config.movement_speed;
+            if keys.pressed(key_bindings.toggle_sprint) {
+                computed_speed *= config.sprint_speed_factor;
+                motion.sprinting = true;
+            } else {
+                motion.sprinting = false;
+            }
+            let speed_vector: Vec3 = Vec3::from([computed_speed, computed_speed, computed_speed]);
+
             if keys.pressed(key_bindings.move_forward) {
                 movement_vector += camera_transform.forward();
             }
@@ -53,7 +71,7 @@ pub fn update_player_motion(
             if keys.pressed(key_bindings.move_right) {
                 movement_vector += camera_transform.right();
             }
-            
+
             // apply the total movement vector.
             motion.movement_vec +=
                 movement_vector.normalize_or_zero() * speed_vector * time.delta_seconds();
@@ -64,7 +82,6 @@ pub fn update_player_motion(
             linear_vel.z = motion.movement_vec.z;
         }
     }
-    
 }
 
 pub fn apply_spring_force(

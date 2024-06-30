@@ -3,6 +3,7 @@ pub const CHUNK_SIZE_I32: i32 = CHUNK_SIZE_F32 as i32;
 pub const CHUNK_SIZE_F32_MIDPOINT: f32 = CHUNK_SIZE_F32 / 2.0;
 pub const CHUNK_SIZE_I32_MIDPOINT: i32 = CHUNK_SIZE_F32_MIDPOINT as i32;
 
+#[macro_export]
 /// Macro for emulating a ternary operator in Rust.
 ///
 /// # Examples

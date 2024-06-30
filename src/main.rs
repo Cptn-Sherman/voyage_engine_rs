@@ -47,6 +47,7 @@ pub struct KeyBindings {
     pub move_right: KeyCode,
     pub move_ascend: KeyCode,
     pub move_descend: KeyCode,
+    pub toggle_sprint: KeyCode,
     pub toggle_grab_cursor: KeyCode,
 }
 
@@ -59,6 +60,7 @@ impl Default for KeyBindings {
             move_right: KeyCode::D,
             move_ascend: KeyCode::Space,
             move_descend: KeyCode::ShiftLeft,
+            toggle_sprint: KeyCode::ShiftLeft,
             toggle_grab_cursor: KeyCode::Escape,
         }
     }

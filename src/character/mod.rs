@@ -66,6 +66,7 @@ pub struct Config {
     stance_lockout: f32,
     jump_strength: f32,
     movement_speed: f32,
+    sprint_speed_factor: f32,
     movement_decay: f32,
     look_sensitivity: f32,
 }
@@ -82,6 +83,7 @@ impl Default for Config {
             stance_lockout: 0.25,
             jump_strength: 130.0,
             movement_speed: 50.0,
+            sprint_speed_factor: 1.5,
             movement_decay: 0.95,
             look_sensitivity: 0.00012, // This value was taken from bevy_flycam.
         }
@@ -147,6 +149,7 @@ fn spawn_player_system(
             },
             motion: Motion {
                 movement_vec: Vec3::from_array([0.0, 0.0, 0.0]),
+                sprinting: false,
             },
             focus: Focus {
                 point_of_focus: Vec3::from_array([0.0, 0.0, 0.0]),
