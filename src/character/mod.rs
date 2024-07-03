@@ -3,16 +3,19 @@ mod focus;
 mod motion;
 pub mod stance;
 
+use std::thread::spawn;
+
 use bevy::{
     app::{App, Plugin, Startup, Update},
     asset::Assets,
     ecs::event::ManualEventReader,
+    hierarchy::{BuildChildren, Parent},
     input::mouse::MouseMotion,
     log::{info, warn},
     math::Vec3,
     pbr::{MaterialMeshBundle, PbrBundle, StandardMaterial},
     prelude::{
-        default, Added, Bundle, Commands, Component, Entity, Query, ResMut, Resource, With, Without,
+        apply_deferred, default, Added, Bundle, Commands, Component, Entity, IntoSystemConfigs, Query, ResMut, Resource, With, Without
     },
     render::{
         camera::Camera,
@@ -41,11 +44,13 @@ impl Plugin for CharacterPlugin {
     fn build(&self, app: &mut App) {
         info!("Initializing Character plugin...");
         app.insert_resource(Config::default()); // later we will load from some toml file
-        app.add_systems(Startup, spawn_player_system);
+        app.add_systems(
+            Startup,
+            (spawn_player_system, apply_deferred, attached_camera_system).chain(),
+        );
         app.add_systems(
             Update,
             (
-                attached_camera_system,
                 update_player_stance,
                 update_player_motion,
                 camera_look_system,
@@ -144,9 +149,7 @@ fn spawn_player_system(
             },
             downward_ray: RayCaster::new(Vec3::ZERO, Vec3::NEG_Y),
             ray_hits: RayHits::default(),
-            body: Body {
-                body_scale: 1.0,
-            },
+            body: Body { body_scale: 1.0 },
             motion: Motion {
                 movement_vec: Vec3::from_array([0.0, 0.0, 0.0]),
                 sprinting: false,
@@ -167,20 +170,28 @@ fn spawn_player_system(
 }
 
 fn attached_camera_system(
-    mut player_query: Query<&mut Transform, With<PlayerControl>>,
-    mut camera_query: Query<(&mut Transform, With<Camera>, Without<PlayerControl>)>,
+    mut commands: Commands,
+    mut player_query: Query<Entity, (With<PlayerControl>, Without<Camera>)>,
+    mut camera_query: Query<(Entity, Option<&Parent>), (With<Camera>, Without<PlayerControl>)>,
 ) {
     if camera_query.is_empty()
         || camera_query.iter().len() > 1
         || player_query.is_empty()
         || player_query.iter().len() > 1
     {
-        info!("The camera attach system did not recieve 1 player and 1 camera. Found {} cameras, and {} players", camera_query.iter().len(), player_query.iter().len());
+        warn!("The camera attach system did not recieve 1 player and 1 camera. Found {} cameras, and {} players", camera_query.iter().len(), player_query.iter().len());
     }
 
-    for player_transfrom in &mut player_query {
-        for (mut camera_transform, _, _) in &mut camera_query {
-            camera_transform.translation = player_transfrom.translation.clone();
+    for player_entity in &mut player_query {
+        for (camera_entity, camera_parent) in &mut camera_query {
+            if camera_parent.is_none() {
+                commands
+                    .entity(player_entity)
+                    .push_children(&[camera_entity]);
+                info!("Attached Camera to player character as child.");
+            } else {
+                info!("Camera parent already exists, will not set player as parent! ");
+            }
         }
     }
 }
