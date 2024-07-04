@@ -84,7 +84,7 @@ fn main() {
         ))
         .add_systems(
             Startup,
-            (setup, grab_cursor, start_background_audio),
+            (setup, grab_cursor, start_background_audio, apply_deferred).chain(),
         )
         .add_systems(
             Update,

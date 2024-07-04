@@ -9,7 +9,7 @@ use bevy::{
 };
 use bevy_xpbd_3d::components::{ExternalForce, ExternalImpulse, LinearVelocity};
 
-use crate::{ternary, KeyBindings};
+use crate::{KeyBindings};
 
 use super::{
     body::{self, Body},

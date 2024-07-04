@@ -13,7 +13,7 @@ use bevy::{
     math::Vec3,
     pbr::{MaterialMeshBundle, PbrBundle, StandardMaterial},
     prelude::{
-        apply_deferred, default, Added, Bundle, Commands, Component, Entity, IntoSystemConfigs,
+        apply_deferred, default, Bundle, Commands, Component, Entity, IntoSystemConfigs,
         Query, ResMut, Resource, With, Without,
     },
     render::{
@@ -22,7 +22,6 @@ use bevy::{
         mesh::{shape, Mesh},
     },
     transform::components::Transform,
-    window::{PrimaryWindow, Window},
 };
 use bevy_xpbd_3d::{
     components::{
@@ -35,7 +34,7 @@ use focus::{camera_look_system, Focus};
 use motion::{update_player_motion, Motion};
 use stance::{update_player_stance, Stance, StanceType};
 
-use crate::toggle_grab_cursor;
+use crate::CameraThing;
 
 pub struct CharacterPlugin;
 
@@ -173,7 +172,7 @@ fn attached_camera_system(
     mut player_query: Query<(Entity, &mut Transform), (With<PlayerControl>, Without<Camera>)>,
     mut camera_query: Query<
         (Entity, &mut Transform, Option<&Parent>),
-        (With<Camera>, Without<PlayerControl>),
+        (With<Camera>, With<CameraThing>, Without<PlayerControl>),
     >,
 ) {
     if camera_query.is_empty()
@@ -196,22 +195,5 @@ fn attached_camera_system(
                 info!("Camera parent already exists, will not set player as parent! ");
             }
         }
-    }
-}
-
-// Grab cursor when an entity with FlyCam is added
-fn initial_grab_window_focus_on_player_spawn(
-    mut primary_window: Query<&mut Window, With<PrimaryWindow>>,
-    query_added: Query<Entity, Added<PlayerControl>>,
-) {
-    if query_added.is_empty() {
-        return;
-    }
-
-    if let Ok(window) = &mut primary_window.get_single_mut() {
-        toggle_grab_cursor(window);
-        info!("Cursor was grabbed!");
-    } else {
-        warn!("Primary window not found for `initial_grab_cursor`!");
     }
 }
