@@ -84,7 +84,7 @@ fn main() {
         ))
         .add_systems(
             Startup,
-            (setup, start_background_audio, grab_cursor, apply_deferred).chain(),
+            (setup, apply_deferred, start_background_audio, grab_cursor).chain(), // this system sometimes runs after the setup for the character plugin resulting in erradict behavior.
         )
         .add_systems(
             Update,
