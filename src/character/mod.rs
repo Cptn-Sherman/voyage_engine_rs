@@ -15,7 +15,8 @@ use bevy::{
     math::Vec3,
     pbr::{MaterialMeshBundle, PbrBundle, StandardMaterial},
     prelude::{
-        apply_deferred, default, Added, Bundle, Commands, Component, Entity, IntoSystemConfigs, Query, ResMut, Resource, With, Without
+        apply_deferred, default, Added, Bundle, Commands, Component, Entity, IntoSystemConfigs,
+        Query, ResMut, Resource, With, Without,
     },
     render::{
         camera::Camera,
@@ -140,7 +141,7 @@ fn spawn_player_system(
             rigid_body: RigidBody::Dynamic,
             mass: Mass(20.0),
             gravity_scale: GravityScale(1.0),
-            collider: Collider::capsule(1.0, 0.5),
+            collider: Collider::capsule(0.75, 0.5),
             mat_mesh_bundle: PbrBundle {
                 mesh: meshes.add(Mesh::from(shape::Capsule::default())),
                 material: materials.add(Color::rgb(1.0, 0.0, 0.0).into()),
@@ -171,8 +172,11 @@ fn spawn_player_system(
 
 fn attached_camera_system(
     mut commands: Commands,
-    mut player_query: Query<Entity, (With<PlayerControl>, Without<Camera>)>,
-    mut camera_query: Query<(Entity, Option<&Parent>), (With<Camera>, Without<PlayerControl>)>,
+    mut player_query: Query<(Entity, &mut Transform), (With<PlayerControl>, Without<Camera>)>,
+    mut camera_query: Query<
+        (Entity, &mut Transform, Option<&Parent>),
+        (With<Camera>, Without<PlayerControl>),
+    >,
 ) {
     if camera_query.is_empty()
         || camera_query.iter().len() > 1
@@ -182,13 +186,14 @@ fn attached_camera_system(
         warn!("The camera attach system did not recieve 1 player and 1 camera. Found {} cameras, and {} players", camera_query.iter().len(), player_query.iter().len());
     }
 
-    for player_entity in &mut player_query {
-        for (camera_entity, camera_parent) in &mut camera_query {
+    for (player_entity, player_transform) in &mut player_query {
+        for (camera_entity, mut camera_transform, camera_parent) in &mut camera_query {
+            camera_transform.translation = Vec3::from_array([0.0, 1.0, 0.0]);
             if camera_parent.is_none() {
                 commands
                     .entity(player_entity)
                     .push_children(&[camera_entity]);
-                info!("Attached Camera to player character as child.");
+                info!("Attached Camera to player character as child");
             } else {
                 info!("Camera parent already exists, will not set player as parent! ");
             }

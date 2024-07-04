@@ -296,7 +296,6 @@ fn screenshot_on_equals(
         let date: DateTime<Local> = Local::now();
         let formated_date = date.format("%Y-%m-%d_%H-%M-%S");
         let path: String = format!("./voyage_screenshot-{}.png", formated_date.to_string());
-        info!("saved screenshot: {}", path);
         screenshot_manager
             .save_screenshot_to_disk(main_window.single(), path)
             .unwrap();
