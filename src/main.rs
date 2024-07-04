@@ -282,6 +282,7 @@ fn detect_toggle_cursor(
 fn toggle_grab_cursor(window: &mut Window) {
     match window.cursor.grab_mode {
         CursorGrabMode::None => {
+            // Set the cursor position to the center of the window
             window.cursor.grab_mode = CursorGrabMode::Confined;
             window.cursor.visible = false;
         }
@@ -290,6 +291,10 @@ fn toggle_grab_cursor(window: &mut Window) {
             window.cursor.visible = true;
         }
     }
+    // set the cursor to the center of the screen.
+    let window_width = window.width();
+    let window_height = window.height();
+    window.set_cursor_position(Some(Vec2::new(window_width / 2.0, window_height / 2.0)));
 }
 
 /** This system was yonked from the screenshot example: https://bevyengine.org/examples/Window/screenshot/ */
@@ -303,7 +308,7 @@ fn screenshot_on_equals(
     if keys.just_pressed(KeyCode::Equals) {
         let date: DateTime<Local> = Local::now();
         let formated_date: chrono::format::DelayedFormat<chrono::format::StrftimeItems> =
-            date.format("%Y-%m-%d_%H-%M-%S");
+            date.format("%Y-%m-%d_%H-%M-%S%.3f");
         let path: String = format!(
             "./voyage_screenshot-{}.{}",
             formated_date.to_string(),
