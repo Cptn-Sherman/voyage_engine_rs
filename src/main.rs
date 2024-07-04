@@ -84,11 +84,11 @@ fn main() {
         ))
         .add_systems(
             Startup,
-            (setup, initial_grab_cursor, start_background_audio),
+            (setup, grab_cursor, start_background_audio),
         )
         .add_systems(
             Update,
-            (animate_light_direction, screenshot_on_equals, cursor_grab),
+            (animate_light_direction, detect_toggle_cursor, screenshot_on_equals),
         )
         .run();
 }
@@ -249,12 +249,28 @@ fn setup(
     });
 }
 
-/// Grabs the cursor when game first starts
-fn initial_grab_cursor(mut primary_window: Query<&mut Window, With<PrimaryWindow>>) {
+fn grab_cursor(mut primary_window: Query<&mut Window, With<PrimaryWindow>>) {
     if let Ok(mut window) = primary_window.get_single_mut() {
-        toggle_grab_cursor(&mut window);
+        // Check if the cursor is already grabbed
+        if window.cursor.grab_mode != CursorGrabMode::Locked {
+            toggle_grab_cursor(&mut window);
+        }
     } else {
         warn!("Primary window not found for `initial_grab_cursor`!");
+    }
+}
+
+fn detect_toggle_cursor(
+    keys: Res<Input<KeyCode>>,
+    key_bindings: Res<KeyBindings>,
+    mut primary_window: Query<&mut Window, With<PrimaryWindow>>,
+) {
+    if let Ok(mut window) = primary_window.get_single_mut() {
+        if keys.just_pressed(key_bindings.toggle_grab_cursor) {
+            toggle_grab_cursor(&mut window);
+        }
+    } else {
+        warn!("Primary window not found for `cursor_grab`!");
     }
 }
 
@@ -269,20 +285,6 @@ fn toggle_grab_cursor(window: &mut Window) {
             window.cursor.grab_mode = CursorGrabMode::None;
             window.cursor.visible = true;
         }
-    }
-}
-
-fn cursor_grab(
-    keys: Res<Input<KeyCode>>,
-    key_bindings: Res<KeyBindings>,
-    mut primary_window: Query<&mut Window, With<PrimaryWindow>>,
-) {
-    if let Ok(mut window) = primary_window.get_single_mut() {
-        if keys.just_pressed(key_bindings.toggle_grab_cursor) {
-            toggle_grab_cursor(&mut window);
-        }
-    } else {
-        warn!("Primary window not found for `cursor_grab`!");
     }
 }
 
