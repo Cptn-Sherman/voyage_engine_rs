@@ -3,8 +3,6 @@ mod focus;
 mod motion;
 pub mod stance;
 
-use std::thread::spawn;
-
 use bevy::{
     app::{App, Plugin, Startup, Update},
     asset::Assets,

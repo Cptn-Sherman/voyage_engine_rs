@@ -249,3 +249,31 @@ pub fn uv_debug_texture() -> Image {
     // Return the generated image
     img
 }
+
+// --- Validating file extensions ---
+const VALID_SCREENSHOT_EXTENSIONS: [&str; 3] = ["png", "jpeg", "bmp"];
+const VALID_VIDEO_EXTENSIONS: [&str; 3] = ["mp4", "avi", "mkv"];
+
+pub enum ExtensionType {
+    Screenshot,
+    Video,
+}
+
+
+pub fn get_valid_extension<'a>(extension: &'a str, ext_type: ExtensionType) -> &'a str {
+    let valid_extensions = match ext_type {
+        ExtensionType::Screenshot => &VALID_SCREENSHOT_EXTENSIONS,
+        ExtensionType::Video => &VALID_VIDEO_EXTENSIONS,
+    };
+
+    let default_extension = match ext_type {
+        ExtensionType::Screenshot => "png",
+        ExtensionType::Video => "mp4",
+    };
+
+    if valid_extensions.contains(&extension.to_lowercase().as_str()) {
+        extension
+    } else {
+        default_extension
+    }
+}

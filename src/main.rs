@@ -33,7 +33,7 @@ use crate::utils::CHUNK_SIZE_I32;
 use bevy_kira_audio::prelude::*;
 use transvoxel::{transition_sides, voxel_source::Block};
 use user_interface::DebugInterfacePlugin;
-use utils::{format_value_f32, CHUNK_SIZE_F32};
+use utils::{format_value_f32, get_valid_extension, CHUNK_SIZE_F32};
 
 #[derive(Component)]
 struct Sun;
@@ -72,6 +72,7 @@ fn main() {
     App::new()
         .init_resource::<InputState>()
         .init_resource::<KeyBindings>()
+        .insert_resource(EngineSettings { ..default() })
         .insert_resource(DirectionalLightShadowMap { size: 4098 })
         .add_plugins((
             DefaultPlugins,
@@ -288,16 +289,35 @@ fn cursor_grab(
 /** This system was yonked from the screenshot example: https://bevyengine.org/examples/Window/screenshot/ */
 // FIXME: filename timestamp fails if two screenshots occur in the same second, also formatting standards... idk.
 fn screenshot_on_equals(
+    settings: Res<EngineSettings>,
     keys: Res<Input<KeyCode>>,
     main_window: Query<Entity, With<PrimaryWindow>>,
     mut screenshot_manager: ResMut<ScreenshotManager>,
 ) {
     if keys.just_pressed(KeyCode::Equals) {
         let date: DateTime<Local> = Local::now();
-        let formated_date = date.format("%Y-%m-%d_%H-%M-%S");
-        let path: String = format!("./voyage_screenshot-{}.png", formated_date.to_string());
+        let formated_date: chrono::format::DelayedFormat<chrono::format::StrftimeItems> = date.format("%Y-%m-%d_%H-%M-%S");
+        let path: String = format!("./voyage_screenshot-{}.{}", formated_date.to_string(), get_valid_extension(&settings.format, utils::ExtensionType::Screenshot));
+        // todo: handle this result.
+        // like what if they try to save the game and there is no room on the disk. Can we halt the game to allow them to fix with out.
+        // Could I make a overlay addon for bevy which integrates discord directly into the game.
         screenshot_manager
             .save_screenshot_to_disk(main_window.single(), path)
             .unwrap();
+    }
+}
+
+// This will be read from a toml file in the future.
+
+#[derive(Resource)]
+struct EngineSettings {
+    format: String,
+}
+
+impl Default for EngineSettings {
+    fn default() -> Self {
+        EngineSettings {
+            format: "png".to_owned(),
+        }
     }
 }
