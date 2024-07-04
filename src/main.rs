@@ -84,11 +84,15 @@ fn main() {
         ))
         .add_systems(
             Startup,
-            (setup, grab_cursor, start_background_audio, apply_deferred).chain(),
+            (setup, start_background_audio, grab_cursor, apply_deferred).chain(),
         )
         .add_systems(
             Update,
-            (animate_light_direction, detect_toggle_cursor, screenshot_on_equals),
+            (
+                animate_light_direction,
+                detect_toggle_cursor,
+                screenshot_on_equals,
+            ),
         )
         .run();
 }
@@ -187,7 +191,7 @@ fn setup(
 ) {
     // Plane
     let plane_size: f32 = 128.0;
-    let plane_thickness: f32 = 0.002;
+    let plane_thickness: f32 = 0.5;
 
     commands.spawn((
         RigidBody::Static,
@@ -298,8 +302,13 @@ fn screenshot_on_equals(
 ) {
     if keys.just_pressed(KeyCode::Equals) {
         let date: DateTime<Local> = Local::now();
-        let formated_date: chrono::format::DelayedFormat<chrono::format::StrftimeItems> = date.format("%Y-%m-%d_%H-%M-%S");
-        let path: String = format!("./voyage_screenshot-{}.{}", formated_date.to_string(), get_valid_extension(&settings.format, utils::ExtensionType::Screenshot));
+        let formated_date: chrono::format::DelayedFormat<chrono::format::StrftimeItems> =
+            date.format("%Y-%m-%d_%H-%M-%S");
+        let path: String = format!(
+            "./voyage_screenshot-{}.{}",
+            formated_date.to_string(),
+            get_valid_extension(&settings.format, utils::ExtensionType::Screenshot)
+        );
         // todo: handle this result.
         // like what if they try to save the game and there is no room on the disk. Can we halt the game to allow them to fix with out.
         // Could I make a overlay addon for bevy which integrates discord directly into the game.
