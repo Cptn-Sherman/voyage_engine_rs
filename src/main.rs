@@ -306,6 +306,7 @@ fn screenshot_on_equals(
     mut screenshot_manager: ResMut<ScreenshotManager>,
 ) {
     if keys.just_pressed(KeyCode::Equals) {
+        // get the formated path as string.
         let date: DateTime<Local> = Local::now();
         let formated_date: chrono::format::DelayedFormat<chrono::format::StrftimeItems> =
             date.format("%Y-%m-%d_%H-%M-%S%.3f");
@@ -314,17 +315,18 @@ fn screenshot_on_equals(
             formated_date.to_string(),
             get_valid_extension(&settings.format, utils::ExtensionType::Screenshot)
         );
-        // todo: handle this result.
-        // like what if they try to save the game and there is no room on the disk. Can we halt the game to allow them to fix with out.
-        // Could I make a overlay addon for bevy which integrates discord directly into the game.
-        screenshot_manager
-            .save_screenshot_to_disk(main_window.single(), path)
-            .unwrap();
+
+        // attempt to save the screenshot to disk and bubble up.
+        match screenshot_manager.save_screenshot_to_disk(main_window.single(), path) {
+            Ok(_) => info!("Screenshot saved successfully."),
+            Err(e) => {
+                error!("Failed to save screenshot: {}", e);
+            }
+        }
     }
 }
 
 // This will be read from a toml file in the future.
-
 #[derive(Resource)]
 struct EngineSettings {
     format: String,
