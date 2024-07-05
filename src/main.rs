@@ -82,9 +82,10 @@ fn main() {
             AudioPlugin,
             CharacterPlugin,
         ))
+        .add_systems(PreStartup, create_camera)
         .add_systems(
             Startup,
-            (setup, apply_deferred, start_background_audio, grab_cursor).chain(), // this system sometimes runs after the setup for the character plugin resulting in erradict behavior.
+            (setup, apply_deferred, start_background_audio).chain(), // this system sometimes runs after the setup for the character plugin resulting in erradict behavior.
         )
         .add_systems(
             Update,
@@ -103,7 +104,7 @@ fn start_background_audio(asset_server: Res<AssetServer>, audio: Res<Audio>) {
         .play(asset_server.load("audio\\liminal-spaces-ambient.ogg"))
         .fade_in(AudioTween::new(
             Duration::from_millis(1500),
-            AudioEasing::OutPowi(2),
+            AudioEasing::OutPowi(4),
         ))
         .with_volume(0.15)
         .looped();
@@ -183,26 +184,9 @@ fn animate_light_direction(
 #[derive(Component)]
 struct CameraThing;
 
-fn setup(
+fn create_camera(
     mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
-    asset_server: Res<AssetServer>,
 ) {
-    // Plane
-    let plane_size: f32 = 128.0;
-    let plane_thickness: f32 = 0.5;
-
-    commands.spawn((
-        RigidBody::Static,
-        Collider::cuboid(plane_size, plane_thickness, plane_size),
-        PbrBundle {
-            mesh: meshes.add(Mesh::from(shape::Plane::from_size(plane_size))),
-            material: materials.add(Color::rgb(0.3, 0.5, 0.3).into()),
-            ..default()
-        },
-    ));
-
     commands
         .spawn((
             Camera3dBundle {
@@ -224,6 +208,27 @@ fn setup(
         ))
         .insert(ScreenSpaceAmbientOcclusionBundle::default())
         .insert(TemporalAntiAliasBundle::default());
+}
+
+fn setup(
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+    asset_server: Res<AssetServer>,
+) {
+    // Plane
+    let plane_size: f32 = 128.0;
+    let plane_thickness: f32 = 0.5;
+
+    commands.spawn((
+        RigidBody::Static,
+        Collider::cuboid(plane_size, plane_thickness, plane_size),
+        PbrBundle {
+            mesh: meshes.add(Mesh::from(shape::Plane::from_size(plane_size))),
+            material: materials.add(Color::rgb(0.3, 0.5, 0.3).into()),
+            ..default()
+        },
+    ));
 
     // light
     commands.spawn((

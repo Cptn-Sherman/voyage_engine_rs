@@ -34,7 +34,7 @@ use focus::{camera_look_system, Focus};
 use motion::{update_player_motion, Motion};
 use stance::{update_player_stance, Stance, StanceType};
 
-use crate::CameraThing;
+use crate::{grab_cursor, CameraThing};
 
 pub struct CharacterPlugin;
 
@@ -44,7 +44,7 @@ impl Plugin for CharacterPlugin {
         app.insert_resource(Config::default()); // later we will load from some toml file
         app.add_systems(
             Startup,
-            (spawn_player_system, apply_deferred, attached_camera_system).chain(),
+            (spawn_player_system, apply_deferred, attached_camera_system, grab_cursor).chain(),
         );
         app.add_systems(
             Update,
