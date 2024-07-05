@@ -1,5 +1,4 @@
 use bevy::{
-    input::Input,
     log::{info, warn},
     math::Vec3,
     prelude::{Component, KeyCode, Query, Res, With},
@@ -10,10 +9,7 @@ use bevy_xpbd_3d::{
     prelude::{RayCaster, RayHits},
 };
 
-use crate::KeyBindings;
-
 use super::{
-    body::Body,
     motion::{apply_jump_force, apply_spring_force},
     Config, PlayerControl,
 };

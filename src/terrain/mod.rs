@@ -78,7 +78,7 @@ pub fn check_lod_position(
     time: Res<Time>,
     mut timer: ResMut<LODRecalculateTimer>,
     mut tracked_pos: ResMut<LODPostionTracker>,
-    camera_query: Query<(&Camera, &Transform, With<CameraThing>)>,
+    camera_query: Query<&Transform, With<CameraThing>>,
 ) {
     // guard: timer hasn't finished, return early.
     if !timer.0.tick(time.delta()).just_finished() {
@@ -91,11 +91,11 @@ pub fn check_lod_position(
         return;    }
 
     // iterate over each camera and update the tracked position. Expects there to be only one camera in the scene.
-    for (_camera, transform, ()) in camera_query.iter() {
+    for camera_transform in camera_query.iter() {
         let cur_position = LODPostionTracker {
-            cx: convert_to_chunk_coordinate(transform.translation.x as i32),
-            cy: convert_to_chunk_coordinate(transform.translation.y as i32),
-            cz: convert_to_chunk_coordinate(transform.translation.z as i32),
+            cx: convert_to_chunk_coordinate(camera_transform.translation.x as i32),
+            cy: convert_to_chunk_coordinate(camera_transform.translation.y as i32),
+            cz: convert_to_chunk_coordinate(camera_transform.translation.z as i32),
         };
         //info!("Your position is: [{}]", transform.translation.to_string());
         if cur_position.cx != tracked_pos.cx

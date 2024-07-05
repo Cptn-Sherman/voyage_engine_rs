@@ -4,6 +4,8 @@ mod terrain;
 mod user_interface;
 mod utils;
 
+use bevy_kira_audio::prelude::*;
+
 use bevy::render::mesh::Mesh as BevyMesh;
 use bevy::render::mesh::Mesh;
 
@@ -18,10 +20,13 @@ use bevy::{
     prelude::*,
 };
 
+
+use bevy_xpbd_3d::parry::shape;
+use bevy_xpbd_3d::prelude::Collider;
 use character::{CharacterPlugin, InputState};
 use chrono::{DateTime, Local};
 
-use bevy_xpbd_3d::components::{Collider, RigidBody};
+use bevy_xpbd_3d::components::RigidBody;
 use bevy_xpbd_3d::plugins::PhysicsPlugins;
 
 use std::f32::consts::{FRAC_PI_4, PI};
@@ -30,7 +35,6 @@ use std::time::Duration;
 use bevy_mesh::{mesh_for_model, Model};
 
 use crate::utils::CHUNK_SIZE_I32;
-use bevy_kira_audio::prelude::*;
 use transvoxel::{transition_sides, voxel_source::Block};
 use user_interface::DebugInterfacePlugin;
 use utils::{format_value_f32, get_valid_extension, CHUNK_SIZE_F32};
@@ -67,7 +71,6 @@ impl Default for KeyBindings {
 }
 
 fn main() {
-    color_eyre::install().unwrap();
 
     App::new()
         .init_resource::<InputState>()
@@ -203,7 +206,7 @@ fn create_camera(
                 falloff: FogFalloff::Exponential { density: 0.0005 },
                 ..Default::default()
             },
-            ShadowFilteringMethod::Jimenez14,
+            ShadowFilteringMethod::Temporal, // NOt sure if this is the right setting.
             CameraThing,
         ))
         .insert(ScreenSpaceAmbientOcclusionBundle::default())
@@ -224,7 +227,7 @@ fn setup(
         RigidBody::Static,
         Collider::cuboid(plane_size, plane_thickness, plane_size),
         PbrBundle {
-            mesh: meshes.add(Mesh::from(shape::Plane::from_size(plane_size))),
+            mesh: meshes.add(Plane3d::default().mesh().size(plane_size, plane_size)),
             material: materials.add(Color::rgb(0.3, 0.5, 0.3).into()),
             ..default()
         },
@@ -234,7 +237,7 @@ fn setup(
     commands.spawn((
         DirectionalLightBundle {
             directional_light: DirectionalLight {
-                color: Color::rgb(1.0, 0.96, 0.95),
+                color: Color::srgb(1.0, 0.96, 0.95),
                 shadows_enabled: true,
                 shadow_depth_bias: 0.02,
                 shadow_normal_bias: 1.0,
@@ -270,7 +273,7 @@ fn grab_cursor(mut primary_window: Query<&mut Window, With<PrimaryWindow>>) {
 }
 
 fn detect_toggle_cursor(
-    keys: Res<Input<KeyCode>>,
+    keys: Res<bevy_mod_picking::backend::prelude::PickSet>,
     key_bindings: Res<KeyBindings>,
     mut primary_window: Query<&mut Window, With<PrimaryWindow>>,
 ) {
@@ -306,11 +309,11 @@ fn toggle_grab_cursor(window: &mut Window) {
 // FIXME: filename timestamp fails if two screenshots occur in the same second, also formatting standards... idk.
 fn screenshot_on_equals(
     settings: Res<EngineSettings>,
-    keys: Res<Input<KeyCode>>,
+    keys: Res<bevy_mod_picking::backend::prelude::PickSet>,
     main_window: Query<Entity, With<PrimaryWindow>>,
     mut screenshot_manager: ResMut<ScreenshotManager>,
 ) {
-    if keys.just_pressed(KeyCode::Equals) {
+    if keys.just_pressed(KeyCode::Equal) {
         // get the formated path as string.
         let date: DateTime<Local> = Local::now();
         let formated_date: chrono::format::DelayedFormat<chrono::format::StrftimeItems> =

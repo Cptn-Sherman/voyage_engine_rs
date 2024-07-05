@@ -19,9 +19,9 @@ impl BevyMeshBuilder {
     from our mesh, but UV coordinates all set to 0
     */
     pub fn build(self) -> Mesh {
-        let mut bevy_mesh = Mesh::new(TriangleList);
+        let mut bevy_mesh = Mesh::new(TriangleList, RenderAssetUsages::MAIN_WORLD);
         let indices = bevy::render::mesh::Indices::U32(self.triangle_indices);
-        bevy_mesh.set_indices(Some(indices));
+        bevy_mesh.insert_indices(Some(indices));
         bevy_mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, self.positions);
         bevy_mesh.insert_attribute(Mesh::ATTRIBUTE_NORMAL, self.normals);
         return bevy_mesh;
@@ -32,7 +32,7 @@ impl BevyMeshBuilder {
     Lines shared between 2 triangles are repeated, for implementation simplicity.
     */
     pub fn build_wireframe(self) -> Mesh {
-        let mut bevy_mesh = Mesh::new(LineList);
+        let mut bevy_mesh = Mesh::new(LineList, RenderAssetUsages::MAIN_WORLD);
         let tris_count = self.triangle_indices.len() / 3;
         let indices = (0..tris_count)
             .map(|i| vec![3 * i, 3 * i + 1, 3 * i + 1, 3 * i + 2, 3 * i + 2, 3 * i])
@@ -40,7 +40,7 @@ impl BevyMeshBuilder {
             .map(|j| self.triangle_indices[j] as u32)
             .collect();
         let indices = bevy::render::mesh::Indices::U32(indices);
-        bevy_mesh.set_indices(Some(indices));
+        bevy_mesh.insert_indices(Some(indices));
         bevy_mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, self.positions);
         bevy_mesh.insert_attribute(Mesh::ATTRIBUTE_NORMAL, self.normals);
         return bevy_mesh;
@@ -91,6 +91,7 @@ use bevy::prelude::Vec3;
 use bevy::render::mesh::Mesh as BevyMesh;
 use bevy::render::mesh::Mesh;
 use bevy::render::mesh::VertexAttributeValues;
+use bevy::render::render_asset::RenderAssetUsages;
 use bevy::render::render_resource::PrimitiveTopology::{LineList, TriangleList};
 use transvoxel::mesh_builder::GridPoint;
 use transvoxel::mesh_builder::MeshBuilder;
@@ -192,7 +193,7 @@ fn inside_grid_points_for_field(
 
 pub fn grid_lines(block: &Block<f32>, transition_sides: &TransitionSides) -> BevyMesh {
     let subs = block.subdivisions;
-    let mut bevy_mesh = BevyMesh::new(bevy::render::render_resource::PrimitiveTopology::LineList);
+    let mut bevy_mesh = BevyMesh::new(bevy::render::render_resource::PrimitiveTopology::LineList, RenderAssetUsages::MAIN_WORLD);
     let mut positions = Vec::<[f32; 3]>::new();
     let mut indices = Vec::<u32>::new();
     for i in 0..=subs {
@@ -297,7 +298,7 @@ pub fn grid_lines(block: &Block<f32>, transition_sides: &TransitionSides) -> Bev
         }
     }
     let normals = positions.clone(); // Not really important for lines ?
-    bevy_mesh.set_indices(Some(bevy::render::mesh::Indices::U32(indices)));
+    bevy_mesh.insert_indices(Some(bevy::render::mesh::Indices::U32(indices)));
     bevy_mesh.insert_attribute(BevyMesh::ATTRIBUTE_POSITION, positions);
     bevy_mesh.insert_attribute(BevyMesh::ATTRIBUTE_NORMAL, normals);
     return bevy_mesh;
@@ -378,8 +379,6 @@ use std::collections::HashMap;
 use noise::{Fbm, NoiseFn, Perlin};
 use std::slice::Iter;
 use transvoxel::voxel_source::DataField;
-
-use crate::utils;
 
 #[derive(PartialEq, Debug, Copy, Clone, Hash, Eq)]
 pub enum Model {

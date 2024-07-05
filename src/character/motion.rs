@@ -1,5 +1,4 @@
 use bevy::{
-    input::Input,
     log::{info, warn},
     math::Vec3,
     prelude::{Component, KeyCode, Query, Res, With, Without},
@@ -7,6 +6,8 @@ use bevy::{
     time::Time,
     transform::components::Transform,
 };
+
+use bevy_mod_picking::backend::prelude::PickSet::Input;
 use bevy_xpbd_3d::components::{ExternalForce, ExternalImpulse, LinearVelocity};
 
 use crate::{KeyBindings};
@@ -25,16 +26,16 @@ pub struct Motion {
 
 pub fn update_player_motion(
     time: Res<Time>,
-    keys: Res<Input<KeyCode>>,
+    keys: Res<bevy_mod_picking::backend::prelude::PickSet::Input<KeyCode>,
     config: Res<Config>,
     key_bindings: Res<KeyBindings>,
-    camera_query: Query<(&mut Transform, With<Camera>, Without<PlayerControl>)>,
+    camera_query: Query<&mut Transform, (With<Camera>, Without<PlayerControl>)>,
     mut query: Query<(
         &mut LinearVelocity,
         &mut Motion,
-        &mut Stance,
+        &mut Stance,),
         With<PlayerControl>,
-    )>,
+    >,
 ) {
     if camera_query.is_empty()
         || camera_query.iter().len() > 1

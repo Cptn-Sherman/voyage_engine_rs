@@ -4,30 +4,17 @@ mod motion;
 pub mod stance;
 
 use bevy::{
-    app::{App, Plugin, Startup, Update},
-    asset::Assets,
-    ecs::event::ManualEventReader,
-    hierarchy::{BuildChildren, Parent},
-    input::mouse::MouseMotion,
-    log::{info, warn},
-    math::Vec3,
-    pbr::{MaterialMeshBundle, PbrBundle, StandardMaterial},
-    prelude::{
-        apply_deferred, default, Bundle, Commands, Component, Entity, IntoSystemConfigs,
-        Query, ResMut, Resource, With, Without,
-    },
-    render::{
+    app::{App, Plugin, Startup, Update}, asset::{io::memory::Dir, Assets}, color::Color, ecs::event::ManualEventReader, hierarchy::{BuildChildren, Parent}, input::mouse::MouseMotion, log::{info, warn}, math::{Dir3, Vec3}, pbr::{MaterialMeshBundle, PbrBundle, StandardMaterial}, prelude::{
+        apply_deferred, default, Bundle, Capsule3d, Commands, Component, Entity, IntoSystemConfigs, Query, ResMut, Resource, With, Without
+    }, render::{
         camera::Camera,
-        color::Color,
-        mesh::{shape, Mesh},
-    },
-    transform::components::Transform,
+        mesh::Mesh,
+    }, transform::components::Transform
 };
 use bevy_xpbd_3d::{
     components::{
-        Collider, ExternalForce, ExternalImpulse, GravityScale, LinearVelocity, Mass, RigidBody,
-    },
-    prelude::{RayCaster, RayHits},
+        ExternalForce, ExternalImpulse, GravityScale, LinearVelocity, Mass, RigidBody,
+    }, parry::shape::{self, Capsule}, prelude::{Collider, RayCaster, RayHits}
 };
 use body::Body;
 use focus::{camera_look_system, Focus};
@@ -44,7 +31,7 @@ impl Plugin for CharacterPlugin {
         app.insert_resource(Config::default()); // later we will load from some toml file
         app.add_systems(
             Startup,
-            (spawn_player_system, apply_deferred, attached_camera_system, grab_cursor).chain(),
+            (spawn_player_system, attached_camera_system, grab_cursor).chain(),
         );
         app.add_systems(
             Update,
@@ -52,7 +39,7 @@ impl Plugin for CharacterPlugin {
                 update_player_stance,
                 update_player_motion,
                 camera_look_system,
-            ),
+            ).chain(),
         );
         info!("Actor plugin successfully initialized!");
     }
@@ -140,12 +127,12 @@ fn spawn_player_system(
             gravity_scale: GravityScale(1.0),
             collider: Collider::capsule(0.75, 0.5),
             mat_mesh_bundle: PbrBundle {
-                mesh: meshes.add(Mesh::from(shape::Capsule::default())),
-                material: materials.add(Color::rgb(1.0, 0.0, 0.0).into()),
+                mesh: meshes.add(Mesh::from(Capsule3d::new(0.5, 0.75))),
+                material: materials.add(Color::srgb(1.0, 0.0, 0.0)),
                 transform: Transform::from_xyz(0.0, 8.0, 0.0),
                 ..default()
             },
-            downward_ray: RayCaster::new(Vec3::ZERO, Vec3::NEG_Y),
+            downward_ray: RayCaster::new(Vec3::ZERO, Dir3::NEG_Y),
             ray_hits: RayHits::default(),
             body: Body { body_scale: 1.0 },
             motion: Motion {
@@ -183,7 +170,7 @@ fn attached_camera_system(
         warn!("The camera attach system did not recieve 1 player and 1 camera. Found {} cameras, and {} players", camera_query.iter().len(), player_query.iter().len());
     }
 
-    for (player_entity, player_transform) in &mut player_query {
+    for (player_entity, _player_transform) in &mut player_query {
         for (camera_entity, mut camera_transform, camera_parent) in &mut camera_query {
             camera_transform.translation = Vec3::from_array([0.0, 1.0, 0.0]);
             if camera_parent.is_none() {

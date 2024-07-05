@@ -80,7 +80,7 @@ macro_rules! double_for_loop {
 }
 
 use bevy::{
-    log::info, prelude::Image, render::render_resource::{Extent3d, TextureDimension, TextureFormat}
+    log::info, prelude::Image, render::{render_asset::RenderAssetUsages, render_resource::{Extent3d, TextureDimension, TextureFormat}}
 };
 use std::fmt::Write;
 
@@ -241,6 +241,7 @@ pub fn uv_debug_texture() -> Image {
         TextureDimension::D2,
         &texture_data,
         TextureFormat::Rgba8UnormSrgb,
+        RenderAssetUsages::MAIN_WORLD,
     );
 
     // Set the sampler descriptor for the image
