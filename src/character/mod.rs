@@ -74,13 +74,13 @@ impl Default for Config {
             ride_height: 1.5,
             ray_length_offset: 0.5,
             downward_ray_length_max: 0.5 + 1.5, // this returns ride_height + ray_length_offset.
-            ride_spring_strength: 800.0,
-            ride_spring_damper: 75.0,
+            ride_spring_strength: 3500.0,
+            ride_spring_damper: 300.0,
             stance_lockout: 0.25,
-            jump_strength: 130.0,
+            jump_strength: 200.0,
             movement_speed: 50.0,
-            sprint_speed_factor: 1.5,
-            movement_decay: 0.95,
+            sprint_speed_factor: 2.5,
+            movement_decay: 0.90,
             look_sensitivity: 0.00012, // This value was taken from bevy_flycam.
         }
     }

@@ -1,5 +1,11 @@
 use bevy::{
-    input::ButtonInput, log::{info, warn}, math::Vec3, prelude::{Component, KeyCode, Query, Res, With, Without}, render::camera::{self, Camera}, time::Time, transform::components::Transform
+    input::ButtonInput,
+    log::{info, warn},
+    math::Vec3,
+    prelude::{Component, KeyCode, Query, Res, With, Without},
+    render::camera::{self, Camera},
+    time::Time,
+    transform::components::Transform,
 };
 
 use avian3d::prelude::*;
@@ -24,12 +30,7 @@ pub fn update_player_motion(
     config: Res<Config>,
     key_bindings: Res<KeyBindings>,
     camera_query: Query<&mut Transform, (With<Camera>, Without<PlayerControl>)>,
-    mut query: Query<(
-        &mut LinearVelocity,
-        &mut Motion,
-        &mut Stance,),
-        With<PlayerControl>,
-    >,
+    mut query: Query<(&mut LinearVelocity, &mut Motion, &mut Stance), With<PlayerControl>>,
 ) {
     if camera_query.is_empty()
         || camera_query.iter().len() > 1
@@ -155,13 +156,13 @@ fn compute_clamped_jump_force_factor(config: &Res<Config>, ray_length: f32) -> f
     let clamped_ray_length = f32::clamp(ray_length, half_standing_ray_length, config.ride_height);
 
     // Apply the linear transformation
-    // Step 1: Normalize clamped_ray_length to a value between 0.0 and 1.0
+    // Step 1: Normalize clamped_ray_length to a value between 0.0 and 1.0.
     let normalized_distance =
         (clamped_ray_length - half_standing_ray_length) / standing_ray_length_range;
 
-    // Step 2: Subtract the normalized distance from CAPSULE_HEIGHT
+    // Step 2: Subtract the normalized distance from CAPSULE_HEIGHT.
     let result: f32 = config.capsule_height - normalized_distance;
 
-    // Ensure the output is within the range [0.0, 1.0]
+    // Ensure the output is within the range [0.0, 1.0].
     f32::clamp(result, 0.0, 1.0)
 }
