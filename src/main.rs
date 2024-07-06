@@ -197,6 +197,7 @@ fn create_camera(mut commands: Commands) {
                 ..Default::default()
             },
             VolumetricFogSettings {
+                absorption: 0.1,
                 ..Default::default()
             },
             ShadowFilteringMethod::Temporal, // NOt sure if this is the right setting.
@@ -232,6 +233,7 @@ fn setup(
             DirectionalLightBundle {
                 directional_light: DirectionalLight {
                     color: Color::srgb(1.0, 0.96, 0.95),
+                    illuminance: 50000.0,
                     shadows_enabled: true,
                     shadow_depth_bias: 0.02,
                     shadow_normal_bias: 1.0,
