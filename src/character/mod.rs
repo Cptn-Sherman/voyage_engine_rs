@@ -20,11 +20,8 @@ use bevy::{
     render::{camera::Camera, mesh::Mesh},
     transform::components::Transform,
 };
-use bevy_xpbd_3d::{
-    components::{ExternalForce, ExternalImpulse, GravityScale, LinearVelocity, Mass, RigidBody},
-    parry::shape::{self, Capsule},
-    prelude::{Collider, RayCaster, RayHits},
-};
+use avian3d::prelude::*;
+
 use body::Body;
 use focus::{camera_look_system, Focus};
 use motion::{update_player_motion, Motion};

@@ -1,10 +1,7 @@
 use bevy::{
     input::ButtonInput, log::{info, warn}, math::Vec3, prelude::{Component, KeyCode, Query, Res, With}, time::Time
 };
-use bevy_xpbd_3d::{
-    components::{ExternalForce, ExternalImpulse, GravityScale, LinearVelocity},
-    prelude::{RayCaster, RayHits},
-};
+use avian3d::prelude::*;
 
 use super::{
     motion::{apply_jump_force, apply_spring_force},

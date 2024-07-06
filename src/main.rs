@@ -6,7 +6,6 @@ mod utils;
 
 use bevy::pbr::{VolumetricFogSettings, VolumetricLight};
 use bevy::render::render_asset::RenderAssetBytesPerFrame;
-use bevy_kira_audio::prelude::*;
 
 use bevy::render::mesh::Mesh as BevyMesh;
 use bevy::render::mesh::Mesh;
@@ -22,13 +21,10 @@ use bevy::{
     prelude::*,
 };
 
-use bevy_xpbd_3d::parry::shape;
-use bevy_xpbd_3d::prelude::Collider;
+use avian3d::prelude::*;
 use character::{CharacterPlugin, InputState};
 use chrono::{DateTime, Local};
 
-use bevy_xpbd_3d::components::RigidBody;
-use bevy_xpbd_3d::plugins::PhysicsPlugins;
 
 use std::f32::consts::{FRAC_PI_4, PI};
 use std::time::Duration;

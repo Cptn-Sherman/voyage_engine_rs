@@ -2,10 +2,9 @@ use bevy::{
     input::ButtonInput, log::{info, warn}, math::Vec3, prelude::{Component, KeyCode, Query, Res, With, Without}, render::camera::{self, Camera}, time::Time, transform::components::Transform
 };
 
-use bevy_mod_picking::backend::prelude::PickSet::Input;
-use bevy_xpbd_3d::components::{ExternalForce, ExternalImpulse, LinearVelocity};
+use avian3d::prelude::*;
 
-use crate::{KeyBindings};
+use crate::KeyBindings;
 
 use super::{
     body::{self, Body},
