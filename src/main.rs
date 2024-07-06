@@ -249,7 +249,7 @@ fn setup(
 
     commands.spawn(SceneBundle {
         scene: asset_server.load("models/FlightHelmet/FlightHelmet.gltf#Scene0"),
-        transform: Transform::from_xyz(-1.0, 0.0, 0.0),
+        transform: Transform::from_xyz(-16.0, 0.0, 16.0).with_scale(Vec3 { x: 8.0, y: 8.0, z: 8.0 }),
         ..default()
     });
 }
