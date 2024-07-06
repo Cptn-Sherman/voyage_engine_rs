@@ -20,8 +20,7 @@ impl BevyMeshBuilder {
     */
     pub fn build(self) -> Mesh {
         let mut bevy_mesh = Mesh::new(TriangleList, RenderAssetUsages::MAIN_WORLD);
-        let indices = bevy::render::mesh::Indices::U32(self.triangle_indices);
-        bevy_mesh.insert_indices(Some(indices));
+        bevy_mesh.insert_indices(Indices::U32(self.triangle_indices));
         bevy_mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, self.positions);
         bevy_mesh.insert_attribute(Mesh::ATTRIBUTE_NORMAL, self.normals);
         return bevy_mesh;
@@ -39,8 +38,7 @@ impl BevyMeshBuilder {
             .flatten()
             .map(|j| self.triangle_indices[j] as u32)
             .collect();
-        let indices = bevy::render::mesh::Indices::U32(indices);
-        bevy_mesh.insert_indices(Some(indices));
+        bevy_mesh.insert_indices(Indices::U32(indices));
         bevy_mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, self.positions);
         bevy_mesh.insert_attribute(Mesh::ATTRIBUTE_NORMAL, self.normals);
         return bevy_mesh;
@@ -88,6 +86,7 @@ where
 
 use bevy::prelude::Transform;
 use bevy::prelude::Vec3;
+use bevy::render::mesh::Indices;
 use bevy::render::mesh::Mesh as BevyMesh;
 use bevy::render::mesh::Mesh;
 use bevy::render::mesh::VertexAttributeValues;
@@ -298,7 +297,7 @@ pub fn grid_lines(block: &Block<f32>, transition_sides: &TransitionSides) -> Bev
         }
     }
     let normals = positions.clone(); // Not really important for lines ?
-    bevy_mesh.insert_indices(Some(bevy::render::mesh::Indices::U32(indices)));
+    bevy_mesh.insert_indices(Indices::U32(indices));
     bevy_mesh.insert_attribute(BevyMesh::ATTRIBUTE_POSITION, positions);
     bevy_mesh.insert_attribute(BevyMesh::ATTRIBUTE_NORMAL, normals);
     return bevy_mesh;

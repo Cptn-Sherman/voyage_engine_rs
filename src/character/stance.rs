@@ -1,8 +1,5 @@
 use bevy::{
-    log::{info, warn},
-    math::Vec3,
-    prelude::{Component, KeyCode, Query, Res, With},
-    time::Time,
+    input::ButtonInput, log::{info, warn}, math::Vec3, prelude::{Component, KeyCode, Query, Res, With}, time::Time
 };
 use bevy_xpbd_3d::{
     components::{ExternalForce, ExternalImpulse, GravityScale, LinearVelocity},
@@ -38,7 +35,7 @@ pub struct Stance {
 
 pub fn update_player_stance(
     time: Res<Time>,
-    keys: Res<Input<KeyCode>>,
+    keys: Res<ButtonInput<KeyCode>>,
     config: Res<Config>,
     mut query: Query<(&mut LinearVelocity, &mut ExternalForce, &mut ExternalImpulse, &mut GravityScale, &mut RayCaster, &RayHits, &mut Stance), With<PlayerControl>>,
 ) {
@@ -116,7 +113,7 @@ pub fn update_player_stance(
 }
 
 fn determine_next_stance(
-    keys: &Res<Input<KeyCode>>,
+    keys: &Res<ButtonInput<KeyCode>>,
     config: &Res<Config>,
     stance: &Stance,
     ray_length: f32,

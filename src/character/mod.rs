@@ -4,17 +4,26 @@ mod motion;
 pub mod stance;
 
 use bevy::{
-    app::{App, Plugin, Startup, Update}, asset::{io::memory::Dir, Assets}, color::Color, ecs::event::ManualEventReader, hierarchy::{BuildChildren, Parent}, input::mouse::MouseMotion, log::{info, warn}, math::{Dir3, Vec3}, pbr::{MaterialMeshBundle, PbrBundle, StandardMaterial}, prelude::{
-        apply_deferred, default, Bundle, Capsule3d, Commands, Component, Entity, IntoSystemConfigs, Query, ResMut, Resource, With, Without
-    }, render::{
-        camera::Camera,
-        mesh::Mesh,
-    }, transform::components::Transform
+    app::{App, Plugin, Startup, Update},
+    asset::{io::memory::Dir, Assets},
+    color::Color,
+    ecs::event::ManualEventReader,
+    hierarchy::{BuildChildren, Parent},
+    input::mouse::MouseMotion,
+    log::{info, warn},
+    math::{Dir3, Vec3},
+    pbr::{MaterialMeshBundle, PbrBundle, StandardMaterial},
+    prelude::{
+        apply_deferred, default, Bundle, Capsule3d, Commands, Component, Entity, IntoSystemConfigs,
+        Query, ResMut, Resource, With, Without,
+    },
+    render::{camera::Camera, mesh::Mesh},
+    transform::components::Transform,
 };
 use bevy_xpbd_3d::{
-    components::{
-        ExternalForce, ExternalImpulse, GravityScale, LinearVelocity, Mass, RigidBody,
-    }, parry::shape::{self, Capsule}, prelude::{Collider, RayCaster, RayHits}
+    components::{ExternalForce, ExternalImpulse, GravityScale, LinearVelocity, Mass, RigidBody},
+    parry::shape::{self, Capsule},
+    prelude::{Collider, RayCaster, RayHits},
 };
 use body::Body;
 use focus::{camera_look_system, Focus};

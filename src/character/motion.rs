@@ -1,10 +1,5 @@
 use bevy::{
-    log::{info, warn},
-    math::Vec3,
-    prelude::{Component, KeyCode, Query, Res, With, Without},
-    render::camera::{self, Camera},
-    time::Time,
-    transform::components::Transform,
+    input::ButtonInput, log::{info, warn}, math::Vec3, prelude::{Component, KeyCode, Query, Res, With, Without}, render::camera::{self, Camera}, time::Time, transform::components::Transform
 };
 
 use bevy_mod_picking::backend::prelude::PickSet::Input;
@@ -26,7 +21,7 @@ pub struct Motion {
 
 pub fn update_player_motion(
     time: Res<Time>,
-    keys: Res<bevy_mod_picking::backend::prelude::PickSet::Input<KeyCode>,
+    keys: Res<ButtonInput<KeyCode>>,
     config: Res<Config>,
     key_bindings: Res<KeyBindings>,
     camera_query: Query<&mut Transform, (With<Camera>, Without<PlayerControl>)>,
@@ -45,8 +40,8 @@ pub fn update_player_motion(
         warn!("Player Motion System did not expected 1 camera(s) recieved {}, and 1 player(s) recieved {}", camera_query.iter().len(), query.iter().len());
     }
 
-    for (camera_transform, _, _) in camera_query.iter() {
-        for (mut linear_vel, mut motion, mut stance, _) in &mut query {
+    for camera_transform in camera_query.iter() {
+        for (mut linear_vel, mut motion, mut stance) in &mut query {
             // Perform the movement checks.
             let mut movement_vector: Vec3 = Vec3::ZERO.clone();
 
@@ -61,16 +56,16 @@ pub fn update_player_motion(
             let speed_vector: Vec3 = Vec3::from([computed_speed, computed_speed, computed_speed]);
 
             if keys.pressed(key_bindings.move_forward) {
-                movement_vector += camera_transform.forward();
+                movement_vector += camera_transform.forward().as_vec3();
             }
             if keys.pressed(key_bindings.move_backward) {
-                movement_vector += camera_transform.back();
+                movement_vector += camera_transform.back().as_vec3();
             }
             if keys.pressed(key_bindings.move_left) {
-                movement_vector += camera_transform.left();
+                movement_vector += camera_transform.left().as_vec3();
             }
             if keys.pressed(key_bindings.move_right) {
-                movement_vector += camera_transform.right();
+                movement_vector += camera_transform.right().as_vec3();
             }
 
             // apply the total movement vector.

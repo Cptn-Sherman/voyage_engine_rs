@@ -58,10 +58,10 @@ pub struct KeyBindings {
 impl Default for KeyBindings {
     fn default() -> Self {
         Self {
-            move_forward: KeyCode::W,
-            move_backward: KeyCode::S,
-            move_left: KeyCode::A,
-            move_right: KeyCode::D,
+            move_forward: KeyCode::KeyW,
+            move_backward: KeyCode::KeyS,
+            move_left: KeyCode::KeyA,
+            move_right: KeyCode::KeyD,
             move_ascend: KeyCode::Space,
             move_descend: KeyCode::ShiftLeft,
             toggle_sprint: KeyCode::ShiftLeft,
@@ -82,13 +82,12 @@ fn main() {
             TemporalAntiAliasPlugin,
             PhysicsPlugins::default(),
             DebugInterfacePlugin,
-            AudioPlugin,
             CharacterPlugin,
         ))
         .add_systems(PreStartup, create_camera)
         .add_systems(
             Startup,
-            (setup, apply_deferred, start_background_audio).chain(), // this system sometimes runs after the setup for the character plugin resulting in erradict behavior.
+            (setup, apply_deferred).chain(), 
         )
         .add_systems(
             Update,
@@ -101,17 +100,17 @@ fn main() {
         .run();
 }
 
-fn start_background_audio(asset_server: Res<AssetServer>, audio: Res<Audio>) {
-    // this file is for internal testing only, DO NOT DISTRIBUTE!
-    audio
-        .play(asset_server.load("audio\\liminal-spaces-ambient.ogg"))
-        .fade_in(AudioTween::new(
-            Duration::from_millis(1500),
-            AudioEasing::OutPowi(4),
-        ))
-        .with_volume(0.15)
-        .looped();
-}
+// fn start_background_audio(asset_server: Res<AssetServer>, audio: Res<AudioChannel<MainTrack>>) {
+//     // this file is for internal testing only, DO NOT DISTRIBUTE!
+//     audio
+//         .play(asset_server.load("audio\\liminal-spaces-ambient.ogg"))
+//         .fade_in(AudioTween::new(
+//             Duration::from_millis(1500),
+//             AudioEasing::OutPowi(4),
+//         ))
+//         .with_volume(0.15)
+//         .looped();
+// }
 
 // A unit struct to help identify the FPS UI component, since there may be many Text components
 #[derive(Component)]
@@ -228,7 +227,7 @@ fn setup(
         Collider::cuboid(plane_size, plane_thickness, plane_size),
         PbrBundle {
             mesh: meshes.add(Plane3d::default().mesh().size(plane_size, plane_size)),
-            material: materials.add(Color::rgb(0.3, 0.5, 0.3).into()),
+            material: materials.add(Color::srgb(0.3, 0.5, 0.3)),
             ..default()
         },
     ));
@@ -273,7 +272,7 @@ fn grab_cursor(mut primary_window: Query<&mut Window, With<PrimaryWindow>>) {
 }
 
 fn detect_toggle_cursor(
-    keys: Res<bevy_mod_picking::backend::prelude::PickSet>,
+    keys: Res<ButtonInput<KeyCode>>,
     key_bindings: Res<KeyBindings>,
     mut primary_window: Query<&mut Window, With<PrimaryWindow>>,
 ) {
@@ -309,7 +308,7 @@ fn toggle_grab_cursor(window: &mut Window) {
 // FIXME: filename timestamp fails if two screenshots occur in the same second, also formatting standards... idk.
 fn screenshot_on_equals(
     settings: Res<EngineSettings>,
-    keys: Res<bevy_mod_picking::backend::prelude::PickSet>,
+    keys: Res<ButtonInput<KeyCode>>,
     main_window: Query<Entity, With<PrimaryWindow>>,
     mut screenshot_manager: ResMut<ScreenshotManager>,
 ) {
