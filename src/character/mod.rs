@@ -56,7 +56,6 @@ pub struct Config {
     capsule_height: f32,
     ride_height: f32,
     ray_length_offset: f32,
-    downward_ray_length_max: f32,
     ride_spring_strength: f32,
     ride_spring_damper: f32,
     stance_lockout: f32,
@@ -73,7 +72,6 @@ impl Default for Config {
             capsule_height: 1.0,
             ride_height: 1.5,
             ray_length_offset: 0.5,
-            downward_ray_length_max: 0.5 + 1.5, // this returns ride_height + ray_length_offset.
             ride_spring_strength: 3500.0,
             ride_spring_damper: 300.0,
             stance_lockout: 0.25,
@@ -83,6 +81,16 @@ impl Default for Config {
             movement_decay: 0.90,
             look_sensitivity: 0.00012, // This value was taken from bevy_flycam.
         }
+    }
+}
+
+pub trait GetDownwardRayLengthMax {
+    fn get_downard_ray_length_max(&self) -> f32;
+}
+
+impl GetDownwardRayLengthMax for Config {
+    fn get_downard_ray_length_max(&self) -> f32 {
+        self.ride_height + self.ray_length_offset
     }
 }
 

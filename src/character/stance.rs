@@ -2,7 +2,7 @@ use bevy::{
     input::ButtonInput, log::{info, warn}, math::Vec3, prelude::{Component, KeyCode, Query, Res, With}, time::Time
 };
 use avian3d::prelude::*;
-
+use crate::character::GetDownwardRayLengthMax;
 use super::{
     motion::{apply_jump_force, apply_spring_force},
     Config, PlayerControl,
@@ -120,7 +120,7 @@ fn determine_next_stance(
     let mut next_stance: StanceType = stance.current.clone();
     // If your locked in you cannot change state.
     if !is_locked_out {
-        if ray_length > config.downward_ray_length_max {
+        if ray_length > config.get_downard_ray_length_max() {
             next_stance = StanceType::Airborne;
         } else if previous_stance == StanceType::Standing
             && stance.lockout <= 0.0
@@ -130,10 +130,10 @@ fn determine_next_stance(
         } else if ray_length < config.ride_height {
             next_stance = StanceType::Standing;
         } else if previous_stance != StanceType::Standing
-            && ray_length < config.downward_ray_length_max
+            && ray_length < config.get_downard_ray_length_max()
         {
             next_stance = StanceType::Landing;
-        } else if ray_length > config.downward_ray_length_max {
+        } else if ray_length > config.get_downard_ray_length_max() {
             next_stance = StanceType::Airborne;
         }
     }
