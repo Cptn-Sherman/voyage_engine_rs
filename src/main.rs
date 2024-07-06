@@ -24,6 +24,7 @@ use bevy::{
 
 use avian3d::prelude::*;
 use bevy_atmosphere::plugin::{AtmosphereCamera, AtmospherePlugin};
+use bevy_infinite_grid::{InfiniteGridBundle, InfiniteGridPlugin};
 use character::{CharacterPlugin, InputState};
 use chrono::{DateTime, Local};
 
@@ -81,7 +82,7 @@ fn main() {
             PhysicsPlugins::default(),
             DebugInterfacePlugin,
             CharacterPlugin,
-            AtmospherePlugin
+            InfiniteGridPlugin,
         ))
         .add_systems(PreStartup, create_camera)
         .add_systems(Startup, (setup, apply_deferred).chain())
@@ -195,11 +196,11 @@ fn create_camera(mut commands: Commands) {
                 ..Default::default()
             },
             // ! I cause the render to run out of memory or something... AtmosphereCamera::default(),
-            VolumetricFogSettings {
-                absorption: 0.1,
-                ..Default::default()
-            },
-            ShadowFilteringMethod::Temporal,
+            // VolumetricFogSettings {
+            //     absorption: 0.1,
+            //     ..Default::default()
+            // },
+            // ShadowFilteringMethod::Temporal,
             CameraThing,
         ))
         .insert(ScreenSpaceAmbientOcclusionBundle::default())
@@ -226,13 +227,15 @@ fn setup(
         },
     ));
 
+    commands.spawn(InfiniteGridBundle::default());
+
     // light
     commands
         .spawn((
             DirectionalLightBundle {
                 directional_light: DirectionalLight {
                     color: Color::srgb(1.0, 0.96, 0.95),
-                    illuminance: 50000.0,
+                    illuminance: 10000.0,
                     shadows_enabled: true,
                     shadow_depth_bias: 0.02,
                     shadow_normal_bias: 1.0,
