@@ -10,6 +10,7 @@ use bevy::render::render_asset::RenderAssetBytesPerFrame;
 use bevy::render::mesh::Mesh as BevyMesh;
 use bevy::render::mesh::Mesh;
 
+use bevy::render::settings::WgpuSettings;
 use bevy::render::view::screenshot::ScreenshotManager;
 use bevy::window::{CursorGrabMode, PrimaryWindow};
 use bevy::{
@@ -22,6 +23,7 @@ use bevy::{
 };
 
 use avian3d::prelude::*;
+use bevy_atmosphere::plugin::{AtmosphereCamera, AtmospherePlugin};
 use character::{CharacterPlugin, InputState};
 use chrono::{DateTime, Local};
 
@@ -79,6 +81,7 @@ fn main() {
             PhysicsPlugins::default(),
             DebugInterfacePlugin,
             CharacterPlugin,
+            AtmospherePlugin
         ))
         .add_systems(PreStartup, create_camera)
         .add_systems(Startup, (setup, apply_deferred).chain())
@@ -191,11 +194,12 @@ fn create_camera(mut commands: Commands) {
                 tonemapping: Tonemapping::TonyMcMapface,
                 ..Default::default()
             },
+            // ! I cause the render to run out of memory or something... AtmosphereCamera::default(),
             VolumetricFogSettings {
                 absorption: 0.1,
                 ..Default::default()
             },
-            ShadowFilteringMethod::Temporal, // NOt sure if this is the right setting.
+            ShadowFilteringMethod::Temporal,
             CameraThing,
         ))
         .insert(ScreenSpaceAmbientOcclusionBundle::default())

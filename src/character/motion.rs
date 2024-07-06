@@ -104,7 +104,7 @@ pub fn apply_jump_force(
     external_impulse: &mut ExternalImpulse,
     ray_length: f32,
 ) {
-    // Apply the stance cooldown now that we are jumping
+    // Apply the stance cooldown now that we are jumping.
     stance.lockout = config.stance_lockout;
 
     let half_jump_strength: f32 = config.jump_strength / 2.0;
