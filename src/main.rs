@@ -5,6 +5,7 @@ mod user_interface;
 mod utils;
 
 use bevy::pbr::{VolumetricFogSettings, VolumetricLight};
+use bevy::render::render_asset::RenderAssetBytesPerFrame;
 use bevy_kira_audio::prelude::*;
 
 use bevy::render::mesh::Mesh as BevyMesh;
@@ -76,6 +77,7 @@ fn main() {
         .init_resource::<KeyBindings>()
         .insert_resource(EngineSettings { ..default() })
         .insert_resource(DirectionalLightShadowMap { size: 4098 })
+        .insert_resource(RenderAssetBytesPerFrame::new(1_000_000_000))
         .add_plugins((
             DefaultPlugins,
             TemporalAntiAliasPlugin,
