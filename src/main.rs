@@ -4,6 +4,7 @@ mod terrain;
 mod user_interface;
 mod utils;
 
+use bevy::pbr::{VolumetricFogSettings, VolumetricLight};
 use bevy_kira_audio::prelude::*;
 
 use bevy::render::mesh::Mesh as BevyMesh;
@@ -19,7 +20,6 @@ use bevy::{
     pbr::{DirectionalLightShadowMap, ScreenSpaceAmbientOcclusionBundle, ShadowFilteringMethod},
     prelude::*,
 };
-
 
 use bevy_xpbd_3d::parry::shape;
 use bevy_xpbd_3d::prelude::Collider;
@@ -71,7 +71,6 @@ impl Default for KeyBindings {
 }
 
 fn main() {
-
     App::new()
         .init_resource::<InputState>()
         .init_resource::<KeyBindings>()
@@ -85,10 +84,7 @@ fn main() {
             CharacterPlugin,
         ))
         .add_systems(PreStartup, create_camera)
-        .add_systems(
-            Startup,
-            (setup, apply_deferred).chain(), 
-        )
+        .add_systems(Startup, (setup, apply_deferred).chain())
         .add_systems(
             Update,
             (
@@ -186,9 +182,7 @@ fn animate_light_direction(
 #[derive(Component)]
 struct CameraThing;
 
-fn create_camera(
-    mut commands: Commands,
-) {
+fn create_camera(mut commands: Commands) {
     commands
         .spawn((
             Camera3dBundle {
@@ -200,9 +194,7 @@ fn create_camera(
                 tonemapping: Tonemapping::TonyMcMapface,
                 ..Default::default()
             },
-            FogSettings {
-                color: Color::WHITE,
-                falloff: FogFalloff::Exponential { density: 0.0005 },
+            VolumetricFogSettings {
                 ..Default::default()
             },
             ShadowFilteringMethod::Temporal, // NOt sure if this is the right setting.
@@ -233,25 +225,27 @@ fn setup(
     ));
 
     // light
-    commands.spawn((
-        DirectionalLightBundle {
-            directional_light: DirectionalLight {
-                color: Color::srgb(1.0, 0.96, 0.95),
-                shadows_enabled: true,
-                shadow_depth_bias: 0.02,
-                shadow_normal_bias: 1.0,
+    commands
+        .spawn((
+            DirectionalLightBundle {
+                directional_light: DirectionalLight {
+                    color: Color::srgb(1.0, 0.96, 0.95),
+                    shadows_enabled: true,
+                    shadow_depth_bias: 0.02,
+                    shadow_normal_bias: 1.0,
+                    ..default()
+                },
+                transform: Transform::from_rotation(Quat::from_euler(
+                    EulerRot::ZYX,
+                    0.0,
+                    PI / 3.,
+                    -PI / 4.,
+                )),
                 ..default()
             },
-            transform: Transform::from_rotation(Quat::from_euler(
-                EulerRot::ZYX,
-                0.0,
-                PI / 3.,
-                -PI / 4.,
-            )),
-            ..default()
-        },
-        Sun,
-    ));
+            Sun,
+        ))
+        .insert(VolumetricLight);
 
     commands.spawn(SceneBundle {
         scene: asset_server.load("models/FlightHelmet/FlightHelmet.gltf#Scene0"),
