@@ -28,11 +28,14 @@ use bevy::{
 use avian3d::prelude::*;
 use bevy_atmosphere::plugin::{AtmosphereCamera, AtmospherePlugin};
 use bevy_infinite_grid::{InfiniteGridBundle, InfiniteGridPlugin};
+use bevy_kira_audio::{Audio, AudioControl, AudioEasing, AudioPlugin, AudioTween};
 use character::{CharacterPlugin, InputState};
 use chrono::{DateTime, Local};
+use light_consts::lux::DIRECT_SUNLIGHT;
 
 
 use std::f32::consts::{FRAC_PI_4, PI};
+use std::time::Duration;
 
 use bevy_mesh::{mesh_for_model, Model};
 
@@ -87,13 +90,14 @@ fn main() {
             DebugInterfacePlugin,
             CharacterPlugin,
             InfiniteGridPlugin,
+            // AtmospherePlugin,
+            AudioPlugin,
         ))
         .add_systems(PreStartup, (create_camera, increase_render_adapter_wgpu_limits))
-        .add_systems(Startup, (setup, create_voxel_mesh).chain())
+        .add_systems(Startup, (setup, start_background_audio, create_voxel_mesh).chain())
         .add_systems(
             Update,
             (
-                // print_render_adapter_wgpu_limits,
                 animate_light_direction,
                 detect_toggle_cursor,
                 screenshot_on_equals,
@@ -109,17 +113,17 @@ fn increase_render_adapter_wgpu_limits(
     info!("max_sampled_textures_per_shader_stage is {} ", render_adapter.limits().max_sampled_textures_per_shader_stage);
 }
 
-// fn start_background_audio(asset_server: Res<AssetServer>, audio: Res<AudioChannel<MainTrack>>) {
-//     // this file is for internal testing only, DO NOT DISTRIBUTE!
-//     audio
-//         .play(asset_server.load("audio\\liminal-spaces-ambient.ogg"))
-//         .fade_in(AudioTween::new(
-//             Duration::from_millis(1500),
-//             AudioEasing::OutPowi(4),
-//         ))
-//         .with_volume(0.15)
-//         .looped();
-// }
+fn start_background_audio(asset_server: Res<AssetServer>, audio: Res<Audio>) {
+    // this file is for internal testing only, DO NOT DISTRIBUTE!
+    audio
+        .into_inner().play(asset_server.load("audio\\liminal-spaces-ambient.ogg"))
+        .fade_in(AudioTween::new(
+            Duration::from_millis(1500),
+            AudioEasing::OutPowi(4),
+        ))
+        .with_volume(0.15)
+        .looped();
+}
 
 // A unit struct to help identify the FPS UI component, since there may be many Text components
 #[derive(Component)]
@@ -203,9 +207,9 @@ fn create_camera(mut commands: Commands) {
                 tonemapping: Tonemapping::TonyMcMapface,
                 ..Default::default()
             },
-            // ! I cause the render to run out of memory or something... AtmosphereCamera::default(),
+            // AtmosphereCamera::default(),
             VolumetricFogSettings {
-                absorption: 0.1,
+                density: 0.0025,
                 ..Default::default()
             },
             ShadowFilteringMethod::Temporal,
@@ -221,29 +225,16 @@ fn setup(
     mut materials: ResMut<Assets<StandardMaterial>>,
     asset_server: Res<AssetServer>,
 ) {
-    // Plane
-    let plane_size: f32 = 128.0;
-    let plane_thickness: f32 = 0.5;
+    // set up the infinite grid with default settings.
+    commands.spawn(InfiniteGridBundle::default());
 
-    commands.spawn((
-        RigidBody::Static,
-        Collider::cuboid(plane_size, plane_thickness, plane_size),
-        PbrBundle {
-            mesh: meshes.add(Plane3d::default().mesh().size(plane_size, plane_size)),
-            material: materials.add(Color::srgb(0.3, 0.5, 0.3)),
-            ..default()
-        },
-    ));
-
-    // commands.spawn(InfiniteGridBundle::default());
-
-    // light
+    // create the 'Sun' with volumetric Lighting enabled.
     commands
         .spawn((
             DirectionalLightBundle {
                 directional_light: DirectionalLight {
-                    color: Color::srgb(1.0, 0.96, 0.95),
-                    illuminance: 10000.0,
+                    color: Color::srgb(1.0, 0.92, 0.80),
+                    illuminance: DIRECT_SUNLIGHT,
                     shadows_enabled: true,
                     shadow_depth_bias: 0.02,
                     shadow_normal_bias: 1.0,
@@ -261,11 +252,26 @@ fn setup(
         ))
         .insert(VolumetricLight);
 
-    // commands.spawn(SceneBundle {
-    //     scene: asset_server.load("models/FlightHelmet/FlightHelmet.gltf#Scene0"),
-    //     transform: Transform::from_xyz(-16.0, 0.0, 16.0).with_scale(Vec3 { x: 8.0, y: 8.0, z: 8.0 }),
-    //     ..default()
-    // });
+    // Plane
+    let plane_size: f32 = 128.0;
+    let plane_thickness: f32 = 0.5;
+
+    commands.spawn((
+        RigidBody::Static,
+        Collider::cuboid(plane_size, plane_thickness, plane_size),
+        PbrBundle {
+            mesh: meshes.add(Plane3d::default().mesh().size(plane_size, plane_size)),
+            material: materials.add(Color::srgb(0.3, 0.5, 0.3)),
+            ..default()
+        },
+    ));
+
+
+    commands.spawn(SceneBundle {
+        scene: asset_server.load("models/FlightHelmet/FlightHelmet.gltf#Scene0"),
+        transform: Transform::from_xyz(-16.0, 0.0, 16.0).with_scale(Vec3 { x: 16.0, y: 16.0, z: 16.0 }),
+        ..default()
+    });
 
     
 
