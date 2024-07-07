@@ -196,11 +196,11 @@ fn create_camera(mut commands: Commands) {
                 ..Default::default()
             },
             // ! I cause the render to run out of memory or something... AtmosphereCamera::default(),
-            // VolumetricFogSettings {
-            //     absorption: 0.1,
-            //     ..Default::default()
-            // },
-            // ShadowFilteringMethod::Temporal,
+            VolumetricFogSettings {
+                absorption: 0.1,
+                ..Default::default()
+            },
+            ShadowFilteringMethod::Temporal,
             CameraThing,
         ))
         .insert(ScreenSpaceAmbientOcclusionBundle::default())

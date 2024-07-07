@@ -19,6 +19,9 @@ chrono = "0.4.38"
 bevy_atmosphere = "0.10.0"
 bevy_infinite_grid = {git = "https://github.com/tychedelia/bevy_infinite_grid.git"}
 
+[workspace]
+resolver = "2" # Important! wgpu/Bevy needs this!
+
 # Enable a small amount of optimization in debug mode
 [profile.dev]
 opt-level = 1
