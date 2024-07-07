@@ -143,7 +143,7 @@ fn spawn_player_system(
             mat_mesh_bundle: PbrBundle {
                 mesh: meshes.add(Mesh::from(Capsule3d::new(0.5, 0.75))),
                 material: materials.add(Color::srgb(1.0, 0.0, 0.0)),
-                transform: Transform::from_xyz(0.0, 8.0, 0.0),
+                transform: Transform::from_xyz(0.0, 32.0, 0.0),
                 ..default()
             },
             downward_ray: RayCaster::new(Vec3::ZERO, Dir3::NEG_Y),

@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 mod bevy_mesh;
 mod character;
 mod terrain;
@@ -10,7 +12,8 @@ use bevy::render::render_asset::RenderAssetBytesPerFrame;
 use bevy::render::mesh::Mesh as BevyMesh;
 use bevy::render::mesh::Mesh;
 
-use bevy::render::settings::WgpuSettings;
+use bevy::render::renderer::{RenderAdapter, RenderDevice, RenderInstance};
+use bevy::render::settings::{WgpuLimits, WgpuSettings};
 use bevy::render::view::screenshot::ScreenshotManager;
 use bevy::window::{CursorGrabMode, PrimaryWindow};
 use bevy::{
@@ -70,6 +73,7 @@ impl Default for KeyBindings {
 }
 
 fn main() {
+
     App::new()
         .init_resource::<InputState>()
         .init_resource::<KeyBindings>()
@@ -84,17 +88,25 @@ fn main() {
             CharacterPlugin,
             InfiniteGridPlugin,
         ))
-        .add_systems(PreStartup, create_camera)
-        .add_systems(Startup, (setup, apply_deferred).chain())
+        .add_systems(PreStartup, (create_camera, increase_render_adapter_wgpu_limits))
+        .add_systems(Startup, (setup, create_voxel_mesh).chain())
         .add_systems(
             Update,
             (
+                // print_render_adapter_wgpu_limits,
                 animate_light_direction,
                 detect_toggle_cursor,
                 screenshot_on_equals,
             ),
         )
         .run();
+}
+
+fn increase_render_adapter_wgpu_limits(
+    render_adapter: Res<RenderAdapter>,
+) {
+    render_adapter.limits().max_sampled_textures_per_shader_stage = 32;
+    info!("max_sampled_textures_per_shader_stage is {} ", render_adapter.limits().max_sampled_textures_per_shader_stage);
 }
 
 // fn start_background_audio(asset_server: Res<AssetServer>, audio: Res<AudioChannel<MainTrack>>) {
@@ -137,11 +149,6 @@ pub fn create_voxel_mesh(
     let start_x = -radius;
     let start_z = -radius;
 
-    // let debug_material = materials.add(StandardMaterial {
-    //     base_color_texture: Some(images.add(uv_debug_texture())),
-    //     ..default()
-    // });
-
     for i in start_x..length {
         for j in start_z..length {
             let x = i;
@@ -160,6 +167,7 @@ pub fn create_voxel_mesh(
                     base_color: Color::WHITE.into(),
                     ..default()
                 }),
+                transform: Transform::from_xyz(0.0, 0.0, 0.0),
                 ..default()
             });
         }
@@ -227,7 +235,7 @@ fn setup(
         },
     ));
 
-    commands.spawn(InfiniteGridBundle::default());
+    // commands.spawn(InfiniteGridBundle::default());
 
     // light
     commands
@@ -253,11 +261,14 @@ fn setup(
         ))
         .insert(VolumetricLight);
 
-    commands.spawn(SceneBundle {
-        scene: asset_server.load("models/FlightHelmet/FlightHelmet.gltf#Scene0"),
-        transform: Transform::from_xyz(-16.0, 0.0, 16.0).with_scale(Vec3 { x: 8.0, y: 8.0, z: 8.0 }),
-        ..default()
-    });
+    // commands.spawn(SceneBundle {
+    //     scene: asset_server.load("models/FlightHelmet/FlightHelmet.gltf#Scene0"),
+    //     transform: Transform::from_xyz(-16.0, 0.0, 16.0).with_scale(Vec3 { x: 8.0, y: 8.0, z: 8.0 }),
+    //     ..default()
+    // });
+
+    
+
 }
 
 fn grab_cursor(mut primary_window: Query<&mut Window, With<PrimaryWindow>>) {
