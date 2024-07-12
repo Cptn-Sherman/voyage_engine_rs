@@ -29,6 +29,7 @@ use avian3d::prelude::*;
 use bevy_atmosphere::plugin::{AtmosphereCamera, AtmospherePlugin};
 use bevy_infinite_grid::{InfiniteGridBundle, InfiniteGridPlugin};
 use bevy_kira_audio::{Audio, AudioControl, AudioEasing, AudioPlugin, AudioTween};
+use bevy_turborand::prelude::RngPlugin;
 use character::{CharacterPlugin, InputState};
 use chrono::{DateTime, Local};
 use light_consts::lux::DIRECT_SUNLIGHT;
@@ -83,6 +84,7 @@ fn main() {
         .insert_resource(RenderAssetBytesPerFrame::new(1_000_000_000))
         .add_plugins((
             DefaultPlugins,
+            RngPlugin::default(),
             TemporalAntiAliasPlugin,
             PhysicsPlugins::default(),
             DebugInterfacePlugin,

@@ -9,10 +9,11 @@ use bevy::{
     input::ButtonInput,
     log::{info, warn},
     math::Vec3,
-    prelude::{Component, Event, EventReader, EventWriter, KeyCode, Query, Res, With},
+    prelude::{Component, Event, EventReader, EventWriter, KeyCode, Query, Res, ResMut, With},
     time::Time,
 };
 use bevy_kira_audio::{Audio, AudioControl};
+use bevy_turborand::{DelegatedRng, GlobalRng};
 
 #[derive(Debug, PartialEq, Clone)]
 // each of these stance types needs to have a movement speed calculation, a
@@ -39,17 +40,21 @@ pub struct Stance {
 #[derive(Event)]
 pub struct FootstepEvent;
 
-pub fn debug_footsteps(mut ev_footstep: EventReader<FootstepEvent>, asset_server: Res<AssetServer>, audio: Res<Audio>) {
+pub fn debug_footsteps(mut ev_footstep: EventReader<FootstepEvent>, asset_server: Res<AssetServer>, audio: Res<Audio>, mut global_rng: ResMut<GlobalRng>) {
     let mut should_play = false;
     for ev in ev_footstep.read() {
         info!("FOOTSTEP!");
         should_play = true;
     }
     if should_play {
+        const PLAYBACK_RANGE: f64 = 0.4;
+        let random_playback_rate: f64 = global_rng.into_inner().f64() * PLAYBACK_RANGE + 0.8;
         audio
         .into_inner()
         .play(asset_server.load("audio\\footstep-fx.mp3"))
-        .with_volume(0.15);
+        .with_panning(0.3)
+        .with_playback_rate(random_playback_rate)
+        .with_volume(0.5);
     }
 }
 
@@ -112,7 +117,7 @@ pub fn update_player_stance(
                 StanceType::Standing => {
                     if stance.current == StanceType::Landing {
                         // we play the second standing soundeffect here.
-                        ev_footstep.send(FootstepEvent);
+                        //ev_footstep.send(FootstepEvent);
                     }
                 }
                 _ => {

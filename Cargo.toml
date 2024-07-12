@@ -18,6 +18,7 @@ acacia = "0.2.0"
 chrono = "0.4.38"
 bevy_atmosphere = "0.10.0"
 bevy_infinite_grid = { git = "https://github.com/tychedelia/bevy_infinite_grid.git" }
+bevy_turborand = "0.9.0"
 
 [workspace]
 resolver = "2" # Important! wgpu/Bevy needs this!

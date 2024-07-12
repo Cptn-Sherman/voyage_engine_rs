@@ -3,6 +3,7 @@ mod focus;
 mod motion;
 pub mod stance;
 
+use avian3d::prelude::*;
 use bevy::{
     app::{App, Plugin, Startup, Update},
     asset::{io::memory::Dir, Assets},
@@ -20,7 +21,6 @@ use bevy::{
     render::{camera::Camera, mesh::Mesh},
     transform::components::Transform,
 };
-use avian3d::prelude::*;
 
 use body::Body;
 use focus::{camera_look_system, Focus};
@@ -46,7 +46,8 @@ impl Plugin for CharacterPlugin {
                 update_player_motion,
                 camera_look_system,
                 debug_footsteps,
-            ).chain(),
+            )
+                .chain(),
         );
         app.add_event::<FootstepEvent>();
         info!("Actor plugin successfully initialized!");
