@@ -33,7 +33,6 @@ use character::{CharacterPlugin, InputState};
 use chrono::{DateTime, Local};
 use light_consts::lux::DIRECT_SUNLIGHT;
 
-
 use std::f32::consts::{FRAC_PI_4, PI};
 use std::time::Duration;
 
@@ -76,7 +75,6 @@ impl Default for KeyBindings {
 }
 
 fn main() {
-
     App::new()
         .init_resource::<InputState>()
         .init_resource::<KeyBindings>()
@@ -90,11 +88,16 @@ fn main() {
             DebugInterfacePlugin,
             CharacterPlugin,
             InfiniteGridPlugin,
-            // AtmospherePlugin,
             AudioPlugin,
         ))
-        .add_systems(PreStartup, (create_camera, increase_render_adapter_wgpu_limits))
-        .add_systems(Startup, (setup, start_background_audio, create_voxel_mesh).chain())
+        .add_systems(
+            PreStartup,
+            (create_camera, increase_render_adapter_wgpu_limits),
+        )
+        .add_systems(
+            Startup,
+            (setup, start_background_audio, create_voxel_mesh).chain(),
+        )
         .add_systems(
             Update,
             (
@@ -106,17 +109,23 @@ fn main() {
         .run();
 }
 
-fn increase_render_adapter_wgpu_limits(
-    render_adapter: Res<RenderAdapter>,
-) {
-    render_adapter.limits().max_sampled_textures_per_shader_stage = 32;
-    info!("max_sampled_textures_per_shader_stage is {} ", render_adapter.limits().max_sampled_textures_per_shader_stage);
+fn increase_render_adapter_wgpu_limits(render_adapter: Res<RenderAdapter>) {
+    render_adapter
+        .limits()
+        .max_sampled_textures_per_shader_stage = 32;
+    info!(
+        "max_sampled_textures_per_shader_stage is {} ",
+        render_adapter
+            .limits()
+            .max_sampled_textures_per_shader_stage
+    );
 }
 
 fn start_background_audio(asset_server: Res<AssetServer>, audio: Res<Audio>) {
     // this file is for internal testing only, DO NOT DISTRIBUTE!
     audio
-        .into_inner().play(asset_server.load("audio\\liminal-spaces-ambient.ogg"))
+        .into_inner()
+        .play(asset_server.load("audio\\liminal-spaces-ambient.ogg"))
         .fade_in(AudioTween::new(
             Duration::from_millis(1500),
             AudioEasing::OutPowi(4),
@@ -207,7 +216,6 @@ fn create_camera(mut commands: Commands) {
                 tonemapping: Tonemapping::TonyMcMapface,
                 ..Default::default()
             },
-            // AtmosphereCamera::default(),
             VolumetricFogSettings {
                 density: 0.0025,
                 ..Default::default()
@@ -266,15 +274,15 @@ fn setup(
         },
     ));
 
-
     commands.spawn(SceneBundle {
         scene: asset_server.load("models/FlightHelmet/FlightHelmet.gltf#Scene0"),
-        transform: Transform::from_xyz(-16.0, 0.0, 16.0).with_scale(Vec3 { x: 16.0, y: 16.0, z: 16.0 }),
+        transform: Transform::from_xyz(-16.0, 0.0, 16.0).with_scale(Vec3 {
+            x: 16.0,
+            y: 16.0,
+            z: 16.0,
+        }),
         ..default()
     });
-
-    
-
 }
 
 fn grab_cursor(mut primary_window: Query<&mut Window, With<PrimaryWindow>>) {
@@ -322,7 +330,6 @@ fn toggle_grab_cursor(window: &mut Window) {
 }
 
 /** This system was yonked from the screenshot example: https://bevyengine.org/examples/Window/screenshot/ */
-// FIXME: filename timestamp fails if two screenshots occur in the same second, also formatting standards... idk.
 fn screenshot_on_equals(
     settings: Res<EngineSettings>,
     keys: Res<ButtonInput<KeyCode>>,

@@ -74,3 +74,7 @@ global_time: 1:35:58pm
 local_time:  3:35:58pm
 date: Oct 07 2023 | fall
 tod: evening | UTC: +02:001
+
+
+- When the player is moving foward (possibly running/sprinting) it would be cool to give them a little speed boost when they jump maybe 50% of the movespeed is added to an impulse when you kick off the ground. Could also play a sound effect at this moment to signal the jump has happened. I think this might make the player controller feel less slow. Or maybe even when jumping you build up to a capped 20% speed increase by default. You are letting momentum help you move as long as your directional vector remains in the same direction you should be able to take advantage of thise energy. Maybe this scales with your athletic ability or stat.
+
