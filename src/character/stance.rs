@@ -1,12 +1,18 @@
-use bevy::{
-    input::ButtonInput, log::{info, warn}, math::Vec3, prelude::{Component, KeyCode, Query, Res, With}, time::Time
-};
-use avian3d::prelude::*;
-use crate::character::GetDownwardRayLengthMax;
 use super::{
     motion::{apply_jump_force, apply_spring_force},
     Config, PlayerControl,
 };
+use crate::character::GetDownwardRayLengthMax;
+use avian3d::prelude::*;
+use bevy::{
+    asset::AssetServer,
+    input::ButtonInput,
+    log::{info, warn},
+    math::Vec3,
+    prelude::{Component, Event, EventReader, EventWriter, KeyCode, Query, Res, With},
+    time::Time,
+};
+use bevy_kira_audio::{Audio, AudioControl};
 
 #[derive(Debug, PartialEq, Clone)]
 // each of these stance types needs to have a movement speed calculation, a
@@ -30,11 +36,40 @@ pub struct Stance {
     pub lockout: f32,
 }
 
+#[derive(Event)]
+pub struct FootstepEvent;
+
+pub fn debug_footsteps(mut ev_footstep: EventReader<FootstepEvent>, asset_server: Res<AssetServer>, audio: Res<Audio>) {
+    let mut should_play = false;
+    for ev in ev_footstep.read() {
+        info!("FOOTSTEP!");
+        should_play = true;
+    }
+    if should_play {
+        audio
+        .into_inner()
+        .play(asset_server.load("audio\\footstep-fx.mp3"))
+        .with_volume(0.15);
+    }
+}
+
 pub fn update_player_stance(
     time: Res<Time>,
     keys: Res<ButtonInput<KeyCode>>,
     config: Res<Config>,
-    mut query: Query<(&mut LinearVelocity, &mut ExternalForce, &mut ExternalImpulse, &mut GravityScale, &mut RayCaster, &RayHits, &mut Stance), With<PlayerControl>>,
+    mut query: Query<
+        (
+            &mut LinearVelocity,
+            &mut ExternalForce,
+            &mut ExternalImpulse,
+            &mut GravityScale,
+            &mut RayCaster,
+            &RayHits,
+            &mut Stance,
+        ),
+        With<PlayerControl>,
+    >,
+    mut ev_footstep: EventWriter<FootstepEvent>,
 ) {
     if query.is_empty() || query.iter().len() > 1 {
         warn!(
@@ -43,11 +78,20 @@ pub fn update_player_stance(
         );
     }
 
-    for (mut linear_vel, mut external_force, mut external_impulse, mut gravity_scale, mut caster, ray_hits, mut stance) in &mut query {
+    for (
+        mut linear_vel,
+        mut external_force,
+        mut external_impulse,
+        mut gravity_scale,
+        mut caster,
+        ray_hits,
+        mut stance,
+    ) in &mut query
+    {
         // We update stance_lockout.
         stance.lockout -= time.delta_seconds();
         stance.lockout = f32::clamp(stance.lockout, 0.0, 1.0);
-        
+
         // Compute the ray_length to a hit, if we don't hit anything we assume the ground is infinitly far away.
         let mut ray_length: f32 = f32::INFINITY;
         if let Some(hit) = ray_hits.iter_sorted().next() {
@@ -56,6 +100,26 @@ pub fn update_player_stance(
 
         // Compute the next stance for the player.
         let next_stance: StanceType = determine_next_stance(&keys, &config, &stance, ray_length);
+
+        // handle footstep sound event when the state has changed and only then.
+        if next_stance != stance.current {
+            match next_stance {
+                StanceType::Landing => {
+                    // Play first the step sound effect.
+                    // we are garenteed that this is the first tick were this new stance is equal to this value.
+                    ev_footstep.send(FootstepEvent);
+                }
+                StanceType::Standing => {
+                    if stance.current == StanceType::Landing {
+                        // we play the second standing soundeffect here.
+                        ev_footstep.send(FootstepEvent);
+                    }
+                }
+                _ => {
+                    // do nothing...
+                }
+            }
+        }
         let next_gravity_scale: f32;
 
         match next_stance {

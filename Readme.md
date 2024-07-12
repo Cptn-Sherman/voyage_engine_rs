@@ -31,7 +31,7 @@ Engine Info --> Right Aligned, Static
 voyage_ver: 0.01ab
 build_num:  545625
 rust_ver: 1.70.0
-bevy_ver: 0.11.3
+bevy_ver: 0.14.0
 backend: vulkan
 
 System Info --> Right Aligned, Static (except time)

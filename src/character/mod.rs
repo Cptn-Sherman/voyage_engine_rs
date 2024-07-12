@@ -25,7 +25,7 @@ use avian3d::prelude::*;
 use body::Body;
 use focus::{camera_look_system, Focus};
 use motion::{update_player_motion, Motion};
-use stance::{update_player_stance, Stance, StanceType};
+use stance::{debug_footsteps, update_player_stance, FootstepEvent, Stance, StanceType};
 
 use crate::{grab_cursor, CameraThing};
 
@@ -45,8 +45,10 @@ impl Plugin for CharacterPlugin {
                 update_player_stance,
                 update_player_motion,
                 camera_look_system,
+                debug_footsteps,
             ).chain(),
         );
+        app.add_event::<FootstepEvent>();
         info!("Actor plugin successfully initialized!");
     }
 }
