@@ -37,17 +37,19 @@ pub struct Stance {
     pub lockout: f32,
 }
 
+
+const PLAYBACK_RANGE: f64 = 0.4;
+
 #[derive(Event)]
 pub struct FootstepEvent;
 
-pub fn debug_footsteps(mut ev_footstep: EventReader<FootstepEvent>, asset_server: Res<AssetServer>, audio: Res<Audio>, mut global_rng: ResMut<GlobalRng>) {
+pub fn play_footstep_sfx(mut ev_footstep: EventReader<FootstepEvent>, asset_server: Res<AssetServer>, audio: Res<Audio>, mut global_rng: ResMut<GlobalRng>) {
     let mut should_play = false;
-    for ev in ev_footstep.read() {
+    for _ev in ev_footstep.read() {
         info!("FOOTSTEP!");
         should_play = true;
     }
     if should_play {
-        const PLAYBACK_RANGE: f64 = 0.4;
         let random_playback_rate: f64 = global_rng.into_inner().f64() * PLAYBACK_RANGE + 0.8;
         audio
         .into_inner()
