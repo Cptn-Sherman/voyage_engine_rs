@@ -25,7 +25,7 @@ use bevy::{
 use body::Body;
 use focus::{camera_look_system, Focus};
 use motion::{update_player_motion, Motion};
-use stance::{play_footstep_sfx, update_player_stance, FootstepEvent, Stance, StanceType};
+use stance::{play_footstep_sfx, tick_footstep, update_player_stance, ActionStep, FootstepEvent, Stance, StanceType, ACTION_STEP_DELTA_DEFAULT};
 
 use crate::{grab_cursor, CameraThing};
 
@@ -46,6 +46,7 @@ impl Plugin for CharacterPlugin {
                 update_player_motion,
                 camera_look_system,
                 play_footstep_sfx,
+                tick_footstep,
             )
                 .chain(),
         );
@@ -102,12 +103,6 @@ pub struct InputState {
     reader_motion: ManualEventReader<MouseMotion>,
 }
 
-// todo: create this one later
-// #[derive(Bundle)]
-// pub struct ActorBundle {
-//     body: CharacterBody,
-// }
-
 #[derive(Component)]
 pub struct PlayerControl;
 
@@ -127,6 +122,7 @@ pub struct PlayerBundle {
     motion: Motion,
     focus: Focus,
     stance: Stance,
+    action_step: ActionStep,
 }
 
 fn spawn_player_system(
@@ -165,6 +161,10 @@ fn spawn_player_system(
                 current: StanceType::Standing,
                 lockout: 0.0,
             },
+            action_step: ActionStep {
+                dir: stance::FootstepDirection::None,
+                delta: ACTION_STEP_DELTA_DEFAULT,
+            }
         },
         PlayerControl,
     )); // it doesn't find thiss thing... maybe it needs to be in the inner objct

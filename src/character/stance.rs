@@ -37,26 +37,93 @@ pub struct Stance {
     pub lockout: f32,
 }
 
-
 const PLAYBACK_RANGE: f64 = 0.4;
 
 #[derive(Event)]
-pub struct FootstepEvent;
+pub struct FootstepEvent {
+    dir: FootstepDirection,
+}
 
-pub fn play_footstep_sfx(mut ev_footstep: EventReader<FootstepEvent>, asset_server: Res<AssetServer>, audio: Res<Audio>, mut global_rng: ResMut<GlobalRng>) {
-    let mut should_play = false;
-    for _ev in ev_footstep.read() {
-        info!("FOOTSTEP!");
-        should_play = true;
+// this is the time in seconds between when the player takes a step. When running this is increased by the configured running speed multiplier.
+// todo: When the ActionStep happens that is the point in time we apply a small impulse downward so the spring can have a lil' bump.
+pub const ACTION_STEP_DELTA_DEFAULT: f32 = 0.85;
+
+#[derive(Component)]
+pub struct ActionStep {
+    pub(crate) dir: FootstepDirection,
+    pub(crate) delta: f32,
+}
+
+// ! this runs constantly... we want it to run only when the player is moving and maybe it is scaled by your current movement speed.
+pub(crate) fn tick_footstep(
+    mut ev_footstep: EventWriter<FootstepEvent>,
+    mut query: Query<&mut ActionStep>,
+    time: Res<Time>,
+) {
+    for mut action in query.iter_mut() {
+        action.delta -= time.delta_seconds();
+        if action.delta <= 0.0 {
+            action.delta += ACTION_STEP_DELTA_DEFAULT;
+
+            ev_footstep.send(FootstepEvent {
+                dir: FootstepDirection::None,
+            });
+        }
     }
+}
+
+pub enum FootstepDirection {
+    None,
+    Left,
+    Right,
+}
+
+impl Default for FootstepDirection {
+    fn default() -> Self {
+        FootstepDirection::None
+    }
+}
+
+impl FootstepDirection {
+    fn value(&self) -> f64 {
+        match self {
+            FootstepDirection::None => 0.5,
+            FootstepDirection::Left => 0.3,
+            FootstepDirection::Right => 0.7,
+        }
+    }
+
+    fn flip(&self) -> Self {
+        match self {
+            FootstepDirection::None => FootstepDirection::None,
+            FootstepDirection::Left => FootstepDirection::Right,
+            FootstepDirection::Right => FootstepDirection::Left,
+        }
+    }
+}
+
+pub fn play_footstep_sfx(
+    mut ev_footstep: EventReader<FootstepEvent>,
+    asset_server: Res<AssetServer>,
+    audio: Res<Audio>,
+    mut global_rng: ResMut<GlobalRng>,
+) {
+    let mut should_play: bool = false;
+    let mut panning: f64 = 0.5;
+
+    for ev in ev_footstep.read() {
+        should_play = true;
+        panning = ev.dir.value();
+    }
+
     if should_play {
-        let random_playback_rate: f64 = global_rng.into_inner().f64() * PLAYBACK_RANGE + 0.8;
+        let random_playback_rate: f64 = global_rng.f64() * PLAYBACK_RANGE + 0.8;
         audio
-        .into_inner()
-        .play(asset_server.load("audio\\footstep-fx.mp3"))
-        .with_panning(0.3)
-        .with_playback_rate(random_playback_rate)
-        .with_volume(0.5);
+            .into_inner()
+            .play(asset_server.load("audio\\footstep-fx.mp3"))
+            .with_panning(panning)
+            .with_playback_rate(random_playback_rate)
+            .with_volume(0.5);
     }
 }
 
@@ -70,9 +137,9 @@ pub fn update_player_stance(
             &mut ExternalForce,
             &mut ExternalImpulse,
             &mut GravityScale,
-            &mut RayCaster,
-            &RayHits,
             &mut Stance,
+            &RayCaster,
+            &RayHits,
         ),
         With<PlayerControl>,
     >,
@@ -90,9 +157,9 @@ pub fn update_player_stance(
         mut external_force,
         mut external_impulse,
         mut gravity_scale,
-        mut caster,
-        ray_hits,
         mut stance,
+        caster,
+        ray_hits,
     ) in &mut query
     {
         // We update stance_lockout.
@@ -112,21 +179,16 @@ pub fn update_player_stance(
         if next_stance != stance.current {
             match next_stance {
                 StanceType::Landing => {
-                    // Play first the step sound effect.
-                    // we are garenteed that this is the first tick were this new stance is equal to this value.
-                    ev_footstep.send(FootstepEvent);
+                    // This is the sound effect that plays when the player has jumped or fallen and will land with both feet on the ground.
+                    // this effect will play centered and will not pan in any direction.
+                    ev_footstep.send(FootstepEvent {
+                        dir: FootstepDirection::None,
+                    });
                 }
-                StanceType::Standing => {
-                    if stance.current == StanceType::Landing {
-                        // we play the second standing soundeffect here.
-                        //ev_footstep.send(FootstepEvent);
-                    }
-                }
-                _ => {
-                    // do nothing...
-                }
+                _ => (),
             }
         }
+
         let next_gravity_scale: f32;
 
         match next_stance {
