@@ -140,6 +140,9 @@ impl FootstepDirection {
     }
 }
 
+//! This should ideally not take in and load a new sound ever time and should be loaded once. ALSO, remove the inability to iterate over all the events this should be solved with an update.
+//! ALSO GENERALIZE THIS TO ANY SOUND.
+//! You should only need to send panning, volume and a sound effect tag to get the right one and it looks up from asset map or some shit.
 pub fn play_footstep_sfx(
     mut ev_footstep: EventReader<FootstepEvent>,
     mut global_rng: ResMut<GlobalRng>,
