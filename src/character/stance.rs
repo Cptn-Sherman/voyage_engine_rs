@@ -1,8 +1,8 @@
 use super::{
-    motion::{apply_jump_force, apply_spring_force},
+    motion::{apply_jump_force, apply_spring_force, Motion},
     Config, PlayerControl,
 };
-use crate::character::GetDownwardRayLengthMax;
+use crate::{character::GetDownwardRayLengthMax, ternary};
 use avian3d::prelude::*;
 use bevy::{
     asset::AssetServer,
@@ -31,6 +31,24 @@ pub enum StanceType {
     Climbing,
 }
 
+impl StanceType {
+    pub fn to_string(&self) -> &str {
+        match self {
+            StanceType::Airborne => "Airborne",
+            StanceType::Standing => "Standing",
+            StanceType::Landing => "Landing",
+            StanceType::Jumping => "Jumping",
+            StanceType::Crouching => "Crouching",
+            StanceType::Crawling => "Crawling",
+            StanceType::Prone => "Prone",
+            StanceType::Sliding => "Sliding",
+            StanceType::Vaulting => "Vaulting",
+            StanceType::Hanging => "Hanging",
+            StanceType::Climbing => "Climbing",
+        }
+    }
+}
+
 #[derive(Component)]
 pub struct Stance {
     pub current: StanceType,
@@ -39,14 +57,15 @@ pub struct Stance {
 
 const PLAYBACK_RANGE: f64 = 0.4;
 
-#[derive(Event)]
+#[derive(Event, Clone)]
 pub struct FootstepEvent {
     dir: FootstepDirection,
+    volume: f64,
 }
 
 // this is the time in seconds between when the player takes a step. When running this is increased by the configured running speed multiplier.
 // todo: When the ActionStep happens that is the point in time we apply a small impulse downward so the spring can have a lil' bump.
-pub const ACTION_STEP_DELTA_DEFAULT: f32 = 0.85;
+pub const ACTION_STEP_DELTA_DEFAULT: f32 = 0.55;
 
 #[derive(Component)]
 pub struct ActionStep {
@@ -54,24 +73,43 @@ pub struct ActionStep {
     pub(crate) delta: f32,
 }
 
-// ! this runs constantly... we want it to run only when the player is moving and maybe it is scaled by your current movement speed.
 pub(crate) fn tick_footstep(
     mut ev_footstep: EventWriter<FootstepEvent>,
-    mut query: Query<&mut ActionStep>,
+    mut query: Query<(&mut ActionStep, &Motion, &Stance)>,
     time: Res<Time>,
 ) {
-    for mut action in query.iter_mut() {
-        action.delta -= time.delta_seconds();
+    for (mut action, motion, stance) in query.iter_mut() {
+        // you must be on the ground for this sound to play.
+        if stance.current != StanceType::Standing  {
+            continue;
+        }
+        // if you are not moving and need to take more than 85% of your remaining step we play no sound.
+        if  motion.moving == false && action.delta >= ACTION_STEP_DELTA_DEFAULT * 0.85  {
+            continue;
+        }
+
+        // scale the speed based on if you are sprinting or if you are not moving and are resting your foot.
+        let mut scale: f32 = 1.0;
+        if motion.sprinting  == true || motion.moving == false {
+            scale = 1.45;
+        }
+
+        // reduce the time by elaspsed times the scale.
+        action.delta -= time.delta_seconds() * scale;
+        // if times is up increase the delta, flip the dir and queue the sound.
         if action.delta <= 0.0 {
             action.delta += ACTION_STEP_DELTA_DEFAULT;
-
+            action.dir.flip();
+            let vol: f64 = ternary!(motion.moving, 0.5, 0.1);
+            info!("stepped with moving: {}, with volume: {}", motion.moving, vol);
             ev_footstep.send(FootstepEvent {
-                dir: FootstepDirection::None,
+                dir: action.dir.clone(),
+                volume: vol,
             });
         }
     }
 }
-
+#[derive(Clone)]
 pub enum FootstepDirection {
     None,
     Left,
@@ -88,8 +126,8 @@ impl FootstepDirection {
     fn value(&self) -> f64 {
         match self {
             FootstepDirection::None => 0.5,
-            FootstepDirection::Left => 0.3,
-            FootstepDirection::Right => 0.7,
+            FootstepDirection::Left => 0.1,
+            FootstepDirection::Right => 0.9,
         }
     }
 
@@ -104,16 +142,18 @@ impl FootstepDirection {
 
 pub fn play_footstep_sfx(
     mut ev_footstep: EventReader<FootstepEvent>,
+    mut global_rng: ResMut<GlobalRng>,
     asset_server: Res<AssetServer>,
     audio: Res<Audio>,
-    mut global_rng: ResMut<GlobalRng>,
 ) {
     let mut should_play: bool = false;
     let mut panning: f64 = 0.5;
+    let mut volume: f64 = 0.5;
 
     for ev in ev_footstep.read() {
         should_play = true;
         panning = ev.dir.value();
+        volume = ev.volume;
     }
 
     if should_play {
@@ -123,7 +163,7 @@ pub fn play_footstep_sfx(
             .play(asset_server.load("audio\\footstep-fx.mp3"))
             .with_panning(panning)
             .with_playback_rate(random_playback_rate)
-            .with_volume(0.5);
+            .with_volume(volume);
     }
 }
 
@@ -183,6 +223,7 @@ pub fn update_player_stance(
                     // this effect will play centered and will not pan in any direction.
                     ev_footstep.send(FootstepEvent {
                         dir: FootstepDirection::None,
+                        volume: 1.0,
                     });
                 }
                 _ => (),

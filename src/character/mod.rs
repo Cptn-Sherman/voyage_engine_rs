@@ -80,8 +80,8 @@ impl Default for Config {
             ride_spring_damper: 300.0,
             stance_lockout: 0.25,
             jump_strength: 200.0,
-            movement_speed: 50.0,
-            sprint_speed_factor: 2.5,
+            movement_speed: 80.0,
+            sprint_speed_factor: 3.5,
             movement_decay: 0.90,
             look_sensitivity: 0.00012, // This value was taken from bevy_flycam.
         }
@@ -151,6 +151,7 @@ fn spawn_player_system(
             motion: Motion {
                 movement_vec: Vec3::from_array([0.0, 0.0, 0.0]),
                 sprinting: false,
+                moving: false,
             },
             focus: Focus {
                 point_of_focus: Vec3::from_array([0.0, 0.0, 0.0]),
