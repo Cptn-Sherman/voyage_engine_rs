@@ -65,7 +65,7 @@ pub struct FootstepEvent {
 
 // this is the time in seconds between when the player takes a step. When running this is increased by the configured running speed multiplier.
 // todo: When the ActionStep happens that is the point in time we apply a small impulse downward so the spring can have a lil' bump.
-pub const ACTION_STEP_DELTA_DEFAULT: f32 = 0.55;
+pub const ACTION_STEP_DELTA_DEFAULT: f32 = 0.60;
 
 #[derive(Component)]
 pub struct ActionStep {
@@ -92,8 +92,10 @@ pub(crate) fn tick_footstep(
         // scale the speed based on if you are sprinting or if you are not moving and are resting your foot.
         // when this value is higher you finish your step sooner.
         let mut scale: f32 = 1.0;
+        let mut offset: f32 = ternary!(motion.sprinting, config.ride_height_step_offset, -config.ride_height_step_offset);
         if motion.sprinting  == true || motion.moving == false {
             scale = 1.45;
+            offset *= 1.2; // this is kinda arbitrary.
         }
 
         // reduce the time by elaspsed times the scale.
@@ -107,8 +109,7 @@ pub(crate) fn tick_footstep(
                 dir: action.dir.clone(),
                 volume: vol,
             });
-
-            let offset: f32 = ternary!(motion.sprinting, config.ride_height_step_offset, -config.ride_height_step_offset);
+            // todo: ideally this will be offset by some amount it needs to happen after the step sound is played by like 0.25 of a second. You step then push off the ground and rise up.
             motion.current_ride_height = config.ride_height + (offset * (2.0 * vol as f32));
         }
     }
@@ -174,6 +175,8 @@ pub fn play_footstep_sfx(
     }
 }
 
+
+// todo: I want to try making it faster to move "forward" and slower to move left, right or backwards. Maybe we construct a const movement speed scaler for each direction.
 pub fn update_player_stance(
     time: Res<Time>,
     keys: Res<ButtonInput<KeyCode>>,

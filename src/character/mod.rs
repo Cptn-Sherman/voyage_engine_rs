@@ -83,7 +83,7 @@ impl Default for Config {
             stance_lockout: 0.25,
             jump_strength: 200.0,
             movement_speed: 80.0,
-            sprint_speed_factor: 3.5,
+            sprint_speed_factor: 3.8,
             movement_decay: 0.90,
             look_sensitivity: 0.00012, // This value was taken from bevy_flycam.
         }
