@@ -98,7 +98,7 @@ fn main() {
         )
         .add_systems(
             Startup,
-            (setup, start_background_audio, create_voxel_mesh).chain(),
+            (setup, start_background_audio).chain(),
         )
         .add_systems(
             Update,

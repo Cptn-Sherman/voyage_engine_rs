@@ -2,7 +2,7 @@ use super::{
     motion::{apply_jump_force, apply_spring_force, Motion},
     Config, PlayerControl,
 };
-use crate::{character::GetDownwardRayLengthMax, ternary};
+use crate::{character::GetDownwardRayLengthMax, ternary, utils::exp_decay};
 use avian3d::prelude::*;
 use bevy::{
     asset::AssetServer,
@@ -74,11 +74,12 @@ pub struct ActionStep {
 }
 
 pub(crate) fn tick_footstep(
+    config: Res<Config>,
     mut ev_footstep: EventWriter<FootstepEvent>,
-    mut query: Query<(&mut ActionStep, &Motion, &Stance)>,
+    mut query: Query<(&mut ActionStep, &mut Motion, &Stance)>,
     time: Res<Time>,
 ) {
-    for (mut action, motion, stance) in query.iter_mut() {
+    for (mut action, mut motion, stance) in query.iter_mut() {
         // you must be on the ground for this sound to play.
         if stance.current != StanceType::Standing  {
             continue;
@@ -89,6 +90,7 @@ pub(crate) fn tick_footstep(
         }
 
         // scale the speed based on if you are sprinting or if you are not moving and are resting your foot.
+        // when this value is higher you finish your step sooner.
         let mut scale: f32 = 1.0;
         if motion.sprinting  == true || motion.moving == false {
             scale = 1.45;
@@ -99,13 +101,15 @@ pub(crate) fn tick_footstep(
         // if times is up increase the delta, flip the dir and queue the sound.
         if action.delta <= 0.0 {
             action.delta += ACTION_STEP_DELTA_DEFAULT;
-            action.dir.flip();
-            let vol: f64 = ternary!(motion.moving, 0.5, 0.1);
-            info!("stepped with moving: {}, with volume: {}", motion.moving, vol);
+            action.dir = action.dir.flip();
+            let vol: f64 = ternary!(motion.moving, 0.5, 0.2);
             ev_footstep.send(FootstepEvent {
                 dir: action.dir.clone(),
                 volume: vol,
             });
+
+            let offset: f32 = ternary!(motion.sprinting, config.ride_height_step_offset, -config.ride_height_step_offset);
+            motion.current_ride_height = config.ride_height + (offset * (2.0 * vol as f32));
         }
     }
 }
@@ -126,8 +130,8 @@ impl FootstepDirection {
     fn value(&self) -> f64 {
         match self {
             FootstepDirection::None => 0.5,
-            FootstepDirection::Left => 0.1,
-            FootstepDirection::Right => 0.9,
+            FootstepDirection::Left => 0.3,
+            FootstepDirection::Right => 0.7,
         }
     }
 
@@ -140,9 +144,9 @@ impl FootstepDirection {
     }
 }
 
-//! This should ideally not take in and load a new sound ever time and should be loaded once. ALSO, remove the inability to iterate over all the events this should be solved with an update.
-//! ALSO GENERALIZE THIS TO ANY SOUND.
-//! You should only need to send panning, volume and a sound effect tag to get the right one and it looks up from asset map or some shit.
+// ! This should ideally not take in and load a new sound ever time and should be loaded once. ALSO, remove the inability to iterate over all the events this should be solved with an update.
+// ! ALSO GENERALIZE THIS TO ANY SOUND.
+// ! You should only need to send panning, volume and a sound effect tag to get the right one and it looks up from asset map or some shit.
 pub fn play_footstep_sfx(
     mut ev_footstep: EventReader<FootstepEvent>,
     mut global_rng: ResMut<GlobalRng>,
@@ -181,6 +185,7 @@ pub fn update_player_stance(
             &mut ExternalImpulse,
             &mut GravityScale,
             &mut Stance,
+            &mut Motion,
             &RayCaster,
             &RayHits,
         ),
@@ -201,6 +206,7 @@ pub fn update_player_stance(
         mut external_impulse,
         mut gravity_scale,
         mut stance,
+        mut motion,
         caster,
         ray_hits,
     ) in &mut query
@@ -235,11 +241,13 @@ pub fn update_player_stance(
 
         let next_gravity_scale: f32;
 
+
+
         match next_stance {
             StanceType::Landing => {
                 // Set the gravity scale to zero.
                 next_gravity_scale = 0.0;
-                apply_spring_force(&config, &mut linear_vel, &mut external_force, ray_length);
+                apply_spring_force(&config, &mut linear_vel, &mut external_force, ray_length, motion.current_ride_height);
             }
             StanceType::Standing => {
                 // Set the gravity scale to zero.
@@ -248,7 +256,9 @@ pub fn update_player_stance(
                 // Clear any persisting forces on the rigid body.
                 external_force.clear();
 
-                apply_spring_force(&config, &mut linear_vel, &mut external_force, ray_length);
+                
+                
+                apply_spring_force(&config, &mut linear_vel, &mut external_force, ray_length, motion.current_ride_height);
             }
             StanceType::Airborne => {
                 next_gravity_scale = 1.0;
@@ -278,6 +288,8 @@ pub fn update_player_stance(
             StanceType::Climbing => todo!(),
         }
 
+        // Lerp current_ride_height back to normal ride_height. Right now this assumes "normal" is standing.
+        motion.current_ride_height = exp_decay(motion.current_ride_height, config.ride_height, 8.0, time.delta_seconds());
         // Update the gravity scale.
         gravity_scale.0 = next_gravity_scale;
 

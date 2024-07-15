@@ -22,6 +22,7 @@ pub struct Motion {
     pub(crate) movement_vec: Vec3,
     pub(crate) sprinting: bool,
     pub(crate) moving: bool,
+    pub(crate) current_ride_height: f32,
 }
 
 pub fn update_player_motion(
@@ -83,6 +84,9 @@ pub fn update_player_motion(
             linear_vel.z = motion.movement_vec.z;
         }
     }
+
+
+    
 }
 
 pub fn apply_spring_force(
@@ -90,11 +94,12 @@ pub fn apply_spring_force(
     linear_vel: &mut LinearVelocity,
     external_force: &mut ExternalForce,
     ray_length: f32,
+    ride_height: f32,
 ) {
     // Find the diference between how close the capsule is to the surface beneath it.
     // Compute this value by subtracting the ray length from the set ride height
     // to find the diference in position.
-    let spring_offset = f32::abs(ray_length) - config.ride_height;
+    let spring_offset = f32::abs(ray_length) - ride_height;
     let spring_force =
         (spring_offset * config.ride_spring_strength) - (-linear_vel.y * config.ride_spring_damper);
 

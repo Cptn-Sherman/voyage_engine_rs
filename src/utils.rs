@@ -278,3 +278,10 @@ pub fn get_valid_extension<'a>(extension: &'a str, ext_type: ExtensionType) -> &
         default_extension
     }
 }
+
+
+
+// pulled this from Freya Holmer's Lerp smoothing is broken talk. https://www.youtube.com/watch?v=LSNQuFEDOyQ
+pub fn exp_decay(a: f32, b: f32, decay: f32, delta_time: f32) -> f32 {
+    return b + (a - b) * (-decay * delta_time).exp()
+}

@@ -15,8 +15,7 @@ use bevy::{
     math::{Dir3, Vec3},
     pbr::{MaterialMeshBundle, PbrBundle, StandardMaterial},
     prelude::{
-        apply_deferred, default, Bundle, Capsule3d, Commands, Component, Entity, IntoSystemConfigs,
-        Query, ResMut, Resource, With, Without,
+        apply_deferred, default, Bundle, Capsule3d, Commands, Component, Entity, IntoSystemConfigs, Query, Res, ResMut, Resource, With, Without
     },
     render::{camera::Camera, mesh::Mesh},
     transform::components::Transform,
@@ -59,6 +58,7 @@ impl Plugin for CharacterPlugin {
 pub struct Config {
     capsule_height: f32,
     ride_height: f32,
+    ride_height_step_offset: f32,
     ray_length_offset: f32,
     ride_spring_strength: f32,
     ride_spring_damper: f32,
@@ -68,6 +68,7 @@ pub struct Config {
     sprint_speed_factor: f32,
     movement_decay: f32,
     look_sensitivity: f32,
+
 }
 
 impl Default for Config {
@@ -75,6 +76,7 @@ impl Default for Config {
         Self {
             capsule_height: 1.0,
             ride_height: 1.5,
+            ride_height_step_offset: 0.25,
             ray_length_offset: 0.5,
             ride_spring_strength: 3500.0,
             ride_spring_damper: 300.0,
@@ -126,6 +128,7 @@ pub struct PlayerBundle {
 }
 
 fn spawn_player_system(
+    config: Res<Config>,
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
@@ -152,6 +155,7 @@ fn spawn_player_system(
                 movement_vec: Vec3::from_array([0.0, 0.0, 0.0]),
                 sprinting: false,
                 moving: false,
+                current_ride_height: config.ride_height,
             },
             focus: Focus {
                 point_of_focus: Vec3::from_array([0.0, 0.0, 0.0]),
@@ -163,7 +167,7 @@ fn spawn_player_system(
                 lockout: 0.0,
             },
             action_step: ActionStep {
-                dir: stance::FootstepDirection::None,
+                dir: stance::FootstepDirection::Right,
                 delta: ACTION_STEP_DELTA_DEFAULT,
             }
         },
