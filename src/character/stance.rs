@@ -5,14 +5,9 @@ use super::{
 use crate::{character::GetDownwardRayLengthMax, ternary, utils::exp_decay};
 use avian3d::prelude::*;
 use bevy::{
-    asset::AssetServer,
-    input::ButtonInput,
-    log::{info, warn},
-    math::Vec3,
-    prelude::{Component, Event, EventReader, EventWriter, KeyCode, Query, Res, ResMut, With},
-    time::Time,
+    asset::{AssetServer, Handle}, input::ButtonInput, log::{info, warn}, math::Vec3, prelude::{Commands, Component, Event, EventReader, EventWriter, KeyCode, Query, Res, ResMut, Resource, With}, time::Time
 };
-use bevy_kira_audio::{Audio, AudioControl};
+use bevy_kira_audio::{Audio, AudioControl, AudioSource};
 use bevy_turborand::{DelegatedRng, GlobalRng};
 
 #[derive(Debug, PartialEq, Clone)]
@@ -145,14 +140,25 @@ impl FootstepDirection {
     }
 }
 
+#[derive(Resource)]
+pub struct MyAudioHandle(Handle<AudioSource>);
+
+pub fn load_footstep_sfx(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+) {
+    let handle = asset_server.load("audio\\footstep-fx.mp3");
+    commands.insert_resource(MyAudioHandle(handle.clone()));
+}
+
 // ! This should ideally not take in and load a new sound ever time and should be loaded once. ALSO, remove the inability to iterate over all the events this should be solved with an update.
 // ! ALSO GENERALIZE THIS TO ANY SOUND.
 // ! You should only need to send panning, volume and a sound effect tag to get the right one and it looks up from asset map or some shit.
 pub fn play_footstep_sfx(
     mut ev_footstep: EventReader<FootstepEvent>,
     mut global_rng: ResMut<GlobalRng>,
-    asset_server: Res<AssetServer>,
     audio: Res<Audio>,
+    my_audio_handle: Res<MyAudioHandle>,
 ) {
     let mut should_play: bool = false;
     let mut panning: f64 = 0.5;
@@ -168,7 +174,7 @@ pub fn play_footstep_sfx(
         let random_playback_rate: f64 = global_rng.f64() * PLAYBACK_RANGE + 0.8;
         audio
             .into_inner()
-            .play(asset_server.load("audio\\footstep-fx.mp3"))
+            .play(my_audio_handle.0.clone())
             .with_panning(panning)
             .with_playback_rate(random_playback_rate)
             .with_volume(volume);
@@ -336,6 +342,5 @@ fn determine_next_stance(
             previous_stance, next_stance
         );
     }
-
     return next_stance;
 }

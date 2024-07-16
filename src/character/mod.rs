@@ -24,7 +24,7 @@ use bevy::{
 use body::Body;
 use focus::{camera_look_system, Focus};
 use motion::{update_player_motion, Motion};
-use stance::{play_footstep_sfx, tick_footstep, update_player_stance, ActionStep, FootstepEvent, Stance, StanceType, ACTION_STEP_DELTA_DEFAULT};
+use stance::{load_footstep_sfx, play_footstep_sfx, tick_footstep, update_player_stance, ActionStep, FootstepEvent, Stance, StanceType, ACTION_STEP_DELTA_DEFAULT};
 
 use crate::{grab_cursor, CameraThing};
 
@@ -36,7 +36,7 @@ impl Plugin for CharacterPlugin {
         app.insert_resource(Config::default()); // later we will load from some toml file
         app.add_systems(
             Startup,
-            (spawn_player_system, attached_camera_system, grab_cursor).chain(),
+            (spawn_player_system, attached_camera_system, grab_cursor, load_footstep_sfx).chain(),
         );
         app.add_systems(
             Update,
