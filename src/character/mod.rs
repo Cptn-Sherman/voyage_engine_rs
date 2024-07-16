@@ -6,7 +6,7 @@ pub mod stance;
 use avian3d::prelude::*;
 use bevy::{
     app::{App, Plugin, Startup, Update},
-    asset::{io::memory::Dir, Assets},
+    asset::Assets,
     color::Color,
     ecs::event::ManualEventReader,
     hierarchy::{BuildChildren, Parent},
@@ -15,7 +15,8 @@ use bevy::{
     math::{Dir3, Vec3},
     pbr::{MaterialMeshBundle, PbrBundle, StandardMaterial},
     prelude::{
-        apply_deferred, default, Bundle, Capsule3d, Commands, Component, Entity, IntoSystemConfigs, Query, Res, ResMut, Resource, With, Without
+        default, Bundle, Capsule3d, Commands, Component, Entity, IntoSystemConfigs, Query, Res,
+        ResMut, Resource, With, Without,
     },
     render::{camera::Camera, mesh::Mesh},
     transform::components::Transform,
@@ -24,7 +25,10 @@ use bevy::{
 use body::Body;
 use focus::{camera_look_system, Focus};
 use motion::{update_player_motion, Motion};
-use stance::{load_footstep_sfx, play_footstep_sfx, tick_footstep, update_player_stance, ActionStep, FootstepEvent, Stance, StanceType, ACTION_STEP_DELTA_DEFAULT};
+use stance::{
+    load_footstep_sfx, play_footstep_sfx, tick_footstep, update_player_stance, ActionStep,
+    FootstepEvent, Stance, StanceType, ACTION_STEP_DELTA_DEFAULT,
+};
 
 use crate::{grab_cursor, CameraThing};
 
@@ -36,7 +40,13 @@ impl Plugin for CharacterPlugin {
         app.insert_resource(Config::default()); // later we will load from some toml file
         app.add_systems(
             Startup,
-            (spawn_player_system, attached_camera_system, grab_cursor, load_footstep_sfx).chain(),
+            (
+                spawn_player_system,
+                attached_camera_system,
+                grab_cursor,
+                load_footstep_sfx,
+            )
+                .chain(),
         );
         app.add_systems(
             Update,
@@ -68,7 +78,6 @@ pub struct Config {
     sprint_speed_factor: f32,
     movement_decay: f32,
     look_sensitivity: f32,
-
 }
 
 impl Default for Config {
@@ -76,7 +85,7 @@ impl Default for Config {
         Self {
             capsule_height: 1.0,
             ride_height: 1.5,
-            ride_height_step_offset: 0.25,
+            ride_height_step_offset: 0.15,
             ray_length_offset: 0.5,
             ride_spring_strength: 3500.0,
             ride_spring_damper: 300.0,
@@ -169,10 +178,10 @@ fn spawn_player_system(
             action_step: ActionStep {
                 dir: stance::FootstepDirection::Right,
                 delta: ACTION_STEP_DELTA_DEFAULT,
-            }
+            },
         },
         PlayerControl,
-    )); // it doesn't find thiss thing... maybe it needs to be in the inner objct
+    ));
     info!("Spawned Player Actor");
 }
 

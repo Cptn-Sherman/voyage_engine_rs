@@ -16,7 +16,6 @@ num-traits = "0.2.14"
 num-integer = "0.1.45"
 acacia = "0.2.0"
 chrono = "0.4.38"
-bevy_atmosphere = "0.10.0"
 bevy_infinite_grid = { git = "https://github.com/tychedelia/bevy_infinite_grid.git" }
 bevy_turborand = "0.9.0"
 

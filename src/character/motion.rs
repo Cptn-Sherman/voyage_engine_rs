@@ -42,7 +42,7 @@ pub fn update_player_motion(
     }
 
     for camera_transform in camera_query.iter() {
-        for (mut linear_vel, mut motion, mut stance) in &mut query {
+        for (mut linear_vel, mut motion, mut _stance) in &mut query {
             // Perform the movement checks.
             let mut movement_vector: Vec3 = Vec3::ZERO.clone();
 
@@ -127,7 +127,7 @@ pub fn apply_jump_force(
     // maybe instead of half the strength getting added to the up we added it directionally only so you always jump x height but can
     // use more of the timing to aid in forward momentum.
 
-    //remove any previous impulse on the object.
+    // remove any previous impulse on the object.
     external_impulse.clear();
     external_impulse.apply_impulse(Vec3::from((0.0, dynamic_jump_strength, 0.0)).into());
 

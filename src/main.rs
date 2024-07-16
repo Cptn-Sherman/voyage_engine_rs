@@ -7,13 +7,15 @@ mod user_interface;
 mod utils;
 
 use bevy::pbr::{VolumetricFogSettings, VolumetricLight};
-use bevy::render::render_asset::RenderAssetBytesPerFrame;
+use bevy::render::render_asset::{RenderAssetBytesPerFrame, RenderAssetUsages};
 
-use bevy::render::mesh::Mesh as BevyMesh;
+use bevy::render::mesh::{Indices, Mesh as BevyMesh, PrimitiveTopology, VertexAttributeValues};
 use bevy::render::mesh::Mesh;
 
+use bevy::render::render_resource::{AddressMode, SamplerDescriptor};
 use bevy::render::renderer::{RenderAdapter, RenderDevice, RenderInstance};
 use bevy::render::settings::{WgpuLimits, WgpuSettings};
+use bevy::render::texture::{ImageAddressMode, ImageLoaderSettings, ImageSampler, ImageSamplerDescriptor};
 use bevy::render::view::screenshot::ScreenshotManager;
 use bevy::window::{CursorGrabMode, PrimaryWindow};
 use bevy::{
@@ -26,7 +28,6 @@ use bevy::{
 };
 
 use avian3d::prelude::*;
-use bevy_atmosphere::plugin::{AtmosphereCamera, AtmospherePlugin};
 use bevy_infinite_grid::{InfiniteGridBundle, InfiniteGridPlugin};
 use bevy_kira_audio::{Audio, AudioControl, AudioEasing, AudioPlugin, AudioTween};
 use bevy_turborand::prelude::RngPlugin;
@@ -236,7 +237,7 @@ fn setup(
     asset_server: Res<AssetServer>,
 ) {
     // set up the infinite grid with default settings.
-    commands.spawn(InfiniteGridBundle::default());
+    //commands.spawn(InfiniteGridBundle::default());
 
     // create the 'Sun' with volumetric Lighting enabled.
     commands
@@ -266,25 +267,80 @@ fn setup(
     let plane_size: f32 = 128.0;
     let plane_thickness: f32 = 0.5;
 
+    let sampler_desc = ImageSamplerDescriptor {
+        address_mode_u: ImageAddressMode::Repeat,
+        address_mode_v: ImageAddressMode::Repeat,
+        ..Default::default()
+    };
+
+    let settings = move |s: &mut ImageLoaderSettings| {
+        s.sampler = ImageSampler::Descriptor(sampler_desc.clone());
+    };
+
+    let proto_material = materials.add(StandardMaterial {
+        base_color_texture: Some(asset_server.load_with_settings("textures/texture_02.png", settings)),
+        alpha_mode: AlphaMode::Opaque,
+        unlit: true,
+        ..default()
+    });
+
     commands.spawn((
         RigidBody::Static,
         Collider::cuboid(plane_size, plane_thickness, plane_size),
         PbrBundle {
-            mesh: meshes.add(Plane3d::default().mesh().size(plane_size, plane_size)),
-            material: materials.add(Color::srgb(0.3, 0.5, 0.3)),
+            mesh: generate_plane_mesh(&mut meshes, plane_size, plane_size, 0.5), //meshes.add(Plane3d::default().mesh().size(plane_size, plane_size)),
+            transform: Transform::from_xyz(0.0, 1.0, 0.0),
+            material: proto_material,
             ..default()
         },
     ));
 
     commands.spawn(SceneBundle {
         scene: asset_server.load("models/FlightHelmet/FlightHelmet.gltf#Scene0"),
-        transform: Transform::from_xyz(-16.0, 0.0, 16.0).with_scale(Vec3 {
+        transform: Transform::from_xyz(-16.0, 1.0, 16.0).with_scale(Vec3 {
             x: 16.0,
             y: 16.0,
             z: 16.0,
         }),
         ..default()
     });
+}
+
+
+
+fn generate_plane_mesh(meshes: &mut ResMut<Assets<Mesh>>, width: f32, length: f32, uv_scale: f32) -> Handle<Mesh> {
+    let half_width = width / 2.0;
+    let half_length = length / 2.0;
+
+    let vertices = vec![
+        // Top face
+        ([-half_width, 0.0, half_length], [0.0, 1.0, 0.0], [0.0, uv_scale * length]),   // Top-left
+        ([half_width, 0.0, half_length], [0.0, 1.0, 0.0], [uv_scale * width, uv_scale * length]),    // Top-right
+        ([half_width, 0.0, -half_length], [0.0, 1.0, 0.0], [uv_scale * width, 0.0]),   // Bottom-right
+        ([-half_width, 0.0, -half_length], [0.0, 1.0, 0.0], [0.0, 0.0]),  // Bottom-left
+    ];
+
+    let indices = vec![
+        0, 1, 2, 2, 3, 0, // top face
+    ];
+
+    let mut positions = Vec::new();
+    let mut normals = Vec::new();
+    let mut uvs = Vec::new();
+
+    for (position, normal, uv) in vertices {
+        positions.push(position);
+        normals.push(normal);
+        uvs.push(uv);
+    }
+
+    let mut mesh = Mesh::new(PrimitiveTopology::TriangleList, RenderAssetUsages::RENDER_WORLD);
+    mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, VertexAttributeValues::from(positions));
+    mesh.insert_attribute(Mesh::ATTRIBUTE_NORMAL, VertexAttributeValues::from(normals));
+    mesh.insert_attribute(Mesh::ATTRIBUTE_UV_0, VertexAttributeValues::from(uvs));
+    mesh.insert_indices(Indices::U32(indices));
+
+    meshes.add(mesh)
 }
 
 fn grab_cursor(mut primary_window: Query<&mut Window, With<PrimaryWindow>>) {
