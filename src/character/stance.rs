@@ -82,7 +82,7 @@ pub(crate) fn tick_footstep(
             continue;
         }
         // if you are not moving and need to take more than 85% of your remaining step we play no sound.
-        if  motion.moving == false && action.delta >= ACTION_STEP_DELTA_DEFAULT * 0.85  {
+        if  motion.moving == false && action.delta >= ACTION_STEP_DELTA_DEFAULT * 0.5  {
             continue;
         }
 
@@ -108,8 +108,8 @@ pub(crate) fn tick_footstep(
         // if times is up increase the delta, flip the dir and queue the sound.
         if action.delta <= 0.0 {
             action.delta += ACTION_STEP_DELTA_DEFAULT;
-            action.bumped = false; // reset the bumped flag.
             action.dir = action.dir.flip();
+            action.bumped = false; // reset the bumped flag.
             ev_footstep.send(FootstepEvent {
                 dir: action.dir.clone(),
                 volume: vol,
