@@ -55,6 +55,7 @@ const PLAYBACK_RANGE: f64 = 0.4;
 #[derive(Event, Clone)]
 pub struct FootstepEvent {
     dir: FootstepDirection,
+
     volume: f64,
 }
 
@@ -65,6 +66,7 @@ pub const ACTION_STEP_DELTA_DEFAULT: f32 = 0.60;
 #[derive(Component)]
 pub struct ActionStep {
     pub(crate) dir: FootstepDirection,
+    pub(crate) bumped: bool,
     pub(crate) delta: f32,
 }
 
@@ -95,17 +97,23 @@ pub(crate) fn tick_footstep(
 
         // reduce the time by elaspsed times the scale.
         action.delta -= time.delta_seconds() * scale;
+        let vol: f64 = ternary!(motion.moving, 0.5, 0.2);
+
+        if action.delta <= (ACTION_STEP_DELTA_DEFAULT / 2.0) && action.bumped == false {
+            // apply a small impulse downward so the spring can have a lil' bump.
+            motion.current_ride_height = config.ride_height + (offset * (2.0 * vol as f32));
+            action.bumped = true;
+        }
+
         // if times is up increase the delta, flip the dir and queue the sound.
         if action.delta <= 0.0 {
             action.delta += ACTION_STEP_DELTA_DEFAULT;
+            action.bumped = false; // reset the bumped flag.
             action.dir = action.dir.flip();
-            let vol: f64 = ternary!(motion.moving, 0.5, 0.2);
             ev_footstep.send(FootstepEvent {
                 dir: action.dir.clone(),
                 volume: vol,
             });
-            // todo: ideally this will be offset by some amount it needs to happen after the step sound is played by like 0.25 of a second. You step then push off the ground and rise up.
-            motion.current_ride_height = config.ride_height + (offset * (2.0 * vol as f32));
         }
     }
 }

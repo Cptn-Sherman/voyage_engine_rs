@@ -177,6 +177,7 @@ fn spawn_player_system(
             },
             action_step: ActionStep {
                 dir: stance::FootstepDirection::Right,
+                bumped: false,
                 delta: ACTION_STEP_DELTA_DEFAULT,
             },
         },
