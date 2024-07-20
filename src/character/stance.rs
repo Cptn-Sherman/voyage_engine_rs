@@ -81,8 +81,13 @@ pub(crate) fn tick_footstep(
         if stance.current != StanceType::Standing  {
             continue;
         }
+
+        const LOCKIN_ACTION_THRESHOLD_PERCENTAGE: f32 = 0.05;
+        const BUMP_ACTION_THRESHOLD_PERCENTAGE: f32 = 0.25;
+        const BUMP_REMAINING_ACTION_STEP: f32 = ACTION_STEP_DELTA_DEFAULT * (1.0 - BUMP_ACTION_THRESHOLD_PERCENTAGE);
+        const LOCKIN_ACTION_STEP_DELTA: f32 = ACTION_STEP_DELTA_DEFAULT * (1.0 - LOCKIN_ACTION_THRESHOLD_PERCENTAGE);
         // if you are not moving and need to take more than 85% of your remaining step we play no sound.
-        if  motion.moving == false && action.delta >= ACTION_STEP_DELTA_DEFAULT * 0.5  {
+        if  motion.moving == false && action.delta >= LOCKIN_ACTION_STEP_DELTA {
             continue;
         }
 
@@ -97,19 +102,18 @@ pub(crate) fn tick_footstep(
 
         // reduce the time by elaspsed times the scale.
         action.delta -= time.delta_seconds() * scale;
-        let vol: f64 = ternary!(motion.moving, 0.5, 0.2);
+        let vol: f64 = ternary!(motion.moving, 0.5, 0.25);
 
-        if action.delta <= (ACTION_STEP_DELTA_DEFAULT / 2.0) && action.bumped == false {
-            // apply a small impulse downward so the spring can have a lil' bump.
+        if action.delta <= BUMP_REMAINING_ACTION_STEP && action.bumped == false {
             motion.current_ride_height = config.ride_height + (offset * (2.0 * vol as f32));
             action.bumped = true;
         }
 
-        // if times is up increase the delta, flip the dir and queue the sound.
+        // if the inter step delta has elapsed increase the delta, flip the dir, reset the bump, and queue the sound event.
         if action.delta <= 0.0 {
             action.delta += ACTION_STEP_DELTA_DEFAULT;
             action.dir = action.dir.flip();
-            action.bumped = false; // reset the bumped flag.
+            action.bumped = false; 
             ev_footstep.send(FootstepEvent {
                 dir: action.dir.clone(),
                 volume: vol,

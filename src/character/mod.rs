@@ -19,7 +19,7 @@ use bevy::{
         ResMut, Resource, With, Without,
     },
     render::{camera::Camera, mesh::Mesh},
-    transform::components::Transform,
+    transform::components::{GlobalTransform, Transform},
 };
 
 use body::Body;
@@ -92,7 +92,7 @@ impl Default for Config {
             stance_lockout: 0.25,
             jump_strength: 200.0,
             movement_speed: 80.0,
-            sprint_speed_factor: 3.8,
+            sprint_speed_factor: 1.5,
             movement_decay: 0.90,
             look_sensitivity: 0.00012, // This value was taken from bevy_flycam.
         }
@@ -126,7 +126,9 @@ pub struct PlayerBundle {
     mass: Mass,
     gravity_scale: GravityScale,
     collider: Collider,
-    mat_mesh_bundle: MaterialMeshBundle<StandardMaterial>,
+    transform: Transform,
+    global_transform: GlobalTransform,
+    //mat_mesh_bundle: MaterialMeshBundle<StandardMaterial>,
     downward_ray: RayCaster,
     ray_hits: RayHits,
     body: Body,
@@ -151,12 +153,13 @@ fn spawn_player_system(
             mass: Mass(20.0),
             gravity_scale: GravityScale(1.0),
             collider: Collider::capsule(0.75, 0.5),
-            mat_mesh_bundle: PbrBundle {
-                mesh: meshes.add(Mesh::from(Capsule3d::new(0.5, 0.75))),
-                material: materials.add(Color::srgb(1.0, 0.0, 0.0)),
-                transform: Transform::from_xyz(0.0, 32.0, 0.0),
-                ..default()
-            },
+            transform: Transform::from_xyz(0.0, 16.0, 0.0),
+            global_transform: GlobalTransform::default(),
+            // mat_mesh_bundle: PbrBundle {
+            //     mesh: meshes.add(Mesh::from(Capsule3d::new(0.5, 0.75))),
+            //     material: materials.add(Color::srgba(0.0, 0.0, 0.0, 1.0)),
+            //     ..default()
+            // },
             downward_ray: RayCaster::new(Vec3::ZERO, Dir3::NEG_Y),
             ray_hits: RayHits::default(),
             body: Body { body_scale: 1.0 },

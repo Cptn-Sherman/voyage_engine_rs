@@ -278,9 +278,11 @@ fn setup(
     };
 
     let proto_material = materials.add(StandardMaterial {
-        base_color_texture: Some(asset_server.load_with_settings("textures/texture_02.png", settings)),
+        base_color_texture: Some(asset_server.load_with_settings("textures/stone/smooth_stone.png", settings.clone())),
+        normal_map_texture: Some(asset_server.load_with_settings("textures/stone/smooth_stone_n.png", settings)),
+        perceptual_roughness: 0.9,
         alpha_mode: AlphaMode::Opaque,
-        unlit: true,
+        unlit: false,
         ..default()
     });
 
