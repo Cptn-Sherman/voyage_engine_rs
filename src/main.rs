@@ -278,9 +278,13 @@ fn setup(
     };
 
     let proto_material = materials.add(StandardMaterial {
-        base_color_texture: Some(asset_server.load_with_settings("textures/stone/smooth_stone.png", settings.clone())),
-        normal_map_texture: Some(asset_server.load_with_settings("textures/stone/smooth_stone_n.png", settings)),
-        perceptual_roughness: 0.9,
+        base_color_texture: Some(asset_server.load_with_settings("textures/volcanic rock/TCom_Rock_CliffVolcanic_4K_albedo.png", settings.clone())),
+        normal_map_texture: Some(asset_server.load_with_settings("textures/volcanic rock/TCom_Rock_CliffVolcanic_4K_normal.png", settings.clone())),
+        metallic_roughness_texture: Some(asset_server.load_with_settings("textures/volcanic rock/TCom_Rock_CliffVolcanic_4K_roughness.png", settings.clone())),
+        occlusion_texture: Some(asset_server.load_with_settings("textures/volcanic rock/TCom_Rock_CliffVolcanic_4K_ao.png", settings.clone())),
+        // metallic_roughness_texture: Some(asset_server.load_with_settings("textures/stone/smooth_stone_s.png", settings.clone())),
+        perceptual_roughness: 0.95,
+        metallic: 0.0,
         alpha_mode: AlphaMode::Opaque,
         unlit: false,
         ..default()
