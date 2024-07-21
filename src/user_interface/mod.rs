@@ -18,8 +18,8 @@ const NO_PERCENTAGE: &str = "---.-%";
 
 const ORANGE_TEXT_COLOR: Color = Color::hsv(0.34, 1.0, 0.5);
 const YELLOW_GREEN_TEXT_COLOR: Color = Color::hsv(0.9, 0.69, 0.58);
-const RED_TEXT_COLOR: Color = Color::hsv(0.07, 0.85, 0.5);
-const GOLD_TEXT_COLOR: Color = Color::hsv(0.51, 1.0, 0.5);
+const RED_TEXT_COLOR: Color = Color::srgb(1.0, 0.0, 0.0);
+const GOLD_TEXT_COLOR: Color = Color::srgb(1.0 , 0.72, 0.0);
 
 pub struct DebugInterfacePlugin;
 

@@ -91,8 +91,8 @@ impl Default for Config {
             ride_spring_damper: 300.0,
             stance_lockout: 0.25,
             jump_strength: 200.0,
-            movement_speed: 80.0,
-            sprint_speed_factor: 1.5,
+            movement_speed: 125.0,
+            sprint_speed_factor: 2.0,
             movement_decay: 0.90,
             look_sensitivity: 0.00012, // This value was taken from bevy_flycam.
         }

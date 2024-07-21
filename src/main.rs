@@ -230,6 +230,26 @@ fn create_camera(mut commands: Commands) {
         .insert(TemporalAntiAliasBundle::default());
 }
 
+struct TargetDepth(f32);
+impl Default for TargetDepth {
+    fn default() -> Self {
+        TargetDepth(0.006)
+    }
+}
+struct TargetLayers(f32);
+impl Default for TargetLayers {
+    fn default() -> Self {
+        TargetLayers(8.0)
+    }
+}
+struct CurrentMethod(ParallaxMappingMethod);
+impl Default for CurrentMethod {
+    fn default() -> Self {
+        CurrentMethod(ParallaxMappingMethod::Relief { max_steps: 4 })
+    }
+}
+
+
 fn setup(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
@@ -277,14 +297,21 @@ fn setup(
         s.sampler = ImageSampler::Descriptor(sampler_desc.clone());
     };
 
+    let parallax_depth_scale: f32 = TargetDepth::default().0;
+    let max_parallax_layer_count: f32 = TargetLayers::default().0.exp2();
+    let parallax_mapping_method: CurrentMethod = CurrentMethod::default();
+
     let proto_material = materials.add(StandardMaterial {
-        base_color_texture: Some(asset_server.load_with_settings("textures/volcanic rock/TCom_Rock_CliffVolcanic_4K_albedo.png", settings.clone())),
-        normal_map_texture: Some(asset_server.load_with_settings("textures/volcanic rock/TCom_Rock_CliffVolcanic_4K_normal.png", settings.clone())),
-        metallic_roughness_texture: Some(asset_server.load_with_settings("textures/volcanic rock/TCom_Rock_CliffVolcanic_4K_roughness.png", settings.clone())),
-        occlusion_texture: Some(asset_server.load_with_settings("textures/volcanic rock/TCom_Rock_CliffVolcanic_4K_ao.png", settings.clone())),
-        // metallic_roughness_texture: Some(asset_server.load_with_settings("textures/stone/smooth_stone_s.png", settings.clone())),
-        perceptual_roughness: 0.95,
-        metallic: 0.0,
+        base_color_texture: Some(asset_server.load_with_settings("textures/old brass/TCom_CorrodedMedievalMetalE_4K_albedo.png", settings.clone())),
+        normal_map_texture: Some(asset_server.load_with_settings("textures/old brass/TCom_CorrodedMedievalMetalE_4K_normal.png", settings.clone())),
+        metallic_roughness_texture: Some(asset_server.load_with_settings("textures/old brass/TCom_CorrodedMedievalMetalE_4K_metallic.png", settings.clone())),
+        occlusion_texture: Some(asset_server.load_with_settings("textures/old brass/TCom_CorrodedMedievalMetalE_4K_ao.png", settings.clone())),
+        depth_map: Some(asset_server.load_with_settings("textures/old brass/TCom_CorrodedMedievalMetalE_2K_height.png", settings.clone())),
+        parallax_depth_scale,
+        parallax_mapping_method: parallax_mapping_method.0,
+        max_parallax_layer_count,
+        perceptual_roughness: 0.6,
+        metallic: 1.0,
         alpha_mode: AlphaMode::Opaque,
         unlit: false,
         ..default()
@@ -294,9 +321,9 @@ fn setup(
         RigidBody::Static,
         Collider::cuboid(plane_size, plane_thickness, plane_size),
         PbrBundle {
-            mesh: generate_plane_mesh(&mut meshes, plane_size, plane_size, 0.5), //meshes.add(Plane3d::default().mesh().size(plane_size, plane_size)),
+            mesh: generate_plane_mesh(&mut meshes, plane_size, plane_size, 1.0 / 16.0),
             transform: Transform::from_xyz(0.0, 1.0, 0.0),
-            material: proto_material,
+            material: proto_material.clone(),
             ..default()
         },
     ));
@@ -346,7 +373,7 @@ fn generate_plane_mesh(meshes: &mut ResMut<Assets<Mesh>>, width: f32, length: f3
     mesh.insert_attribute(Mesh::ATTRIBUTE_UV_0, VertexAttributeValues::from(uvs));
     mesh.insert_indices(Indices::U32(indices));
 
-    meshes.add(mesh)
+    meshes.add(mesh.with_generated_tangents().expect("Failed to generate tangents for the mesh"))
 }
 
 fn grab_cursor(mut primary_window: Query<&mut Window, With<PrimaryWindow>>) {
