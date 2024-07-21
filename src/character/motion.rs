@@ -1,9 +1,9 @@
 use bevy::{
     input::ButtonInput,
     log::{info, warn},
-    math::Vec3,
+    math::{NormedVectorSpace, Vec3},
     prelude::{Component, KeyCode, Query, Res, With, Without},
-    render::camera::{Camera},
+    render::camera::Camera,
     time::Time,
     transform::components::Transform,
 };
@@ -13,7 +13,7 @@ use avian3d::prelude::*;
 use crate::KeyBindings;
 
 use super::{
-    stance::Stance,
+    stance::{self, Stance, StanceType},
     Config, PlayerControl,
 };
 
@@ -23,6 +23,7 @@ pub struct Motion {
     pub(crate) sprinting: bool,
     pub(crate) moving: bool,
     pub(crate) current_ride_height: f32,
+    pub(crate) target_ride_height: f32,
 }
 
 pub fn update_player_motion(
@@ -42,7 +43,7 @@ pub fn update_player_motion(
     }
 
     for camera_transform in camera_query.iter() {
-        for (mut linear_vel, mut motion, mut _stance) in &mut query {
+        for (mut linear_vel, mut motion, mut stance) in &mut query {
             // Perform the movement checks.
             let mut movement_vector: Vec3 = Vec3::ZERO.clone();
 
@@ -54,6 +55,18 @@ pub fn update_player_motion(
             } else {
                 motion.sprinting = false;
             }
+
+            if stance.current == StanceType::Standing || stance.current == StanceType::Landing {
+                if keys.pressed(KeyCode::ControlLeft) {
+                    stance.crouched = true;
+                    motion.current_ride_height = config.ride_height / 2.0;
+                    info!("Crouched");
+                } else {
+                    stance.crouched = false;
+                    info!("Not Crouched");
+                }
+            }
+
             let speed_vector: Vec3 = Vec3::from([computed_speed, computed_speed, computed_speed]);
 
             if keys.pressed(key_bindings.move_forward) {
@@ -84,9 +97,6 @@ pub fn update_player_motion(
             linear_vel.z = motion.movement_vec.z;
         }
     }
-
-
-    
 }
 
 pub fn apply_spring_force(
@@ -112,6 +122,7 @@ pub fn apply_jump_force(
     config: &Res<Config>,
     stance: &mut Stance,
     external_impulse: &mut ExternalImpulse,
+    linear_vel: &mut LinearVelocity,
     ray_length: f32,
 ) {
     // Apply the stance cooldown now that we are jumping.
@@ -129,14 +140,16 @@ pub fn apply_jump_force(
 
     // remove any previous impulse on the object.
     external_impulse.clear();
-    external_impulse.apply_impulse(Vec3::from((0.0, dynamic_jump_strength, 0.0)).into());
+    // find the movement vector in the x and z direction.
+    let scaled_movement_vector: Vec3 = Vec3::from((linear_vel.x, 0.0, linear_vel.z)).normalize_or_zero();
+
+    // apply the jump force.
+    external_impulse.apply_impulse(Vec3::from((scaled_movement_vector.x, dynamic_jump_strength, scaled_movement_vector.z)).into());
 
     info!(
         "\tJumped with {}/{} due to distance to ground, jump_factor {}, of ray length: {}",
         dynamic_jump_strength, config.jump_strength, jump_factor, ray_length
     );
-
-    info!("\t ray_length {} ", ray_length);
 }
 
 /// Computes a clamped jump force factor based on the provided ray length.

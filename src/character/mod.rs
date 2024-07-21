@@ -168,6 +168,7 @@ fn spawn_player_system(
                 sprinting: false,
                 moving: false,
                 current_ride_height: config.ride_height,
+                target_ride_height: config.ride_height,
             },
             focus: Focus {
                 point_of_focus: Vec3::from_array([0.0, 0.0, 0.0]),
@@ -176,6 +177,7 @@ fn spawn_player_system(
             },
             stance: Stance {
                 current: StanceType::Standing,
+                crouched: false,
                 lockout: 0.0,
             },
             action_step: ActionStep {

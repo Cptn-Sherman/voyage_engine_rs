@@ -265,7 +265,7 @@ fn setup(
             DirectionalLightBundle {
                 directional_light: DirectionalLight {
                     color: Color::srgb(1.0, 0.92, 0.80),
-                    illuminance: DIRECT_SUNLIGHT,
+                    illuminance: 80000.0,
                     shadows_enabled: true,
                     shadow_depth_bias: 0.02,
                     shadow_normal_bias: 1.0,
@@ -297,21 +297,10 @@ fn setup(
         s.sampler = ImageSampler::Descriptor(sampler_desc.clone());
     };
 
-    let parallax_depth_scale: f32 = TargetDepth::default().0;
-    let max_parallax_layer_count: f32 = TargetLayers::default().0.exp2();
-    let parallax_mapping_method: CurrentMethod = CurrentMethod::default();
 
     let proto_material = materials.add(StandardMaterial {
-        base_color_texture: Some(asset_server.load_with_settings("textures/old brass/TCom_CorrodedMedievalMetalE_4K_albedo.png", settings.clone())),
-        normal_map_texture: Some(asset_server.load_with_settings("textures/old brass/TCom_CorrodedMedievalMetalE_4K_normal.png", settings.clone())),
-        metallic_roughness_texture: Some(asset_server.load_with_settings("textures/old brass/TCom_CorrodedMedievalMetalE_4K_metallic.png", settings.clone())),
-        occlusion_texture: Some(asset_server.load_with_settings("textures/old brass/TCom_CorrodedMedievalMetalE_4K_ao.png", settings.clone())),
-        depth_map: Some(asset_server.load_with_settings("textures/old brass/TCom_CorrodedMedievalMetalE_2K_height.png", settings.clone())),
-        parallax_depth_scale,
-        parallax_mapping_method: parallax_mapping_method.0,
-        max_parallax_layer_count,
-        perceptual_roughness: 0.6,
-        metallic: 1.0,
+        base_color_texture: Some(asset_server.load_with_settings("textures/proto_dark_01.png", settings.clone())),
+        metallic: 0.0,
         alpha_mode: AlphaMode::Opaque,
         unlit: false,
         ..default()

@@ -5,7 +5,7 @@ use super::{
 use crate::{character::GetDownwardRayLengthMax, ternary, utils::exp_decay};
 use avian3d::prelude::*;
 use bevy::{
-    asset::{AssetServer, Handle}, input::ButtonInput, log::{info, warn}, math::Vec3, prelude::{Commands, Component, Event, EventReader, EventWriter, KeyCode, Query, Res, ResMut, Resource, With}, time::Time
+    asset::{AssetServer, Handle}, input::ButtonInput, log::{info, warn}, math::Vec3, prelude::{Commands, Component, Event, EventReader, EventWriter, KeyCode, Query, Res, ResMut, Resource, With}, time::Time, utils::info
 };
 use bevy_kira_audio::{Audio, AudioControl, AudioSource};
 use bevy_turborand::{DelegatedRng, GlobalRng};
@@ -47,6 +47,7 @@ impl StanceType {
 #[derive(Component)]
 pub struct Stance {
     pub current: StanceType,
+    pub crouched: bool,
     pub lockout: f32,
 }
 
@@ -243,7 +244,7 @@ pub fn update_player_stance(
         }
 
         // Compute the next stance for the player.
-        let next_stance: StanceType = determine_next_stance(&keys, &config, &stance, ray_length);
+        let next_stance: StanceType = determine_next_stance(&keys, &config, &mut stance, ray_length);
 
         // handle footstep sound event when the state has changed and only then.
         if next_stance != stance.current {
@@ -297,7 +298,7 @@ pub fn update_player_stance(
                 // check if the stance has changed.
                 if stance.current != StanceType::Jumping {
                     linear_vel.y = 0.0; // clear the jump velocity.
-                    apply_jump_force(&config, &mut stance, &mut external_impulse, ray_length);
+                    apply_jump_force(&config, &mut stance, &mut external_impulse, &mut linear_vel, ray_length);
                 }
             }
             StanceType::Crouching => todo!(),
@@ -310,7 +311,7 @@ pub fn update_player_stance(
         }
 
         // Lerp current_ride_height back to normal ride_height. Right now this assumes "normal" is standing.
-        motion.current_ride_height = exp_decay(motion.current_ride_height, config.ride_height, 8.0, time.delta_seconds());
+        motion.current_ride_height = exp_decay(motion.current_ride_height, motion.target_ride_height, 4.0, time.delta_seconds());
         // Update the gravity scale.
         gravity_scale.0 = next_gravity_scale;
 
@@ -322,7 +323,7 @@ pub fn update_player_stance(
 fn determine_next_stance(
     keys: &Res<ButtonInput<KeyCode>>,
     config: &Res<Config>,
-    stance: &Stance,
+    stance: &mut Stance,
     ray_length: f32,
 ) -> StanceType {
     let is_locked_out: bool = stance.lockout > 0.0;
