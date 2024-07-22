@@ -46,7 +46,7 @@ use bevy_mesh::{mesh_for_model, Model};
 use crate::utils::CHUNK_SIZE_I32;
 use transvoxel::{transition_sides, voxel_source::Block};
 use user_interface::DebugInterfacePlugin;
-use utils::{format_value_f32, get_valid_extension, CHUNK_SIZE_F32};
+use utils::{format_value_f32, get_valid_extension, increase_render_adapter_wgpu_limits, CHUNK_SIZE_F32};
 
 #[derive(Component)]
 struct Sun;
@@ -115,17 +115,7 @@ fn main() {
         .run();
 }
 
-fn increase_render_adapter_wgpu_limits(render_adapter: Res<RenderAdapter>) {
-    render_adapter
-        .limits()
-        .max_sampled_textures_per_shader_stage = 32;
-    info!(
-        "max_sampled_textures_per_shader_stage is {} ",
-        render_adapter
-            .limits()
-            .max_sampled_textures_per_shader_stage
-    );
-}
+
 
 fn start_background_audio(asset_server: Res<AssetServer>, audio: Res<Audio>) {
     // this file is for internal testing only, DO NOT DISTRIBUTE!

@@ -10,6 +10,7 @@ pub fn toggle_crouching(
 ) {
     for (mut stance, mut motion, mut collider) in query.iter_mut() {
         // Check if the control key is pressed
+        // todo: replace with a crouch key binding.
         if !keys.just_pressed(KeyCode::ControlLeft) {
             return;
         }
@@ -20,7 +21,7 @@ pub fn toggle_crouching(
 
         // Update the collider scale
         if stance.crouched == true {
-            collider.set_scale(Vec3::from([1.0, 0.5, 1.0]), 4);
+            collider.set_scale(Vec3::from([1.0, 0.5, 1.0]), 4); // we still seem to be bottoming out and falling over when crouching.
             motion.target_ride_height = config.ride_height / 2.0;
         } else {
             collider.set_scale(Vec3::from([1.0, 1.0, 1.0]), 4);

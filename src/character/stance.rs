@@ -164,9 +164,10 @@ pub fn load_footstep_sfx(
     commands.insert_resource(MyAudioHandle(handle.clone()));
 }
 
+// todo: move this somewhere more appropriate.
 // ! This should ideally not take in and load a new sound ever time and should be loaded once. ALSO, remove the inability to iterate over all the events this should be solved with an update.
 // ! ALSO GENERALIZE THIS TO ANY SOUND.
-// ! You should only need to send panning, volume and a sound effect tag to get the right one and it looks up from asset map or some shit.
+// ! You should only need to send panning, volume and a sound effect tag to get the right one and it looks up from asset map or some shit...
 pub fn play_footstep_sfx(
     mut ev_footstep: EventReader<FootstepEvent>,
     mut global_rng: ResMut<GlobalRng>,
@@ -193,7 +194,6 @@ pub fn play_footstep_sfx(
             .with_volume(volume);
     }
 }
-
 
 // todo: I want to try making it faster to move "forward" and slower to move left, right or backwards. Maybe we construct a const movement speed scaler for each direction.
 pub fn update_player_stance(
@@ -310,9 +310,9 @@ pub fn update_player_stance(
             StanceType::Climbing => todo!(),
         }
 
-        // Lerp current_ride_height back to normal ride_height. Right now this assumes "normal" is standing.
+        // Lerp current_ride_height to target_ride_height, this target_ride_height changes depending on the stance. Standing, Crouching, and Prone.
         motion.current_ride_height = exp_decay(motion.current_ride_height, motion.target_ride_height, 6.0, time.delta_seconds());
-        info!("Current Ride Height: {}", motion.current_ride_height);
+        
         // Update the gravity scale.
         gravity_scale.0 = next_gravity_scale;
 

@@ -80,7 +80,7 @@ macro_rules! double_for_loop {
 }
 
 use bevy::{
-    log::info, prelude::Image, render::{render_asset::RenderAssetUsages, render_resource::{Extent3d, TextureDimension, TextureFormat}}
+    log::info, prelude::{Image, Res}, render::{render_asset::RenderAssetUsages, render_resource::{Extent3d, TextureDimension, TextureFormat}, renderer::RenderAdapter}
 };
 use std::fmt::Write;
 
@@ -284,4 +284,17 @@ pub fn get_valid_extension<'a>(extension: &'a str, ext_type: ExtensionType) -> &
 // pulled this from Freya Holmer's Lerp smoothing is broken talk. https://www.youtube.com/watch?v=LSNQuFEDOyQ
 pub fn exp_decay(a: f32, b: f32, decay: f32, delta_time: f32) -> f32 {
     return b + (a - b) * (-decay * delta_time).exp()
+}
+
+
+pub fn increase_render_adapter_wgpu_limits(render_adapter: Res<RenderAdapter>) {
+    render_adapter
+        .limits()
+        .max_sampled_textures_per_shader_stage = 32;
+    info!(
+        "max_sampled_textures_per_shader_stage is {} ",
+        render_adapter
+            .limits()
+            .max_sampled_textures_per_shader_stage
+    );
 }
