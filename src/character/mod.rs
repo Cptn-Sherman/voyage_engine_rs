@@ -1,6 +1,7 @@
 mod body;
 mod focus;
 mod motion;
+mod states;
 pub mod stance;
 
 use avian3d::prelude::*;
@@ -29,6 +30,7 @@ use stance::{
     load_footstep_sfx, play_footstep_sfx, tick_footstep, update_player_stance, ActionStep,
     FootstepEvent, Stance, StanceType, ACTION_STEP_DELTA_DEFAULT,
 };
+use states::crouched::toggle_crouching;
 
 use crate::{grab_cursor, CameraThing};
 
@@ -52,6 +54,7 @@ impl Plugin for CharacterPlugin {
             Update,
             (
                 update_player_stance,
+                toggle_crouching,
                 update_player_motion,
                 camera_look_system,
                 play_footstep_sfx,
@@ -115,7 +118,7 @@ pub struct InputState {
 }
 
 #[derive(Component)]
-pub struct PlayerControl;
+pub struct Player;
 
 #[derive(Bundle)]
 pub struct PlayerBundle {
@@ -186,17 +189,17 @@ fn spawn_player_system(
                 delta: ACTION_STEP_DELTA_DEFAULT,
             },
         },
-        PlayerControl,
+        Player,
     ));
     info!("Spawned Player Actor");
 }
 
 fn attached_camera_system(
     mut commands: Commands,
-    mut player_query: Query<(Entity, &mut Transform), (With<PlayerControl>, Without<Camera>)>,
+    mut player_query: Query<(Entity, &mut Transform), (With<Player>, Without<Camera>)>,
     mut camera_query: Query<
         (Entity, &mut Transform, Option<&Parent>),
-        (With<Camera>, With<CameraThing>, Without<PlayerControl>),
+        (With<Camera>, With<CameraThing>, Without<Player>),
     >,
 ) {
     if camera_query.is_empty()

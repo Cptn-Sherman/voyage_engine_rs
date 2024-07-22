@@ -1,6 +1,7 @@
 use super::{
     motion::{apply_jump_force, apply_spring_force, Motion},
-    Config, PlayerControl,
+    states::crouched::toggle_crouching,
+    Config, Player,
 };
 use crate::{character::GetDownwardRayLengthMax, ternary, utils::exp_decay};
 use avian3d::prelude::*;
@@ -211,7 +212,7 @@ pub fn update_player_stance(
             &RayCaster,
             &RayHits,
         ),
-        With<PlayerControl>,
+        With<Player>,
     >,
     mut ev_footstep: EventWriter<FootstepEvent>,
 ) {
@@ -311,7 +312,8 @@ pub fn update_player_stance(
         }
 
         // Lerp current_ride_height back to normal ride_height. Right now this assumes "normal" is standing.
-        motion.current_ride_height = exp_decay(motion.current_ride_height, motion.target_ride_height, 4.0, time.delta_seconds());
+        motion.current_ride_height = exp_decay(motion.current_ride_height, motion.target_ride_height, 6.0, time.delta_seconds());
+        info!("Current Ride Height: {}", motion.current_ride_height);
         // Update the gravity scale.
         gravity_scale.0 = next_gravity_scale;
 

@@ -14,7 +14,7 @@ use crate::KeyBindings;
 
 use super::{
     stance::{self, Stance, StanceType},
-    Config, PlayerControl,
+    Config, Player,
 };
 
 #[derive(Component)]
@@ -31,8 +31,8 @@ pub fn update_player_motion(
     keys: Res<ButtonInput<KeyCode>>,
     config: Res<Config>,
     key_bindings: Res<KeyBindings>,
-    camera_query: Query<&mut Transform, (With<Camera>, Without<PlayerControl>)>,
-    mut query: Query<(&mut LinearVelocity, &mut Motion, &mut Stance), With<PlayerControl>>,
+    camera_query: Query<&mut Transform, (With<Camera>, Without<Player>)>,
+    mut query: Query<(&mut LinearVelocity, &mut Motion, &mut Stance), With<Player>>,
 ) {
     if camera_query.is_empty()
         || camera_query.iter().len() > 1
@@ -54,17 +54,6 @@ pub fn update_player_motion(
                 motion.sprinting = true;
             } else {
                 motion.sprinting = false;
-            }
-
-            if stance.current == StanceType::Standing || stance.current == StanceType::Landing {
-                if keys.pressed(KeyCode::ControlLeft) {
-                    stance.crouched = true;
-                    motion.current_ride_height = config.ride_height / 2.0;
-                    info!("Crouched");
-                } else {
-                    stance.crouched = false;
-                    info!("Not Crouched");
-                }
             }
 
             let speed_vector: Vec3 = Vec3::from([computed_speed, computed_speed, computed_speed]);

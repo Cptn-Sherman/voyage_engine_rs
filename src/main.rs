@@ -257,7 +257,7 @@ fn setup(
     asset_server: Res<AssetServer>,
 ) {
     // set up the infinite grid with default settings.
-    //commands.spawn(InfiniteGridBundle::default());
+    commands.spawn(InfiniteGridBundle::default());
 
     // create the 'Sun' with volumetric Lighting enabled.
     commands
@@ -297,8 +297,7 @@ fn setup(
         s.sampler = ImageSampler::Descriptor(sampler_desc.clone());
     };
 
-
-    let proto_material = materials.add(StandardMaterial {
+    let proto_material: Handle<StandardMaterial> = materials.add(StandardMaterial {
         base_color_texture: Some(asset_server.load_with_settings("textures/proto_dark_01.png", settings.clone())),
         metallic: 0.0,
         alpha_mode: AlphaMode::Opaque,
