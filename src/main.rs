@@ -91,6 +91,8 @@ fn main() {
             RngPlugin::default(),
             TemporalAntiAliasPlugin,
             PhysicsPlugins::default(),
+            #[cfg(feature = "use-debug-plugin")]
+            PhysicsDebugPlugin::default(),
             DebugInterfacePlugin,
             CharacterPlugin,
             InfiniteGridPlugin,

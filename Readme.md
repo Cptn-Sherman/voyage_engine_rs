@@ -2,9 +2,19 @@
 
 ## Todo: 
 
-- When the user makes changes to the camera settings just kill the world camera entity and do a quick push out and push back in with the last frame before pausing in the back ground.
+- Looking at the ground causes you to walk slower becuase we care about the y component of the camera. Use XZ and normalize
+- You can full height jump while crouched becuase the ray is short when testing the jump height. You hit 200/200 which feels wrong.
+- Crouching should be lower but you bottom out and fall over
+- render colliders for debug
+- need a mechanism for standing up after falling
+- Feels like you jump really strong and hover, like gravity is added slowly
+- Implement free camera and detach camera from the player entity
 
 - Continue implementing the debug interface
+
+
+--- 
+## Questions: 
 - How can this rust executable know information about what version of bevy it uses
 - What version of rust it was compiled with...
 - other things
@@ -76,5 +86,5 @@ date: Oct 07 2023 | fall
 tod: evening | UTC: +02:001
 
 
-- When the player is moving foward (possibly running/sprinting) it would be cool to give them a little speed boost when they jump maybe 50% of the movespeed is added to an impulse when you kick off the ground. Could also play a sound effect at this moment to signal the jump has happened. I think this might make the player controller feel less slow. Or maybe even when jumping you build up to a capped 20% speed increase by default. You are letting momentum help you move as long as your directional vector remains in the same direction you should be able to take advantage of thise energy. Maybe this scales with your athletic ability or stat.
+
 
