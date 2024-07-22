@@ -30,7 +30,7 @@ use stance::{
     load_footstep_sfx, play_footstep_sfx, tick_footstep, update_player_stance, ActionStep,
     FootstepEvent, Stance, StanceType, ACTION_STEP_DELTA_DEFAULT,
 };
-use states::crouched::toggle_crouching;
+use states::{crouched::toggle_crouching, grounded::sprinting::toggle_sprint};
 
 use crate::{grab_cursor, player::{config::PlayerControlConfig, spawn_player, Player}, CameraThing};
 
@@ -55,6 +55,7 @@ impl Plugin for CharacterPlugin {
             (
                 update_player_stance,
                 toggle_crouching,
+                toggle_sprint,
                 update_player_motion,
                 camera_look_system,
                 play_footstep_sfx,

@@ -20,16 +20,17 @@ use super::{
 #[derive(Component)]
 pub struct Motion {
     pub(crate) movement_vec: Vec3,
-    pub(crate) sprinting: bool,
-    pub(crate) moving: bool,
+    pub(crate) current_movement_speed: f32,
     pub(crate) current_ride_height: f32,
     pub(crate) target_ride_height: f32,
+    pub(crate) sprinting: bool,
+    pub(crate) moving: bool,
 }
 
 pub fn update_player_motion(
     time: Res<Time>,
     keys: Res<ButtonInput<KeyCode>>,
-    config: Res<PlayerControlConfig>,
+    player_config: Res<PlayerControlConfig>,
     key_bindings: Res<KeyBindings>,
     camera_query: Query<&mut Transform, (With<Camera>, Without<Player>)>,
     mut query: Query<(&mut LinearVelocity, &mut Motion, &mut Stance), With<Player>>,
@@ -47,16 +48,11 @@ pub fn update_player_motion(
             // Perform the movement checks.
             let mut movement_vector: Vec3 = Vec3::ZERO.clone();
 
-            // todo: this could be cleaned up by producing a Option if the key is down and unwrapping to the value or zero.
-            let mut computed_speed: f32 = config.movement_speed;
-            if keys.pressed(key_bindings.toggle_sprint) {
-                computed_speed *= config.sprint_speed_factor;
-                motion.sprinting = true;
-            } else {
-                motion.sprinting = false;
-            }
-
-            let speed_vector: Vec3 = Vec3::from([computed_speed, computed_speed, computed_speed]);
+            let speed_vector: Vec3 = Vec3::from([
+                motion.current_movement_speed,
+                motion.current_movement_speed,
+                motion.current_movement_speed,
+            ]);
 
             if keys.pressed(key_bindings.move_forward) {
                 movement_vector += camera_transform.forward().as_vec3();
@@ -82,8 +78,8 @@ pub fn update_player_motion(
             motion.movement_vec +=
                 movement_vector.normalize_or_zero() * speed_vector * time.delta_seconds();
             // Appy decay to Linear Velocity on the X and Z directions and apply to the velocity.
-            motion.movement_vec.x *= config.movement_decay;
-            motion.movement_vec.z *= config.movement_decay;
+            motion.movement_vec.x *= player_config.movement_decay;
+            motion.movement_vec.z *= player_config.movement_decay;
             linear_vel.x = motion.movement_vec.x;
             linear_vel.z = motion.movement_vec.z;
         }

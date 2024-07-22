@@ -52,6 +52,7 @@ pub fn spawn_player(
             body: Body { body_scale: 1.0 },
             motion: Motion {
                 movement_vec: Vec3::from_array([0.0, 0.0, 0.0]),
+                current_movement_speed: player_config.movement_speed,
                 sprinting: false,
                 moving: false,
                 current_ride_height: player_config.ride_height,

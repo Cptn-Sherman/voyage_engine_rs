@@ -269,6 +269,7 @@ pub fn update_player_stance(
             StanceType::Landing => {
                 // Set the gravity scale to zero.
                 next_gravity_scale = 0.0;
+                motion.current_ride_height = config.ride_height * 0.85;
                 apply_spring_force(&config, &mut linear_vel, &mut external_force, ray_length, motion.current_ride_height);
             }
             StanceType::Standing => {
