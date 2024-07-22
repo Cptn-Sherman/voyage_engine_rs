@@ -14,7 +14,7 @@ use crate::KeyBindings;
 
 use super::{
     stance::{self, Stance, StanceType},
-    Config, Player,
+    Player, PlayerControlConfig,
 };
 
 #[derive(Component)]
@@ -29,7 +29,7 @@ pub struct Motion {
 pub fn update_player_motion(
     time: Res<Time>,
     keys: Res<ButtonInput<KeyCode>>,
-    config: Res<Config>,
+    config: Res<PlayerControlConfig>,
     key_bindings: Res<KeyBindings>,
     camera_query: Query<&mut Transform, (With<Camera>, Without<Player>)>,
     mut query: Query<(&mut LinearVelocity, &mut Motion, &mut Stance), With<Player>>,
@@ -89,7 +89,7 @@ pub fn update_player_motion(
 }
 
 pub fn apply_spring_force(
-    config: &Res<Config>,
+    config: &Res<PlayerControlConfig>,
     linear_vel: &mut LinearVelocity,
     external_force: &mut ExternalForce,
     ray_length: f32,
@@ -108,7 +108,7 @@ pub fn apply_spring_force(
 }
 
 pub fn apply_jump_force(
-    config: &Res<Config>,
+    config: &Res<PlayerControlConfig>,
     stance: &mut Stance,
     external_impulse: &mut ExternalImpulse,
     linear_vel: &mut LinearVelocity,
@@ -130,10 +130,18 @@ pub fn apply_jump_force(
     // remove any previous impulse on the object.
     external_impulse.clear();
     // find the movement vector in the x and z direction.
-    let scaled_movement_vector: Vec3 = Vec3::from((linear_vel.x, 0.0, linear_vel.z)).normalize_or_zero();
+    let scaled_movement_vector: Vec3 =
+        Vec3::from((linear_vel.x, 0.0, linear_vel.z)).normalize_or_zero();
 
     // apply the jump force.
-    external_impulse.apply_impulse(Vec3::from((scaled_movement_vector.x, dynamic_jump_strength, scaled_movement_vector.z)).into());
+    external_impulse.apply_impulse(
+        Vec3::from((
+            scaled_movement_vector.x,
+            dynamic_jump_strength,
+            scaled_movement_vector.z,
+        ))
+        .into(),
+    );
 
     info!(
         "\tJumped with {}/{} due to distance to ground, jump_factor {}, of ray length: {}",
@@ -158,7 +166,7 @@ pub fn apply_jump_force(
 /// let jump_force_factor = compute_clamped_jump_force_factor(ray_length);
 /// println!("Jump Force Factor: {}", jump_force_factor);
 /// ```
-fn compute_clamped_jump_force_factor(config: &Res<Config>, ray_length: f32) -> f32 {
+fn compute_clamped_jump_force_factor(config: &Res<PlayerControlConfig>, ray_length: f32) -> f32 {
     // Constants defined elsewhere in the code
     let full_standing_ray_length: f32 = config.ride_height;
     let half_standing_ray_length: f32 = config.ride_height - (config.capsule_height / 4.0);

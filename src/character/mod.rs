@@ -1,8 +1,8 @@
-mod body;
-mod focus;
-mod motion;
-mod states;
+pub mod body;
+pub mod focus;
+pub mod motion;
 pub mod stance;
+pub mod states;
 
 use avian3d::prelude::*;
 use bevy::{
@@ -32,18 +32,18 @@ use stance::{
 };
 use states::crouched::toggle_crouching;
 
-use crate::{grab_cursor, CameraThing};
+use crate::{grab_cursor, player::{config::PlayerControlConfig, spawn_player, Player}, CameraThing};
 
 pub struct CharacterPlugin;
 
 impl Plugin for CharacterPlugin {
     fn build(&self, app: &mut App) {
         info!("Initializing Character plugin...");
-        app.insert_resource(Config::default()); // later we will load from some toml file
+        app.insert_resource(PlayerControlConfig::default()); // later we will load from some toml file
         app.add_systems(
             Startup,
             (
-                spawn_player_system,
+                spawn_player,
                 attached_camera_system,
                 grab_cursor,
                 load_footstep_sfx,
@@ -67,132 +67,7 @@ impl Plugin for CharacterPlugin {
     }
 }
 
-#[derive(Resource)]
-pub struct Config {
-    capsule_height: f32,
-    ride_height: f32,
-    ride_height_step_offset: f32,
-    ray_length_offset: f32,
-    ride_spring_strength: f32,
-    ride_spring_damper: f32,
-    stance_lockout: f32,
-    jump_strength: f32,
-    movement_speed: f32,
-    sprint_speed_factor: f32,
-    movement_decay: f32,
-    look_sensitivity: f32,
-}
 
-impl Default for Config {
-    fn default() -> Self {
-        Self {
-            capsule_height: 1.0,
-            ride_height: 1.5,
-            ride_height_step_offset: 0.15,
-            ray_length_offset: 0.5,
-            ride_spring_strength: 3500.0,
-            ride_spring_damper: 300.0,
-            stance_lockout: 0.25,
-            jump_strength: 200.0,
-            movement_speed: 125.0,
-            sprint_speed_factor: 2.0,
-            movement_decay: 0.90,
-            look_sensitivity: 0.00012, // This value was taken from bevy_flycam.
-        }
-    }
-}
-
-pub trait GetDownwardRayLengthMax {
-    fn get_downard_ray_length_max(&self) -> f32;
-}
-
-impl GetDownwardRayLengthMax for Config {
-    fn get_downard_ray_length_max(&self) -> f32 {
-        self.ride_height + self.ray_length_offset
-    }
-}
-
-#[derive(Resource, Default)]
-pub struct InputState {
-    reader_motion: ManualEventReader<MouseMotion>,
-}
-
-#[derive(Component)]
-pub struct Player;
-
-#[derive(Bundle)]
-pub struct PlayerBundle {
-    linear_vel: LinearVelocity,
-    external_force: ExternalForce,
-    external_impulse: ExternalImpulse,
-    rigid_body: RigidBody,
-    mass: Mass,
-    gravity_scale: GravityScale,
-    collider: Collider,
-    transform: Transform,
-    global_transform: GlobalTransform,
-    //mat_mesh_bundle: MaterialMeshBundle<StandardMaterial>,
-    downward_ray: RayCaster,
-    ray_hits: RayHits,
-    body: Body,
-    motion: Motion,
-    focus: Focus,
-    stance: Stance,
-    action_step: ActionStep,
-}
-
-fn spawn_player_system(
-    config: Res<Config>,
-    mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
-) {
-    commands.spawn((
-        PlayerBundle {
-            linear_vel: LinearVelocity::ZERO,
-            external_force: ExternalForce::new([0.0, 0.0, 0.0].into()),
-            external_impulse: ExternalImpulse::new([0.0, 0.0, 0.0].into()),
-            rigid_body: RigidBody::Dynamic,
-            mass: Mass(20.0),
-            gravity_scale: GravityScale(1.0),
-            collider: Collider::capsule(0.75, 0.5),
-            transform: Transform::from_xyz(0.0, 16.0, 0.0),
-            global_transform: GlobalTransform::default(),
-            // mat_mesh_bundle: PbrBundle {
-            //     mesh: meshes.add(Mesh::from(Capsule3d::new(0.5, 0.75))),
-            //     material: materials.add(Color::srgba(0.0, 0.0, 0.0, 1.0)),
-            //     ..default()
-            // },
-            downward_ray: RayCaster::new(Vec3::ZERO, Dir3::NEG_Y),
-            ray_hits: RayHits::default(),
-            body: Body { body_scale: 1.0 },
-            motion: Motion {
-                movement_vec: Vec3::from_array([0.0, 0.0, 0.0]),
-                sprinting: false,
-                moving: false,
-                current_ride_height: config.ride_height,
-                target_ride_height: config.ride_height,
-            },
-            focus: Focus {
-                point_of_focus: Vec3::from_array([0.0, 0.0, 0.0]),
-                face_direction: Vec3::from_array([0.0, 0.0, 0.0]),
-                free_look: false,
-            },
-            stance: Stance {
-                current: StanceType::Standing,
-                crouched: false,
-                lockout: 0.0,
-            },
-            action_step: ActionStep {
-                dir: stance::FootstepDirection::Right,
-                bumped: false,
-                delta: ACTION_STEP_DELTA_DEFAULT,
-            },
-        },
-        Player,
-    ));
-    info!("Spawned Player Actor");
-}
 
 fn attached_camera_system(
     mut commands: Commands,

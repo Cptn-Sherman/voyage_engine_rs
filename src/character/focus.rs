@@ -1,6 +1,6 @@
-use bevy::{input::mouse::MouseMotion, math::{EulerRot, Quat, Vec3}, prelude::{Component, Events, Query, Res, ResMut, With}, render::camera::Camera, transform::components::Transform, window::{CursorGrabMode, PrimaryWindow, Window}};
+use bevy::{input::mouse::MouseMotion, prelude::*, window::{CursorGrabMode, PrimaryWindow}};
+use crate::{player::config::PlayerControlConfig, InputState};
 
-use super::{Config, InputState};
 
 #[derive(Component)]
 pub struct Focus {
@@ -14,7 +14,7 @@ pub struct Focus {
 pub fn camera_look_system(
     primary_window: Query<&Window, With<PrimaryWindow>>,
     motion: Res<Events<MouseMotion>>,
-    config: Res<Config>,
+    config: Res<PlayerControlConfig>,
     mut state: ResMut<InputState>,
     mut camera_query: Query<&mut Transform, With<Camera>>,
 ) {

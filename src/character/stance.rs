@@ -1,16 +1,15 @@
 use super::{
     motion::{apply_jump_force, apply_spring_force, Motion},
-    states::crouched::toggle_crouching,
-    Config, Player,
+    Player,
 };
-use crate::{character::GetDownwardRayLengthMax, ternary, utils::exp_decay};
+use crate::{ player::config::PlayerControlConfig, ternary, utils::exp_decay};
 use avian3d::prelude::*;
 use bevy::{
     asset::{AssetServer, Handle}, input::ButtonInput, log::{info, warn}, math::Vec3, prelude::{Commands, Component, Event, EventReader, EventWriter, KeyCode, Query, Res, ResMut, Resource, With}, time::Time, utils::info
 };
 use bevy_kira_audio::{Audio, AudioControl, AudioSource};
 use bevy_turborand::{DelegatedRng, GlobalRng};
-
+use crate::player::config::GetDownwardRayLengthMax;
 #[derive(Debug, PartialEq, Clone)]
 // each of these stance types needs to have a movement speed calculation, a
 pub enum StanceType {
@@ -73,7 +72,7 @@ pub struct ActionStep {
 }
 
 pub(crate) fn tick_footstep(
-    config: Res<Config>,
+    config: Res<PlayerControlConfig>,
     mut ev_footstep: EventWriter<FootstepEvent>,
     mut query: Query<(&mut ActionStep, &mut Motion, &Stance)>,
     time: Res<Time>,
@@ -200,7 +199,7 @@ pub fn play_footstep_sfx(
 pub fn update_player_stance(
     time: Res<Time>,
     keys: Res<ButtonInput<KeyCode>>,
-    config: Res<Config>,
+    config: Res<PlayerControlConfig>,
     mut query: Query<
         (
             &mut LinearVelocity,
@@ -324,7 +323,7 @@ pub fn update_player_stance(
 
 fn determine_next_stance(
     keys: &Res<ButtonInput<KeyCode>>,
-    config: &Res<Config>,
+    config: &Res<PlayerControlConfig>,
     stance: &mut Stance,
     ray_length: f32,
 ) -> StanceType {

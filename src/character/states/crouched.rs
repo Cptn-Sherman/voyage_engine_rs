@@ -1,14 +1,11 @@
-use avian3d::{
-    collision::Collider,
-    parry::shape::{self, SharedShape},
-};
+use avian3d::collision::Collider;
 use bevy::prelude::*;
 
-use crate::character::{motion::Motion, stance::Stance, Config, Player};
+use crate::{character::{motion::Motion, stance::Stance, Player}, player::config::PlayerControlConfig};
 
 pub fn toggle_crouching(
     keys: Res<ButtonInput<KeyCode>>,
-    config: Res<Config>,
+    config: Res<PlayerControlConfig>,
     mut query: Query<(&mut Stance, &mut Motion, &mut Collider), With<Player>>,
 ) {
     for (mut stance, mut motion, mut collider) in query.iter_mut() {

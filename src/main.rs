@@ -5,7 +5,10 @@ mod character;
 mod terrain;
 mod user_interface;
 mod utils;
+mod player;
 
+use bevy::ecs::event::ManualEventReader;
+use bevy::input::mouse::MouseMotion;
 use bevy::pbr::{VolumetricFogSettings, VolumetricLight};
 use bevy::render::render_asset::{RenderAssetBytesPerFrame, RenderAssetUsages};
 
@@ -31,7 +34,7 @@ use avian3d::prelude::*;
 use bevy_infinite_grid::{InfiniteGridBundle, InfiniteGridPlugin};
 use bevy_kira_audio::{Audio, AudioControl, AudioEasing, AudioPlugin, AudioTween};
 use bevy_turborand::prelude::RngPlugin;
-use character::{CharacterPlugin, InputState};
+use character::{CharacterPlugin};
 use chrono::{DateTime, Local};
 use light_consts::lux::DIRECT_SUNLIGHT;
 
@@ -448,4 +451,9 @@ impl Default for EngineSettings {
             format: "png".to_owned(),
         }
     }
+}
+
+#[derive(Resource, Default)]
+pub struct InputState {
+    reader_motion: ManualEventReader<MouseMotion>,
 }
