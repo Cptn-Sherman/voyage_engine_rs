@@ -70,12 +70,14 @@ pub fn update_player_motion(
             if keys.pressed(key_bindings.move_right) {
                 movement_vector += camera_transform.right().as_vec3();
             }
-            // set the motion.moving depending on the magnituted of the movement_vector.
+
+            // set the motion.moving when the magnituted of the movement_vector is greater than some arbitrary threshold.
             if movement_vector.length() <= 0.01 {
                 motion.moving = false;
             } else {
                 motion.moving = true;
             }
+
             // apply the total movement vector.
             motion.movement_vec +=
                 movement_vector.normalize_or_zero() * speed_vector * time.delta_seconds();
