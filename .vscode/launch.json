@@ -21,9 +21,8 @@
             },
             "args": [],
             "cwd": "${workspaceFolder}",
-            "env": {
-                "name": "PATH",
-                "value": "%USERPROFILE%/.rustup/toolchains/stable-x86_64-pc-windows-msvc/bin;${workspaceFolder}/target/debug/deps;%PATH%"
+            "env" : {
+                "PATH": "${env:USERPROFILE}/.rustup/toolchains/stable-x86_64-pc-windows-msvc/bin;${workspaceFolder}/target/debug/deps;${env:PATH}",
             },
         },
         {
@@ -43,11 +42,7 @@
                 }
             },
             "args": [],
-            "cwd": "${workspaceFolder}",
-            "env": {
-                "name": "PATH",
-                "value": "%USERPROFILE%/.rustup/toolchains/stable-x86_64-pc-windows-msvc/bin;${workspaceFolder}/target/debug/deps;%PATH%"
-            },
-        },
+            "cwd": "${workspaceFolder}"
+        }
     ]
 }
