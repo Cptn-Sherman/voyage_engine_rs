@@ -32,7 +32,7 @@ use stance::{
 };
 use states::{crouched::toggle_crouching, grounded::sprinting::toggle_sprint};
 
-use crate::{grab_cursor, player::{config::PlayerControlConfig, spawn_player, Player}, CameraThing};
+use crate::{grab_cursor, player::{config::PlayerControlConfig, handle_pickup_input, spawn_player, Player}, CameraThing};
 
 pub struct CharacterPlugin;
 
@@ -60,6 +60,7 @@ impl Plugin for CharacterPlugin {
                 camera_look_system,
                 play_footstep_sfx,
                 tick_footstep,
+                handle_pickup_input,
             )
                 .chain(),
         );

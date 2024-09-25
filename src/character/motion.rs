@@ -1,7 +1,7 @@
 use bevy::{
     input::ButtonInput,
     log::{info, warn},
-    math::{NormedVectorSpace, Vec3},
+    math::{NormedVectorSpace, Quat, Vec3},
     prelude::{Component, KeyCode, Query, Res, With, Without},
     render::camera::Camera,
     time::Time,
@@ -33,7 +33,7 @@ pub fn update_player_motion(
     player_config: Res<PlayerControlConfig>,
     key_bindings: Res<KeyBindings>,
     camera_query: Query<&mut Transform, (With<Camera>, Without<Player>)>,
-    mut query: Query<(&mut LinearVelocity, &mut Motion, &mut Stance), With<Player>>,
+    mut query: Query<(&mut LinearVelocity, &mut Rotation, &mut Motion, &mut Stance), With<Player>>,
 ) {
     if camera_query.is_empty()
         || camera_query.iter().len() > 1
@@ -44,7 +44,7 @@ pub fn update_player_motion(
     }
 
     for camera_transform in camera_query.iter() {
-        for (mut linear_vel, mut motion, mut stance) in &mut query {
+        for (mut linear_vel, mut rotation, mut motion, mut stance) in &mut query {
             // Perform the movement checks.
             let mut movement_vector: Vec3 = Vec3::ZERO.clone();
 
@@ -82,6 +82,19 @@ pub fn update_player_motion(
             motion.movement_vec.z *= player_config.movement_decay;
             linear_vel.x = motion.movement_vec.x;
             linear_vel.z = motion.movement_vec.z;
+
+            // print the angular velocity to console
+            info!(
+                "Rotation: {:?}",
+                rotation
+                    .to_array()
+                    .iter()
+                    .map(|x| x.to_string())
+                    .collect::<Vec<String>>()
+                    .join(", ")
+            );
+
+            rotation.0 = Quat::from_xyzw(0.0, 0.0, 0.0, 1.0);
         }
     }
 }

@@ -6,10 +6,9 @@
 - You can full height jump while crouched becuase the ray is short when testing the jump height. You hit 200/200 which feels wrong.
 - Crouching should be lower but you bottom out and fall over
 - render colliders for debug
-- need a mechanism for standing up after falling
+- need a mechanism for standing up after falling, possibly just limit external forces on the collider which cause rotation but allow impulses.
 - Feels like you jump really strong and hover, like gravity is added slowly
 - Implement free camera and detach camera from the player entity
-
 - Continue implementing the debug interface
 
 
@@ -29,7 +28,7 @@ fps: 165.08 | 6.06 ms/frame
 gpu:  22.2% | mem: no_impl
 cpu: ---.-% | mem: no_data
 entity_count:   -----
-hunk_count:     ----- 
+chunk_count:    ----- 
 updates_queued: -----
 draws:  --.--ms
 swap:   --.--ms

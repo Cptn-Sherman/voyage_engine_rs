@@ -1,11 +1,12 @@
 use avian3d::prelude::*;
+use avian_pickup::{actor::AvianPickupActor, input::{AvianPickupAction, AvianPickupInput}};
 use bevy::{log::info, prelude::*};
 use body::Body;
 use config::PlayerControlConfig;
 use focus::Focus;
 use motion::Motion;
 use stance::{ActionStep, Stance, StanceType, ACTION_STEP_DELTA_DEFAULT};
-use crate::character::*;
+use crate::{character::*, CameraThing, KeyBindings};
 
 pub mod config;
 
@@ -30,6 +31,7 @@ pub struct PlayerBundle {
     focus: Focus,
     stance: Stance,
     action_step: ActionStep,
+    pickup_actor: AvianPickupActor,
 }
 
 pub fn spawn_player(
@@ -73,8 +75,26 @@ pub fn spawn_player(
                 delta: ACTION_STEP_DELTA_DEFAULT,
                 bumped: false,
             },
+            pickup_actor: AvianPickupActor::default(),
         },
         Player,
+        
     ));
     info!("Spawned Player Actor");
+}
+
+
+pub fn handle_pickup_input(
+    keys: Res<ButtonInput<KeyCode>>,
+    key_bindings: Res<KeyBindings>,
+    actor: Query<Entity, With<AvianPickupActor>>,
+    mut avian_pickup_input_writer: EventWriter<AvianPickupInput>,
+) {
+    if keys.pressed(key_bindings.interact) {
+        println!("Interact key pressed");
+        avian_pickup_input_writer.send(AvianPickupInput {
+            action: AvianPickupAction::Pull,
+            actor: actor.iter().next().unwrap(),
+        });
+    }
 }
