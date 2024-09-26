@@ -1,7 +1,7 @@
 use bevy::{
     input::ButtonInput,
     log::{info, warn},
-    math::{NormedVectorSpace, Quat, Vec3},
+    math::{Quat, Vec3},
     prelude::{Component, KeyCode, Query, Res, With, Without},
     render::camera::Camera,
     time::Time,
@@ -13,8 +13,7 @@ use avian3d::prelude::*;
 use crate::KeyBindings;
 
 use super::{
-    stance::{self, Stance, StanceType},
-    Player, PlayerControlConfig,
+    stance::Stance, Player, PlayerControlConfig
 };
 
 #[derive(Component)]
@@ -44,7 +43,7 @@ pub fn update_player_motion(
     }
 
     for camera_transform in camera_query.iter() {
-        for (mut linear_vel, mut rotation, mut motion, mut stance) in &mut query {
+        for (mut linear_vel, mut rotation, mut motion, mut _stance) in &mut query {
             // Perform the movement checks.
             let mut movement_vector: Vec3 = Vec3::ZERO.clone();
 
@@ -83,18 +82,7 @@ pub fn update_player_motion(
             linear_vel.x = motion.movement_vec.x;
             linear_vel.z = motion.movement_vec.z;
 
-            // print the angular velocity to console
-            info!(
-                "Rotation: {:?}",
-                rotation
-                    .to_array()
-                    .iter()
-                    .map(|x| x.to_string())
-                    .collect::<Vec<String>>()
-                    .join(", ")
-            );
 
-            rotation.0 = Quat::from_xyzw(0.0, 0.0, 0.0, 1.0);
         }
     }
 }

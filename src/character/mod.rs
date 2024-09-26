@@ -27,8 +27,7 @@ use body::Body;
 use focus::{camera_look_system, Focus};
 use motion::{update_player_motion, Motion};
 use stance::{
-    load_footstep_sfx, play_footstep_sfx, tick_footstep, update_player_stance, ActionStep,
-    FootstepEvent, Stance, StanceType, ACTION_STEP_DELTA_DEFAULT,
+    load_footstep_sfx, lock_rotation, play_footstep_sfx, tick_footstep, update_player_stance, ActionStep, FootstepEvent, Stance, StanceType, ACTION_STEP_DELTA_DEFAULT
 };
 use states::{crouched::toggle_crouching, grounded::sprinting::toggle_sprint};
 
@@ -57,10 +56,11 @@ impl Plugin for CharacterPlugin {
                 toggle_crouching,
                 toggle_sprint,
                 update_player_motion,
-                camera_look_system,
+                lock_rotation,
                 play_footstep_sfx,
                 tick_footstep,
                 handle_pickup_input,
+                camera_look_system,
             )
                 .chain(),
         );

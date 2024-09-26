@@ -2,14 +2,24 @@ use super::{
     motion::{apply_jump_force, apply_spring_force, Motion},
     Player,
 };
-use crate::{ player::config::PlayerControlConfig, ternary, utils::exp_decay};
+use crate::player::config::GetDownwardRayLengthMax;
+use crate::{player::config::PlayerControlConfig, ternary, utils::exp_decay};
 use avian3d::prelude::*;
 use bevy::{
-    asset::{AssetServer, Handle}, input::ButtonInput, log::{info, warn}, math::Vec3, prelude::{Commands, Component, Event, EventReader, EventWriter, KeyCode, Query, Res, ResMut, Resource, With}, time::Time, utils::info
+    asset::{AssetServer, Handle},
+    input::ButtonInput,
+    log::{info, warn},
+    math::{Quat, Vec3},
+    prelude::{
+        Commands, Component, Event, EventReader, EventWriter, KeyCode, Query, Res, ResMut,
+        Resource, With,
+    },
+    time::Time,
+    utils::info,
 };
 use bevy_kira_audio::{Audio, AudioControl, AudioSource};
 use bevy_turborand::{DelegatedRng, GlobalRng};
-use crate::player::config::GetDownwardRayLengthMax;
+use dynamics::rigid_body;
 #[derive(Debug, PartialEq, Clone)]
 // each of these stance types needs to have a movement speed calculation, a
 pub enum StanceType {
@@ -79,24 +89,30 @@ pub(crate) fn tick_footstep(
 ) {
     for (mut action, mut motion, stance) in query.iter_mut() {
         // you must be on the ground for this sound to play.
-        if stance.current != StanceType::Standing  {
+        if stance.current != StanceType::Standing {
             continue;
         }
 
         const LOCKIN_ACTION_THRESHOLD_PERCENTAGE: f32 = 0.05;
         const BUMP_ACTION_THRESHOLD_PERCENTAGE: f32 = 0.25;
-        const BUMP_REMAINING_ACTION_STEP: f32 = ACTION_STEP_DELTA_DEFAULT * (1.0 - BUMP_ACTION_THRESHOLD_PERCENTAGE);
-        const LOCKIN_ACTION_STEP_DELTA: f32 = ACTION_STEP_DELTA_DEFAULT * (1.0 - LOCKIN_ACTION_THRESHOLD_PERCENTAGE);
+        const BUMP_REMAINING_ACTION_STEP: f32 =
+            ACTION_STEP_DELTA_DEFAULT * (1.0 - BUMP_ACTION_THRESHOLD_PERCENTAGE);
+        const LOCKIN_ACTION_STEP_DELTA: f32 =
+            ACTION_STEP_DELTA_DEFAULT * (1.0 - LOCKIN_ACTION_THRESHOLD_PERCENTAGE);
         // if you are not moving and need to take more than 85% of your remaining step we play no sound.
-        if  motion.moving == false && action.delta >= LOCKIN_ACTION_STEP_DELTA {
+        if motion.moving == false && action.delta >= LOCKIN_ACTION_STEP_DELTA {
             continue;
         }
 
         // scale the speed based on if you are sprinting or if you are not moving and are resting your foot.
         // when this value is higher you finish your step sooner.
         let mut scale: f32 = 1.0;
-        let mut offset: f32 = ternary!(motion.sprinting, config.ride_height_step_offset, -config.ride_height_step_offset);
-        if motion.sprinting  == true || motion.moving == false {
+        let mut offset: f32 = ternary!(
+            motion.sprinting,
+            config.ride_height_step_offset,
+            -config.ride_height_step_offset
+        );
+        if motion.sprinting == true || motion.moving == false {
             scale = 1.45;
             offset *= 1.2; // this is kinda arbitrary.
         }
@@ -114,7 +130,7 @@ pub(crate) fn tick_footstep(
         if action.delta <= 0.0 {
             action.delta += ACTION_STEP_DELTA_DEFAULT;
             action.dir = action.dir.flip();
-            action.bumped = false; 
+            action.bumped = false;
             ev_footstep.send(FootstepEvent {
                 dir: action.dir.clone(),
                 volume: vol,
@@ -156,10 +172,7 @@ impl FootstepDirection {
 #[derive(Resource)]
 pub struct MyAudioHandle(Handle<AudioSource>);
 
-pub fn load_footstep_sfx(
-    mut commands: Commands,
-    asset_server: Res<AssetServer>,
-) {
+pub fn load_footstep_sfx(mut commands: Commands, asset_server: Res<AssetServer>) {
     let handle = asset_server.load("audio\\footstep-fx.mp3");
     commands.insert_resource(MyAudioHandle(handle.clone()));
 }
@@ -206,6 +219,7 @@ pub fn update_player_stance(
             &mut ExternalForce,
             &mut ExternalImpulse,
             &mut GravityScale,
+            &mut Rotation,
             &mut Stance,
             &mut Motion,
             &RayCaster,
@@ -227,6 +241,7 @@ pub fn update_player_stance(
         mut external_force,
         mut external_impulse,
         mut gravity_scale,
+        mut rotation,
         mut stance,
         mut motion,
         caster,
@@ -244,7 +259,8 @@ pub fn update_player_stance(
         }
 
         // Compute the next stance for the player.
-        let next_stance: StanceType = determine_next_stance(&keys, &config, &mut stance, ray_length);
+        let next_stance: StanceType =
+            determine_next_stance(&keys, &config, &mut stance, ray_length);
 
         // handle footstep sound event when the state has changed and only then.
         if next_stance != stance.current {
@@ -263,43 +279,54 @@ pub fn update_player_stance(
 
         let next_gravity_scale: f32;
 
-
-
         match next_stance {
             StanceType::Landing => {
                 // Set the gravity scale to zero.
                 next_gravity_scale = 0.0;
                 motion.current_ride_height = config.ride_height * 0.85;
-                apply_spring_force(&config, &mut linear_vel, &mut external_force, ray_length, motion.current_ride_height);
+                apply_spring_force(
+                    &config,
+                    &mut linear_vel,
+                    &mut external_force,
+                    ray_length,
+                    motion.current_ride_height,
+                );
             }
             StanceType::Standing => {
                 // Set the gravity scale to zero.
                 next_gravity_scale = 0.0;
-
                 // Clear any persisting forces on the rigid body.
                 external_force.clear();
+                // lock the rotation
 
-                
-                
-                apply_spring_force(&config, &mut linear_vel, &mut external_force, ray_length, motion.current_ride_height);
+                apply_spring_force(
+                    &config,
+                    &mut linear_vel,
+                    &mut external_force,
+                    ray_length,
+                    motion.current_ride_height,
+                );
             }
             StanceType::Airborne => {
                 next_gravity_scale = 1.0;
-
                 // Clear any persisting forces on the rigid body.
                 external_force.clear();
             }
             StanceType::Jumping => {
                 // set the gravity scale to zero.
                 next_gravity_scale = 1.0;
-
                 // clear any persisting forces on the rigid body.
                 external_force.clear();
-
                 // check if the stance has changed.
                 if stance.current != StanceType::Jumping {
                     linear_vel.y = 0.0; // clear the jump velocity.
-                    apply_jump_force(&config, &mut stance, &mut external_impulse, &mut linear_vel, ray_length);
+                    apply_jump_force(
+                        &config,
+                        &mut stance,
+                        &mut external_impulse,
+                        &mut linear_vel,
+                        ray_length,
+                    );
                 }
             }
             StanceType::Crouching => todo!(),
@@ -312,13 +339,34 @@ pub fn update_player_stance(
         }
 
         // Lerp current_ride_height to target_ride_height, this target_ride_height changes depending on the stance. Standing, Crouching, and Prone.
-        motion.current_ride_height = exp_decay(motion.current_ride_height, motion.target_ride_height, 6.0, time.delta_seconds());
-        
+        motion.current_ride_height = exp_decay(
+            motion.current_ride_height,
+            motion.target_ride_height,
+            6.0,
+            time.delta_seconds(),
+        );
+
         // Update the gravity scale.
         gravity_scale.0 = next_gravity_scale;
 
         // Update the current stance.
         stance.current = next_stance.clone();
+    }
+}
+
+pub fn lock_rotation(mut query: Query<(&mut LockedAxes, &mut AngularVelocity, &mut Rotation, &mut Stance), With<Player>>) {
+    for (mut locked_axes,mut angular_velocity, mut rotation, stance) in &mut query {
+        match stance.current {
+            StanceType::Standing | StanceType::Landing => {
+                // *locked_axes = locked_axes
+                //     .lock_rotation_x()
+                //     .lock_rotation_y()
+                //     .lock_rotation_z();
+                rotation.0 = Quat::IDENTITY;
+                angular_velocity.0 = Vec3::ZERO;
+            }
+            _ => (),
+        }
     }
 }
 
