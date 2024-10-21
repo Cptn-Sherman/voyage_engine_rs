@@ -669,6 +669,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "bevy_blur_regions"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6f418001f3801fa57c3b0d84bcdc312bba6bae1704f6ff819638921f582bd171"
+dependencies = [
+ "bevy",
+]
+
+[[package]]
 name = "bevy_color"
 version = "0.14.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5601,6 +5610,7 @@ dependencies = [
  "avian_interpolation3d",
  "avian_pickup",
  "bevy",
+ "bevy_blur_regions",
  "bevy_infinite_grid",
  "bevy_kira_audio",
  "bevy_mod_picking",

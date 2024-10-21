@@ -39,6 +39,7 @@ use bevy::{
 };
 
 use avian3d::prelude::*;
+use bevy_blur_regions::{BlurRegionsCamera, BlurRegionsPlugin};
 use bevy_infinite_grid::{InfiniteGridBundle, InfiniteGridPlugin};
 use bevy_kira_audio::{Audio, AudioControl, AudioEasing, AudioPlugin, AudioTween};
 use bevy_turborand::prelude::RngPlugin;
@@ -108,6 +109,7 @@ fn main() {
             AvianInterpolationPlugin::default(),
             #[cfg(feature = "use-debug-plugin")]
             PhysicsDebugPlugin::default(),
+            BlurRegionsPlugin::default(),
             DebugInterfacePlugin,
             CharacterPlugin,
             InfiniteGridPlugin,
@@ -216,6 +218,7 @@ struct CameraThing;
 fn create_camera(mut commands: Commands) {
     commands
         .spawn((
+            BlurRegionsCamera::default(),
             Camera3dBundle {
                 camera: Camera {
                     hdr: true,

@@ -6,6 +6,7 @@ use bevy::{
     },
     prelude::*,
 };
+use bevy_blur_regions::BlurRegion;
 
 use crate::{
     utils::{format_percentage_f64, format_value_f32},
@@ -59,6 +60,7 @@ pub fn create_debug_interface(mut cmd: Commands, asset_server: Res<AssetServer>)
 
     // Center Look UI
     cmd.spawn(NodeBundle {
+        
         style: Style {
             width: Val::Percent(100.0),
             height: Val::Percent(100.0),
@@ -87,7 +89,7 @@ pub fn create_debug_interface(mut cmd: Commands, asset_server: Res<AssetServer>)
     })
     .with_children(|parent| {
         parent
-            .spawn(NodeBundle {
+            .spawn(( BlurRegion, NodeBundle {
                 style: Style {
                     display: Display::Flex,
                     justify_content: JustifyContent::SpaceAround,
@@ -102,7 +104,7 @@ pub fn create_debug_interface(mut cmd: Commands, asset_server: Res<AssetServer>)
                 background_color: BackgroundColor(Color::srgba(0.05, 0.05, 0.05, 0.85)),
                 border_color: BorderColor(Color::srgb(0.9, 0.9, 0.9)),
                 ..Default::default()
-            })
+            }))
             .with_children(|parent| {
                 parent.spawn((TextBundle::from_sections([gen_text_section(
                     Some("Box".to_string()),
@@ -122,7 +124,7 @@ pub fn create_debug_interface(mut cmd: Commands, asset_server: Res<AssetServer>)
     // Engine and System Information
 
     // System State
-    cmd.spawn(NodeBundle {
+    cmd.spawn( NodeBundle {
         style: Style {
             width: Val::Percent(100.0),
             height: Val::Percent(100.0),
@@ -137,7 +139,7 @@ pub fn create_debug_interface(mut cmd: Commands, asset_server: Res<AssetServer>)
     })
     .with_children(|parent| {
         parent
-            .spawn(NodeBundle {
+            .spawn(( BlurRegion, NodeBundle {
                 style: Style {
                     display: Display::Flex,
                     justify_content: JustifyContent::SpaceAround,
@@ -152,7 +154,7 @@ pub fn create_debug_interface(mut cmd: Commands, asset_server: Res<AssetServer>)
                 background_color: BackgroundColor(Color::srgba(0.05, 0.05, 0.05, 0.75)),
                 border_color: BorderColor(Color::srgb(0.9, 0.9, 0.9)),
                 ..Default::default()
-            })
+            }))
             .with_children(|parent| {
                 parent.spawn((
                     TextBundle::from_sections([
@@ -329,7 +331,7 @@ pub fn create_debug_interface(mut cmd: Commands, asset_server: Res<AssetServer>)
     })
     .with_children(|parent| {
         parent
-            .spawn(NodeBundle {
+            .spawn(( BlurRegion, NodeBundle {
                 style: Style {
                     display: Display::Flex,
                     justify_content: JustifyContent::SpaceAround,
@@ -344,7 +346,7 @@ pub fn create_debug_interface(mut cmd: Commands, asset_server: Res<AssetServer>)
                 background_color: BackgroundColor(Color::srgba(0.05, 0.05, 0.05, 0.75)),
                 border_color: BorderColor(Color::srgb(0.9, 0.9, 0.9)),
                 ..Default::default()
-            })
+            }))
             .with_children(|parent| {
                 parent.spawn((
                     TextBundle::from_sections([

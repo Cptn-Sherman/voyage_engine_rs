@@ -10,7 +10,7 @@
 - Feels like you jump really strong and hover, like gravity is added slowly
 - Implement free camera and detach camera from the player entity
 - Continue implementing the debug interface
-
+- Define a panel style template which defines how a ui panel looks and reuse it when creating part of the hud. For Example the Blur Region
 
 --- 
 ## Questions: 

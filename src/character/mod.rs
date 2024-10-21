@@ -65,7 +65,7 @@ impl Plugin for CharacterPlugin {
                 .chain(),
         );
         app.add_event::<FootstepEvent>();
-        info!("Actor plugin successfully initialized!");
+        info!("Character plugin successfully initialized!");
     }
 }
 
