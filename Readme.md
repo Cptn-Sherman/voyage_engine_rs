@@ -11,6 +11,8 @@
 - Implement free camera and detach camera from the player entity
 - Continue implementing the debug interface
 - Define a panel style template which defines how a ui panel looks and reuse it when creating part of the hud. For Example the Blur Region
+- Make the cursor high-contrast currently its not visisble in bright scenarios... look at minecrafts implementation and probably implement a custom shader or something.
+- Question: Why do different fonts render at different scales.
 
 --- 
 ## Questions: 

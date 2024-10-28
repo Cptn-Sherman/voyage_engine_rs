@@ -13,15 +13,15 @@ use crate::{
     CameraThing,
 };
 
-const DEFAULT_FONT_PATH: &str = "fonts/Monocraft.ttf";
-const DEFAULT_FONT_SIZE: f32 = 13.0;
+const DEFAULT_FONT_PATH: &str = "fonts/ashlander-pixel.ttf";
+const DEFAULT_FONT_SIZE: f32 = 36.0;
 const NO_PERCENTAGE: &str = "---.-%";
 
 const ORANGE_TEXT_COLOR: Color = Color::hsv(0.34, 1.0, 0.5);
 const YELLOW_GREEN_TEXT_COLOR: Color = Color::hsv(0.9, 0.69, 0.58);
 const RED_TEXT_COLOR: Color = Color::srgb(1.0, 0.0, 0.0);
 const GOLD_TEXT_COLOR: Color = Color::srgb(1.0 , 0.72, 0.0);
-
+const BORDER_COLOR: Color = Color::srgb(0.8 , 0.8, 0.8);
 pub struct DebugInterfacePlugin;
 
 impl Plugin for DebugInterfacePlugin {
@@ -102,7 +102,7 @@ pub fn create_debug_interface(mut cmd: Commands, asset_server: Res<AssetServer>)
                     ..Default::default()
                 },
                 background_color: BackgroundColor(Color::srgba(0.05, 0.05, 0.05, 0.85)),
-                border_color: BorderColor(Color::srgb(0.9, 0.9, 0.9)),
+                border_color: BorderColor(BORDER_COLOR),
                 ..Default::default()
             }))
             .with_children(|parent| {
@@ -152,7 +152,7 @@ pub fn create_debug_interface(mut cmd: Commands, asset_server: Res<AssetServer>)
                     ..Default::default()
                 },
                 background_color: BackgroundColor(Color::srgba(0.05, 0.05, 0.05, 0.75)),
-                border_color: BorderColor(Color::srgb(0.9, 0.9, 0.9)),
+                border_color: BorderColor(BORDER_COLOR),
                 ..Default::default()
             }))
             .with_children(|parent| {
@@ -344,7 +344,7 @@ pub fn create_debug_interface(mut cmd: Commands, asset_server: Res<AssetServer>)
                     ..Default::default()
                 },
                 background_color: BackgroundColor(Color::srgba(0.05, 0.05, 0.05, 0.75)),
-                border_color: BorderColor(Color::srgb(0.9, 0.9, 0.9)),
+                border_color: BorderColor(BORDER_COLOR),
                 ..Default::default()
             }))
             .with_children(|parent| {
