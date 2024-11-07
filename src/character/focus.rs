@@ -16,7 +16,7 @@ pub fn camera_look_system(
     motion: Res<Events<MouseMotion>>,
     config: Res<PlayerControlConfig>,
     mut state: ResMut<InputState>,
-    mut camera_query: Query<&mut Transform, With<Camera>>,
+    mut camera_query: Query<&mut Transform, With<Camera3d>>,
 ) {
     if let Ok(window) = primary_window.get_single() {
         let delta_state = state.as_mut();

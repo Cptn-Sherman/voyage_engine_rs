@@ -13,8 +13,8 @@ use crate::{
     CameraThing,
 };
 
-const DEFAULT_FONT_PATH: &str = "fonts/ashlander-pixel.ttf";
-const DEFAULT_FONT_SIZE: f32 = 36.0;
+const DEFAULT_FONT_PATH: &str = "fonts/AshlanderPixel_fixed.ttf";
+const DEFAULT_FONT_SIZE: f32 = 18.0;
 const NO_PERCENTAGE: &str = "---.-%";
 
 const ORANGE_TEXT_COLOR: Color = Color::hsv(0.34, 1.0, 0.5);
@@ -52,7 +52,6 @@ impl Plugin for DebugInterfacePlugin {
 pub fn create_debug_interface(mut cmd: Commands, asset_server: Res<AssetServer>) {
     // setup the default font
     let default_font = asset_server.load(DEFAULT_FONT_PATH);
-
     // Spawn in the crosshair
     let cursor_size: f32 = 4.0;
     let cursor_color: BackgroundColor = BackgroundColor(Color::WHITE);

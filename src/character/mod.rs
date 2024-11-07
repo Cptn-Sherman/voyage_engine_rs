@@ -16,8 +16,7 @@ use bevy::{
     math::{Dir3, Vec3},
     pbr::{MaterialMeshBundle, PbrBundle, StandardMaterial},
     prelude::{
-        default, Bundle, Capsule3d, Commands, Component, Entity, IntoSystemConfigs, Query, Res,
-        ResMut, Resource, With, Without,
+        default, Bundle, Camera3d, Capsule3d, Commands, Component, Entity, IntoSystemConfigs, Query, Res, ResMut, Resource, With, Without
     },
     render::{camera::Camera, mesh::Mesh},
     transform::components::{GlobalTransform, Transform},
@@ -76,7 +75,7 @@ fn attached_camera_system(
     mut player_query: Query<(Entity, &mut Transform), (With<Player>, Without<Camera>)>,
     mut camera_query: Query<
         (Entity, &mut Transform, Option<&Parent>),
-        (With<Camera>, With<CameraThing>, Without<Player>),
+        (With<Camera3d>, With<CameraThing>, Without<Player>),
     >,
 ) {
     if camera_query.is_empty()

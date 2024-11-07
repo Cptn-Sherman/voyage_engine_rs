@@ -7,11 +7,8 @@ mod terrain;
 mod user_interface;
 mod utils;
 
-use avian3d::parry::shape;
 use avian_interpolation3d::AvianInterpolationPlugin;
-use avian_pickup::actor::AvianPickupActor;
 use avian_pickup::AvianPickupPlugin;
-use bevy::app::RunFixedMainLoop;
 use bevy::color::palettes::css::YELLOW;
 use bevy::ecs::event::ManualEventReader;
 use bevy::input::mouse::MouseMotion;
@@ -20,10 +17,6 @@ use bevy::render::render_asset::{RenderAssetBytesPerFrame, RenderAssetUsages};
 
 use bevy::render::mesh::Mesh;
 use bevy::render::mesh::{Indices, Mesh as BevyMesh, PrimitiveTopology, VertexAttributeValues};
-
-use bevy::render::render_resource::{AddressMode, SamplerDescriptor};
-use bevy::render::renderer::{RenderAdapter, RenderDevice, RenderInstance};
-use bevy::render::settings::{WgpuLimits, WgpuSettings};
 use bevy::render::texture::{
     ImageAddressMode, ImageLoaderSettings, ImageSampler, ImageSamplerDescriptor,
 };
@@ -37,6 +30,7 @@ use bevy::{
     pbr::{DirectionalLightShadowMap, ScreenSpaceAmbientOcclusionBundle, ShadowFilteringMethod},
     prelude::*,
 };
+use bevy_vector_shapes::prelude::*;
 
 use avian3d::prelude::*;
 use bevy_blur_regions::{BlurRegionsCamera, BlurRegionsPlugin};
@@ -45,7 +39,6 @@ use bevy_kira_audio::{Audio, AudioControl, AudioEasing, AudioPlugin, AudioTween}
 use bevy_turborand::prelude::RngPlugin;
 use character::CharacterPlugin;
 use chrono::{DateTime, Local};
-use light_consts::lux::DIRECT_SUNLIGHT;
 
 use std::f32::consts::{FRAC_PI_4, PI};
 use std::time::Duration;
@@ -53,6 +46,8 @@ use std::time::Duration;
 use bevy_mesh::{mesh_for_model, Model};
 
 use crate::utils::CHUNK_SIZE_I32;
+use bevy::log::LogPlugin;
+use bevy_dev_console::prelude::*;
 use transvoxel::{transition_sides, voxel_source::Block};
 use user_interface::DebugInterfacePlugin;
 use utils::{
@@ -100,9 +95,14 @@ fn main() {
         .insert_resource(DirectionalLightShadowMap { size: 4098 })
         .insert_resource(RenderAssetBytesPerFrame::new(1_000_000_000))
         .add_plugins((
-            DefaultPlugins,
+            DefaultPlugins.set(LogPlugin {
+                custom_layer: custom_log_layer,
+                ..default()
+            }),
             RngPlugin::default(),
             TemporalAntiAliasPlugin,
+            DevConsolePlugin,
+            Shape2dPlugin::default(),
             // Disabling SyncPlugin is optional, but will get you a performance boost.
             PhysicsPlugins::default(),
             AvianPickupPlugin::default(),
@@ -126,11 +126,11 @@ fn main() {
                 animate_light_direction,
                 detect_toggle_cursor,
                 screenshot_on_equals,
+                draw,
             ),
         )
         .run();
 }
-
 
 fn start_background_audio(asset_server: Res<AssetServer>, audio: Res<Audio>) {
     // !this file is for internal testing only, DO NOT DISTRIBUTE!
@@ -143,6 +143,15 @@ fn start_background_audio(asset_server: Res<AssetServer>, audio: Res<Audio>) {
         ))
         .with_volume(0.15)
         .looped();
+}
+
+fn draw(mut painter: ShapePainter) {
+    // Draw a arc
+    painter.set_color(Color::srgb(1.0, 0.72, 0.0));
+    painter.set_scale(Vec3::splat(200.0));
+    painter.set_translation(Vec3::new(300.0, 0.0, 0.0));
+    painter.thickness = 0.0002;
+    painter.arc(0.125, f32::to_radians(0.0), f32::to_radians(180.0));
 }
 
 // A unit struct to help identify the FPS UI component, since there may be many Text components
@@ -216,6 +225,17 @@ fn animate_light_direction(
 struct CameraThing;
 
 fn create_camera(mut commands: Commands) {
+    commands.spawn(Camera2dBundle {
+        camera: Camera {
+            order: 1,
+            hdr: true,
+            clear_color: ClearColorConfig::None,
+            ..default()
+        },
+
+        ..default()
+    });
+
     commands
         .spawn((
             BlurRegionsCamera::default(),
@@ -338,8 +358,6 @@ fn setup(
             ..default()
         },
     ));
-
-
 
     commands.spawn(SceneBundle {
         scene: asset_server.load("models/FlightHelmet/FlightHelmet.gltf#Scene0"),

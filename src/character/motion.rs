@@ -2,7 +2,7 @@ use bevy::{
     input::ButtonInput,
     log::{info, warn},
     math::{Quat, Vec3},
-    prelude::{Component, KeyCode, Query, Res, With, Without},
+    prelude::{Camera3d, Component, KeyCode, Query, Res, With, Without},
     render::camera::Camera,
     time::Time,
     transform::components::Transform,
@@ -31,7 +31,7 @@ pub fn update_player_motion(
     keys: Res<ButtonInput<KeyCode>>,
     player_config: Res<PlayerControlConfig>,
     key_bindings: Res<KeyBindings>,
-    camera_query: Query<&mut Transform, (With<Camera>, Without<Player>)>,
+    camera_query: Query<&mut Transform, (With<Camera3d>, Without<Player>)>,
     mut query: Query<(&mut LinearVelocity, &mut Rotation, &mut Motion, &mut Stance), With<Player>>,
 ) {
     if camera_query.is_empty()
