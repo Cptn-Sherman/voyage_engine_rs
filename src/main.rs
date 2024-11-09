@@ -1,6 +1,5 @@
 #![allow(dead_code)]
 
-mod bevy_mesh;
 mod character;
 mod player;
 mod terrain;
@@ -39,11 +38,11 @@ use bevy_kira_audio::{Audio, AudioControl, AudioEasing, AudioPlugin, AudioTween}
 use bevy_turborand::prelude::RngPlugin;
 use character::CharacterPlugin;
 use chrono::{DateTime, Local};
+use terrain::bevy_mesh::{mesh_for_model, Model};
 
 use std::f32::consts::{FRAC_PI_4, PI};
 use std::time::Duration;
 
-use bevy_mesh::{mesh_for_model, Model};
 
 use crate::utils::CHUNK_SIZE_I32;
 use bevy::log::LogPlugin;

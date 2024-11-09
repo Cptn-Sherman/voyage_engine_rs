@@ -13,6 +13,7 @@ pub struct TerrainPlugin;
 pub struct Voxel {
     is_occupied: bool,
 }
+pub mod bevy_mesh;
 
 // Define the Octree node
 enum OctreeNode {

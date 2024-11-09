@@ -1,3 +1,6 @@
+pub mod config;
+pub mod themes;
+
 // basic setup for bevy plugin
 use bevy::{
     diagnostic::{
@@ -7,21 +10,14 @@ use bevy::{
     prelude::*,
 };
 use bevy_blur_regions::BlurRegion;
+use themes::{gen_text_section, BORDER_COLOR, DEFAULT_FONT_PATH, DEFAULT_FONT_SIZE, GOLD_TEXT_COLOR, NO_PERCENTAGE, ORANGE_TEXT_COLOR, RED_TEXT_COLOR, YELLOW_GREEN_TEXT_COLOR};
 
 use crate::{
     utils::{format_percentage_f64, format_value_f32},
     CameraThing,
 };
 
-const DEFAULT_FONT_PATH: &str = "fonts/AshlanderPixel_fixed.ttf";
-const DEFAULT_FONT_SIZE: f32 = 18.0;
-const NO_PERCENTAGE: &str = "---.-%";
 
-const ORANGE_TEXT_COLOR: Color = Color::hsv(0.34, 1.0, 0.5);
-const YELLOW_GREEN_TEXT_COLOR: Color = Color::hsv(0.9, 0.69, 0.58);
-const RED_TEXT_COLOR: Color = Color::srgb(1.0, 0.0, 0.0);
-const GOLD_TEXT_COLOR: Color = Color::srgb(1.0 , 0.72, 0.0);
-const BORDER_COLOR: Color = Color::srgb(0.8 , 0.8, 0.8);
 pub struct DebugInterfacePlugin;
 
 impl Plugin for DebugInterfacePlugin {
@@ -59,7 +55,6 @@ pub fn create_debug_interface(mut cmd: Commands, asset_server: Res<AssetServer>)
 
     // Center Look UI
     cmd.spawn(NodeBundle {
-        
         style: Style {
             width: Val::Percent(100.0),
             height: Val::Percent(100.0),
@@ -599,21 +594,7 @@ pub fn create_debug_interface(mut cmd: Commands, asset_server: Res<AssetServer>)
     });
 }
 
-fn gen_text_section(
-    value: Option<String>,
-    size: Option<f32>,
-    color: Option<Color>,
-    font: Handle<Font>,
-) -> TextSection {
-    TextSection::new(
-        value.unwrap_or("".to_string()),
-        TextStyle {
-            font,
-            font_size: size.unwrap_or(DEFAULT_FONT_SIZE),
-            color: color.unwrap_or(Color::WHITE),
-        },
-    )
-}
+
 
 #[derive(Resource)]
 pub struct FPSUpdateUITimer(Timer);
@@ -675,7 +656,6 @@ fn tps_debug_update_system(
     }
 }
 
-//
 fn gpu_info_update_system(diag: Res<DiagnosticsStore>, mut query: Query<&mut Text, With<GpuText>>) {
     for mut text in &mut query {
         //if let Some(gpu) = diag.get(SystemInformationDiagnosticsPlugin::GPU_USAGE).and_then(|gpu| gpu.smoothed()) {
