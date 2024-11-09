@@ -125,32 +125,22 @@ fn main() {
                 animate_light_direction,
                 detect_toggle_cursor,
                 screenshot_on_equals,
-                draw,
             ),
         )
         .run();
 }
 
 fn start_background_audio(asset_server: Res<AssetServer>, audio: Res<Audio>) {
-    // !this file is for internal testing only, DO NOT DISTRIBUTE!
+    // ! DO NOT DISTRIBUTE - This music file is for internal testing only. !
     audio
         .into_inner()
         .play(asset_server.load("audio\\liminal-spaces-ambient.ogg"))
         .fade_in(AudioTween::new(
-            Duration::from_millis(1500),
-            AudioEasing::OutPowi(4),
+            Duration::from_millis(18000),
+            AudioEasing::InPowf(0.125),
         ))
         .with_volume(0.15)
         .looped();
-}
-
-fn draw(mut painter: ShapePainter) {
-    // Draw a arc
-    painter.set_color(Color::srgb(1.0, 0.72, 0.0));
-    painter.set_scale(Vec3::splat(200.0));
-    painter.set_translation(Vec3::new(300.0, 0.0, 0.0));
-    painter.thickness = 0.0002;
-    painter.arc(0.125, f32::to_radians(0.0), f32::to_radians(180.0));
 }
 
 // A unit struct to help identify the FPS UI component, since there may be many Text components

@@ -10,13 +10,15 @@ use bevy::{
     prelude::*,
 };
 use bevy_blur_regions::BlurRegion;
-use themes::{gen_text_section, BORDER_COLOR, DEFAULT_FONT_PATH, DEFAULT_FONT_SIZE, GOLD_TEXT_COLOR, NO_PERCENTAGE, ORANGE_TEXT_COLOR, RED_TEXT_COLOR, YELLOW_GREEN_TEXT_COLOR};
+use themes::{
+    gen_text_section, BORDER_COLOR, DEFAULT_FONT_PATH, DEFAULT_FONT_SIZE, GOLD_TEXT_COLOR,
+    NO_PERCENTAGE, ORANGE_TEXT_COLOR, RED_TEXT_COLOR, YELLOW_GREEN_TEXT_COLOR,
+};
 
 use crate::{
     utils::{format_percentage_f64, format_value_f32},
     CameraThing,
 };
-
 
 pub struct DebugInterfacePlugin;
 
@@ -83,22 +85,25 @@ pub fn create_debug_interface(mut cmd: Commands, asset_server: Res<AssetServer>)
     })
     .with_children(|parent| {
         parent
-            .spawn(( BlurRegion, NodeBundle {
-                style: Style {
-                    display: Display::Flex,
-                    justify_content: JustifyContent::SpaceAround,
-                    align_items: AlignItems::Center,
-                    flex_direction: FlexDirection::Column,
-                    row_gap: Val::Px(3.0),
-                    top: Val::Px(24.0),
-                    padding: UiRect::all(Val::Px(8.0)),
-                    border: UiRect::all(Val::Px(2.0)),
+            .spawn((
+                BlurRegion,
+                NodeBundle {
+                    style: Style {
+                        display: Display::Flex,
+                        justify_content: JustifyContent::SpaceAround,
+                        align_items: AlignItems::Center,
+                        flex_direction: FlexDirection::Column,
+                        row_gap: Val::Px(3.0),
+                        top: Val::Px(24.0),
+                        padding: UiRect::all(Val::Px(8.0)),
+                        border: UiRect::all(Val::Px(2.0)),
+                        ..Default::default()
+                    },
+                    background_color: BackgroundColor(Color::srgba(0.05, 0.05, 0.05, 0.85)),
+                    border_color: BorderColor(BORDER_COLOR),
                     ..Default::default()
                 },
-                background_color: BackgroundColor(Color::srgba(0.05, 0.05, 0.05, 0.85)),
-                border_color: BorderColor(BORDER_COLOR),
-                ..Default::default()
-            }))
+            ))
             .with_children(|parent| {
                 parent.spawn((TextBundle::from_sections([gen_text_section(
                     Some("Box".to_string()),
@@ -115,10 +120,8 @@ pub fn create_debug_interface(mut cmd: Commands, asset_server: Res<AssetServer>)
             });
     });
 
-    // Engine and System Information
-
     // System State
-    cmd.spawn( NodeBundle {
+    cmd.spawn(NodeBundle {
         style: Style {
             width: Val::Percent(100.0),
             height: Val::Percent(100.0),
@@ -133,22 +136,25 @@ pub fn create_debug_interface(mut cmd: Commands, asset_server: Res<AssetServer>)
     })
     .with_children(|parent| {
         parent
-            .spawn(( BlurRegion, NodeBundle {
-                style: Style {
-                    display: Display::Flex,
-                    justify_content: JustifyContent::SpaceAround,
-                    align_items: AlignItems::FlexStart,
-                    flex_direction: FlexDirection::Column,
-                    row_gap: Val::Px(2.0),
-                    margin: UiRect::all(Val::Px(5.0)),
-                    padding: UiRect::all(Val::Px(5.0)),
-                    border: UiRect::all(Val::Px(2.0)),
+            .spawn((
+                BlurRegion,
+                NodeBundle {
+                    style: Style {
+                        display: Display::Flex,
+                        justify_content: JustifyContent::SpaceAround,
+                        align_items: AlignItems::FlexStart,
+                        flex_direction: FlexDirection::Column,
+                        row_gap: Val::Px(2.0),
+                        margin: UiRect::all(Val::Px(5.0)),
+                        padding: UiRect::all(Val::Px(5.0)),
+                        border: UiRect::all(Val::Px(2.0)),
+                        ..Default::default()
+                    },
+                    background_color: BackgroundColor(Color::srgba(0.05, 0.05, 0.05, 0.75)),
+                    border_color: BorderColor(BORDER_COLOR),
                     ..Default::default()
                 },
-                background_color: BackgroundColor(Color::srgba(0.05, 0.05, 0.05, 0.75)),
-                border_color: BorderColor(BORDER_COLOR),
-                ..Default::default()
-            }))
+            ))
             .with_children(|parent| {
                 parent.spawn((
                     TextBundle::from_sections([
@@ -325,22 +331,25 @@ pub fn create_debug_interface(mut cmd: Commands, asset_server: Res<AssetServer>)
     })
     .with_children(|parent| {
         parent
-            .spawn(( BlurRegion, NodeBundle {
-                style: Style {
-                    display: Display::Flex,
-                    justify_content: JustifyContent::SpaceAround,
-                    align_items: AlignItems::FlexStart,
-                    flex_direction: FlexDirection::Column,
-                    row_gap: Val::Px(2.0),
-                    margin: UiRect::all(Val::Px(5.0)),
-                    padding: UiRect::all(Val::Px(5.0)),
-                    border: UiRect::all(Val::Px(2.0)),
+            .spawn((
+                BlurRegion,
+                NodeBundle {
+                    style: Style {
+                        display: Display::Flex,
+                        justify_content: JustifyContent::SpaceAround,
+                        align_items: AlignItems::FlexStart,
+                        flex_direction: FlexDirection::Column,
+                        row_gap: Val::Px(2.0),
+                        margin: UiRect::all(Val::Px(5.0)),
+                        padding: UiRect::all(Val::Px(5.0)),
+                        border: UiRect::all(Val::Px(2.0)),
+                        ..Default::default()
+                    },
+                    background_color: BackgroundColor(Color::srgba(0.05, 0.05, 0.05, 0.75)),
+                    border_color: BorderColor(BORDER_COLOR),
                     ..Default::default()
                 },
-                background_color: BackgroundColor(Color::srgba(0.05, 0.05, 0.05, 0.75)),
-                border_color: BorderColor(BORDER_COLOR),
-                ..Default::default()
-            }))
+            ))
             .with_children(|parent| {
                 parent.spawn((
                     TextBundle::from_sections([
@@ -593,8 +602,6 @@ pub fn create_debug_interface(mut cmd: Commands, asset_server: Res<AssetServer>)
             });
     });
 }
-
-
 
 #[derive(Resource)]
 pub struct FPSUpdateUITimer(Timer);

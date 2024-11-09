@@ -1,20 +1,23 @@
 
 
 ## Todo: 
-
 - Looking at the ground causes you to walk slower becuase we care about the y component of the camera. Use XZ and normalize
 - You can full height jump while crouched becuase the ray is short when testing the jump height. You hit 200/200 which feels wrong.
 - Crouching should be lower but you bottom out and fall over
 - render colliders for debug
-- need a mechanism for standing up after falling, possibly just limit external forces on the collider which cause rotation but allow impulses.
+- Need a mechanism for standing up after falling over
 - Feels like you jump really strong and hover, like gravity is added slowly
 - Implement free camera and detach camera from the player entity
 - Continue implementing the debug interface
 - Define a panel style template which defines how a ui panel looks and reuse it when creating part of the hud. For Example the Blur Region
 - Make the cursor high-contrast currently its not visisble in bright scenarios... look at minecrafts implementation and probably implement a custom shader or something.
 - Question: Why do different fonts render at different scales.
+- Find Better Footstep sounds
+- Store User Interface themes in toml
+- Make player controller configurable with TOML
 
 --- 
+
 ## Questions: 
 - How can this rust executable know information about what version of bevy it uses
 - What version of rust it was compiled with...
@@ -39,14 +42,14 @@ swap:   --.--ms
 Graphed Info --> Right Aligned
 
 Engine Info --> Right Aligned, Static
-voyage_ver: 0.01ab
+voyage_ver: 0.01.000-ab
 build_num:  545625
 rust_ver: 1.70.0
 bevy_ver: 0.14.0
 backend: vulkan
 
 System Info --> Right Aligned, Static (except time)
-os: windows
+os: windows_11:24H2
 cpu: Intel 3970x 8C-16T
 gpu: RTX 3080 10GB
 sys_time:  3:42:09pm
