@@ -1,6 +1,5 @@
 #![allow(dead_code)]
 
-mod character;
 mod player;
 mod terrain;
 mod user_interface;
@@ -36,7 +35,6 @@ use bevy_blur_regions::{BlurRegionsCamera, BlurRegionsPlugin};
 use bevy_infinite_grid::{InfiniteGridBundle, InfiniteGridPlugin};
 use bevy_kira_audio::{Audio, AudioControl, AudioEasing, AudioPlugin, AudioTween};
 use bevy_turborand::prelude::RngPlugin;
-use character::CharacterPlugin;
 use chrono::{DateTime, Local};
 use player::PlayerPlugin;
 use terrain::bevy_mesh::{mesh_for_model, Model};
@@ -51,7 +49,7 @@ use bevy_dev_console::prelude::*;
 use transvoxel::{transition_sides, voxel_source::Block};
 use user_interface::DebugInterfacePlugin;
 use utils::{
-    format_value_f32, get_valid_extension, increase_render_adapter_wgpu_limits, CHUNK_SIZE_F32,
+    detect_toggle_cursor, format_value_f32, get_valid_extension, increase_render_adapter_wgpu_limits, CHUNK_SIZE_F32
 };
 
 #[derive(Component)]
@@ -112,7 +110,6 @@ fn main() {
             BlurRegionsPlugin::default(),
             DebugInterfacePlugin,
             PlayerPlugin,
-            CharacterPlugin,
             InfiniteGridPlugin,
             AudioPlugin,
         ))
@@ -426,49 +423,9 @@ fn generate_plane_mesh(
     )
 }
 
-fn grab_cursor(mut primary_window: Query<&mut Window, With<PrimaryWindow>>) {
-    if let Ok(mut window) = primary_window.get_single_mut() {
-        // Check if the cursor is already grabbed
-        if window.cursor.grab_mode != CursorGrabMode::Locked {
-            toggle_grab_cursor(&mut window);
-        }
-    } else {
-        warn!("Primary window not found for `initial_grab_cursor`!");
-    }
-}
 
-fn detect_toggle_cursor(
-    keys: Res<ButtonInput<KeyCode>>,
-    key_bindings: Res<KeyBindings>,
-    mut primary_window: Query<&mut Window, With<PrimaryWindow>>,
-) {
-    if let Ok(mut window) = primary_window.get_single_mut() {
-        if keys.just_pressed(key_bindings.toggle_grab_cursor) {
-            toggle_grab_cursor(&mut window);
-        }
-    } else {
-        warn!("Primary window not found for `cursor_grab`!");
-    }
-}
 
-/// Grabs/ungrabs mouse cursor
-fn toggle_grab_cursor(window: &mut Window) {
-    match window.cursor.grab_mode {
-        CursorGrabMode::None => {
-            // Set the cursor position to the center of the window
-            window.cursor.grab_mode = CursorGrabMode::Confined;
-            window.cursor.visible = false;
-        }
-        _ => {
-            window.cursor.grab_mode = CursorGrabMode::None;
-            window.cursor.visible = true;
-        }
-    }
-    // set the cursor to the center of the screen.
-    let window_width = window.width();
-    let window_height = window.height();
-    window.set_cursor_position(Some(Vec2::new(window_width / 2.0, window_height / 2.0)));
-}
+
 
 /** This system was yonked from the screenshot example: https://bevyengine.org/examples/Window/screenshot/ */
 fn screenshot_on_equals(

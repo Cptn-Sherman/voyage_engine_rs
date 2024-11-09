@@ -1,21 +1,50 @@
 use avian3d::prelude::*;
-use avian_pickup::{actor::AvianPickupActor, input::{AvianPickupAction, AvianPickupInput}};
+use avian_pickup::{
+    actor::AvianPickupActor,
+    input::{AvianPickupAction, AvianPickupInput},
+};
 use bevy::{log::info, prelude::*};
+
 use body::Body;
 use config::PlayerControlConfig;
-use focus::Focus;
-use motion::Motion;
-use stance::{ActionStep, Stance, StanceType, ACTION_STEP_DELTA_DEFAULT};
-use crate::{character::*, grab_cursor, CameraThing, KeyBindings};
+use focus::{camera_look_system, Focus};
+use motion::{update_player_motion, Motion};
+use stance::{load_footstep_sfx, lock_rotation, play_footstep_sfx, tick_footstep, update_player_stance, ActionStep, FootstepEvent, Stance, StanceType, ACTION_STEP_DELTA_DEFAULT};
+use states::{crouched::toggle_crouching, grounded::sprinting::toggle_sprint};
+use crate::{utils::grab_cursor, CameraThing};
+
 
 pub mod config;
+pub mod motion;
+pub mod stance;
+pub mod focus;
+pub mod states;
+pub mod body;
 
 pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(PlayerControlConfig::default()); // later we will load from some toml file
-        app.add_systems(Startup, (spawn_player, attached_camera_system, grab_cursor).chain());
+        app.add_systems(
+            Startup,
+            (load_footstep_sfx, spawn_player, attached_camera_system, grab_cursor).chain(),
+        );
+        app.add_systems(
+            Update,
+            (
+                update_player_stance,
+                toggle_crouching,
+                toggle_sprint,
+                update_player_motion,
+                lock_rotation,
+                play_footstep_sfx,
+                tick_footstep,
+                camera_look_system,
+            )
+                .chain(),
+        );
+        app.add_event::<FootstepEvent>();
         info!("Initialized Player plugin");
     }
 }
@@ -45,10 +74,7 @@ pub struct PlayerBundle {
     pickup_actor: AvianPickupActor,
 }
 
-pub fn spawn_player(
-    player_config: Res<PlayerControlConfig>,
-    mut commands: Commands,
-) {
+pub fn spawn_player(player_config: Res<PlayerControlConfig>, mut commands: Commands) {
     commands.spawn((
         PlayerBundle {
             linear_vel: LinearVelocity::ZERO,
@@ -90,11 +116,9 @@ pub fn spawn_player(
             pickup_actor: AvianPickupActor::default(),
         },
         Player,
-        
     ));
     info!("Spawned Player Actor");
 }
-
 
 fn attached_camera_system(
     mut commands: Commands,

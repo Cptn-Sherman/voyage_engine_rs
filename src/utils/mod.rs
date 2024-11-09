@@ -80,9 +80,11 @@ macro_rules! double_for_loop {
 }
 
 use bevy::{
-    log::info, prelude::{Image, Res}, render::{render_asset::RenderAssetUsages, render_resource::{Extent3d, TextureDimension, TextureFormat}, renderer::RenderAdapter}
+    input::ButtonInput, log::{info, warn}, math::Vec2, prelude::{Image, KeyCode, Query, Res, With}, render::{render_asset::RenderAssetUsages, render_resource::{Extent3d, TextureDimension, TextureFormat}, renderer::RenderAdapter}, window::{CursorGrabMode, PrimaryWindow, Window}
 };
 use std::fmt::Write;
+
+use crate::KeyBindings;
 
 /// Formats a value as a string with optional decimal digits and support for negative space formatting.
 ///
@@ -281,7 +283,7 @@ pub fn get_valid_extension<'a>(extension: &'a str, ext_type: ExtensionType) -> &
 
 
 
-// pulled this from Freya Holmer's Lerp smoothing is broken talk. https://www.youtube.com/watch?v=LSNQuFEDOyQ
+// Pulled this from Freya Holmer's Lerp smoothing is broken talk. https://www.youtube.com/watch?v=LSNQuFEDOyQ
 pub fn exp_decay(a: f32, b: f32, decay: f32, delta_time: f32) -> f32 {
     return b + (a - b) * (-decay * delta_time).exp()
 }
@@ -297,4 +299,48 @@ pub fn increase_render_adapter_wgpu_limits(render_adapter: Res<RenderAdapter>) {
             .limits()
             .max_sampled_textures_per_shader_stage
     );
+}
+
+pub fn grab_cursor(mut primary_window: Query<&mut Window, With<PrimaryWindow>>) {
+    if let Ok(mut window) = primary_window.get_single_mut() {
+        // Check if the cursor is already grabbed
+        if window.cursor.grab_mode != CursorGrabMode::Locked {
+            toggle_grab_cursor(&mut window);
+        }
+    } else {
+        warn!("Primary window not found for `initial_grab_cursor`!");
+    }
+}
+
+pub fn detect_toggle_cursor(
+    keys: Res<ButtonInput<KeyCode>>,
+    key_bindings: Res<KeyBindings>,
+    mut primary_window: Query<&mut Window, With<PrimaryWindow>>,
+) {
+    if let Ok(mut window) = primary_window.get_single_mut() {
+        if keys.just_pressed(key_bindings.toggle_grab_cursor) {
+            toggle_grab_cursor(&mut window);
+        }
+    } else {
+        warn!("Primary window not found for `cursor_grab`!");
+    }
+}
+
+/// Grabs/ungrabs mouse cursor
+pub fn toggle_grab_cursor(window: &mut Window) {
+    match window.cursor.grab_mode {
+        CursorGrabMode::None => {
+            // Set the cursor position to the center of the window
+            window.cursor.grab_mode = CursorGrabMode::Confined;
+            window.cursor.visible = false;
+        }
+        _ => {
+            window.cursor.grab_mode = CursorGrabMode::None;
+            window.cursor.visible = true;
+        }
+    }
+    // set the cursor to the center of the screen.
+    let window_width = window.width();
+    let window_height = window.height();
+    window.set_cursor_position(Some(Vec2::new(window_width / 2.0, window_height / 2.0)));
 }

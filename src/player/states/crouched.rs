@@ -1,7 +1,8 @@
 use avian3d::collision::Collider;
 use bevy::prelude::*;
 
-use crate::{character::{motion::Motion, stance::Stance, Player}, player::config::PlayerControlConfig};
+use crate::player::{config::PlayerControlConfig, motion::Motion, stance::Stance, Player};
+
 
 // ! bug: right now the player can crouch and will collide with the terrain. Which causes them to fallover and get stuck on the ground.  
 

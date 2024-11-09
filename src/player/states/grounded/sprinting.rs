@@ -1,9 +1,7 @@
 use bevy::prelude::*;
 
-use crate::{
-    character::{motion::Motion, stance::Stance, Player},
-    player::config::PlayerControlConfig,
-};
+use crate::player::{config::PlayerControlConfig, motion::Motion, stance::Stance, Player};
+
 
 pub fn toggle_sprint(
     keys: Res<ButtonInput<KeyCode>>,
