@@ -38,6 +38,7 @@ use bevy_kira_audio::{Audio, AudioControl, AudioEasing, AudioPlugin, AudioTween}
 use bevy_turborand::prelude::RngPlugin;
 use character::CharacterPlugin;
 use chrono::{DateTime, Local};
+use player::PlayerPlugin;
 use terrain::bevy_mesh::{mesh_for_model, Model};
 
 use std::f32::consts::{FRAC_PI_4, PI};
@@ -110,6 +111,7 @@ fn main() {
             PhysicsDebugPlugin::default(),
             BlurRegionsPlugin::default(),
             DebugInterfacePlugin,
+            PlayerPlugin,
             CharacterPlugin,
             InfiniteGridPlugin,
             AudioPlugin,
@@ -302,7 +304,7 @@ fn setup(
 
     // Plane
     let plane_size: f32 = 128.0;
-    let plane_thickness: f32 = 0.5;
+    let plane_thickness: f32 = 0.0001;
 
     let sampler_desc = ImageSamplerDescriptor {
         address_mode_u: ImageAddressMode::Repeat,
@@ -329,7 +331,7 @@ fn setup(
         Collider::cuboid(plane_size, plane_thickness, plane_size),
         PbrBundle {
             mesh: generate_plane_mesh(&mut meshes, plane_size, plane_size, 1.0 / 16.0),
-            transform: Transform::from_xyz(0.0, 1.0, 0.0),
+            transform: Transform::from_xyz(0.0, 2.0, 0.0),
             material: proto_material.clone(),
             ..default()
         },
@@ -350,7 +352,7 @@ fn setup(
 
     commands.spawn(SceneBundle {
         scene: asset_server.load("models/FlightHelmet/FlightHelmet.gltf#Scene0"),
-        transform: Transform::from_xyz(-16.0, 1.0, 16.0).with_scale(Vec3 {
+        transform: Transform::from_xyz(-16.0, 2.0, 16.0).with_scale(Vec3 {
             x: 16.0,
             y: 16.0,
             z: 16.0,

@@ -6,9 +6,19 @@ use config::PlayerControlConfig;
 use focus::Focus;
 use motion::Motion;
 use stance::{ActionStep, Stance, StanceType, ACTION_STEP_DELTA_DEFAULT};
-use crate::{character::*, CameraThing, KeyBindings};
+use crate::{character::*, grab_cursor, CameraThing, KeyBindings};
 
 pub mod config;
+
+pub struct PlayerPlugin;
+
+impl Plugin for PlayerPlugin {
+    fn build(&self, app: &mut App) {
+        app.insert_resource(PlayerControlConfig::default()); // later we will load from some toml file
+        app.add_systems(Startup, (spawn_player, attached_camera_system, grab_cursor).chain());
+        info!("Initialized Player plugin");
+    }
+}
 
 #[derive(Component)]
 pub struct Player;
@@ -86,17 +96,33 @@ pub fn spawn_player(
 }
 
 
-pub fn handle_pickup_input(
-    keys: Res<ButtonInput<KeyCode>>,
-    key_bindings: Res<KeyBindings>,
-    actor: Query<Entity, With<AvianPickupActor>>,
-    mut avian_pickup_input_writer: EventWriter<AvianPickupInput>,
+fn attached_camera_system(
+    mut commands: Commands,
+    mut player_query: Query<(Entity, &mut Transform), (With<Player>, Without<Camera>)>,
+    mut camera_query: Query<
+        (Entity, &mut Transform, Option<&Parent>),
+        (With<Camera3d>, With<CameraThing>, Without<Player>),
+    >,
 ) {
-    if keys.pressed(key_bindings.interact) {
-        println!("Interact key pressed");
-        avian_pickup_input_writer.send(AvianPickupInput {
-            action: AvianPickupAction::Pull,
-            actor: actor.iter().next().unwrap(),
-        });
+    if camera_query.is_empty()
+        || camera_query.iter().len() > 1
+        || player_query.is_empty()
+        || player_query.iter().len() > 1
+    {
+        warn!("The camera attach system did not recieve 1 player and 1 camera. Found {} cameras, and {} players", camera_query.iter().len(), player_query.iter().len());
+    }
+
+    for (player_entity, _player_transform) in &mut player_query {
+        for (camera_entity, mut camera_transform, camera_parent) in &mut camera_query {
+            camera_transform.translation = Vec3::from_array([0.0, 1.0, 0.0]);
+            if camera_parent.is_none() {
+                commands
+                    .entity(player_entity)
+                    .push_children(&[camera_entity]);
+                info!("Attached Camera to player character as child");
+            } else {
+                info!("Camera parent already exists, will not set player as parent! ");
+            }
+        }
     }
 }
