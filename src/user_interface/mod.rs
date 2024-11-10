@@ -93,8 +93,8 @@ pub fn create_debug_interface(mut cmd: Commands, asset_server: Res<AssetServer>)
                         justify_content: JustifyContent::SpaceAround,
                         align_items: AlignItems::Center,
                         flex_direction: FlexDirection::Column,
-                        row_gap: Val::Px(3.0),
-                        top: Val::Px(24.0),
+                        row_gap: Val::Px(8.0),
+                        top: Val::Px(8.0),
                         padding: UiRect::all(Val::Px(8.0)),
                         border: UiRect::all(Val::Px(2.0)),
                         ..Default::default()
@@ -382,7 +382,6 @@ pub fn create_debug_interface(mut cmd: Commands, asset_server: Res<AssetServer>)
                             color: Color::WHITE,
                         }),
                     ]),
-                    PosText,
                 ));
 
                 // todo: spawn a horizontal line using parent.spawn to seperate the position from the chunk and hunk position.
@@ -400,7 +399,6 @@ pub fn create_debug_interface(mut cmd: Commands, asset_server: Res<AssetServer>)
                             color: Color::WHITE,
                         }),
                     ]),
-                    PosText,
                 ));
 
                 parent.spawn((TextBundle::from_sections([
@@ -665,16 +663,19 @@ fn tps_debug_update_system(
 
 fn gpu_info_update_system(diag: Res<DiagnosticsStore>, mut query: Query<&mut Text, With<GpuText>>) {
     for mut text in &mut query {
-        //if let Some(gpu) = diag.get(SystemInformationDiagnosticsPlugin::GPU_USAGE).and_then(|gpu| gpu.smoothed()) {
-        //    text.sections[1].value = format_value_f32(gpu as f32, Some(2), false);
-        //    text.sections[1].style.color = Color::WHITE;
-        //} else {
+        // if let Some(gpu) = diag
+        //     .get(&SystemInformationDiagnosticsPlugin::CPU_USAGE)
+        //     .and_then(|gpu| gpu.smoothed())
+        // {
+        //     text.sections[1].value = format_value_f32(gpu as f32, Some(2), false);
+        //     text.sections[1].style.color = Color::WHITE;
+        // } else {
         text.sections[1].value =
             format_percentage_f64(Some(22.2)).unwrap_or(NO_PERCENTAGE.to_string());
         text.sections[1].style.color = ORANGE_TEXT_COLOR;
         text.sections[3].value = "no_impl".to_string();
         text.sections[3].style.color = ORANGE_TEXT_COLOR;
-        //}
+        // }
         // todo: there is current no plugin to get this information about the gpu, when it is available this will be updated. So this will always show no_impl.
         if let Some(mem) = diag
             .get(&SystemInformationDiagnosticsPlugin::MEM_USAGE)
@@ -712,16 +713,16 @@ fn cpu_info_update_system(diag: Res<DiagnosticsStore>, mut query: Query<&mut Tex
 }
 
 fn pos_debug_update_system(
-    camera_query: Query<&Transform, With<CameraThing>>,
+    camera_query: Query<&GlobalTransform, With<Camera3d>>,
     mut query: Query<&mut Text, With<PosText>>,
 ) {
     for transform in &mut camera_query.into_iter() {
         for mut text in query.iter_mut() {
             text.sections[1].value = format!(
                 "[{},{},{}]",
-                format_value_f32(transform.translation.x, Some(2), true),
-                format_value_f32(transform.translation.y, Some(2), true),
-                format_value_f32(transform.translation.z, Some(2), true)
+                format_value_f32(transform.translation().x, Some(3), true),
+                format_value_f32(transform.translation().y, Some(3), true),
+                format_value_f32(transform.translation().z, Some(3), true)
             );
         }
     }

@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 bevy = { version = "0.14.2", features = ["dynamic_linking"] }
-avian3d = { git = "https://github.com/Jondolf/avian", version = "0.1.2" }
+avian3d = { git = "https://github.com/Jondolf/avian", version = "0.1.2", feature = "use-debug-plugin" }
 bevy_mod_picking = "0.19.1"
 bevy_kira_audio = { version = "0.20.0", features = ["mp3"] }
 noise = "0.8.2"
@@ -23,6 +23,8 @@ avian_pickup = { git = "https://github.com/janhohenheim/avian_pickup", version =
 bevy_blur_regions = "0.4.0"
 bevy_vector_shapes = "0.8.2"
 bevy_dev_console = { git = "https://github.com/doonv/bevy_dev_console.git", version = "0.1.0" }
+with = "0.0.0"
+bevy_flycam = "0.14.1"
 
 [workspace]
 resolver = "2" # Important! wgpu/Bevy needs this!

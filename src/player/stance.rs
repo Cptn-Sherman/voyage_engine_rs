@@ -1,6 +1,5 @@
 use super::{
-    motion::{apply_jump_force, apply_spring_force, Motion},
-    Player,
+    body::Body, motion::{apply_jump_force, apply_spring_force, Motion}, Player
 };
 use crate::player::config::GetDownwardRayLengthMax;
 use crate::{player::config::PlayerControlConfig, ternary, utils::exp_decay};
@@ -99,6 +98,7 @@ pub(crate) fn tick_footstep(
             ACTION_STEP_DELTA_DEFAULT * (1.0 - BUMP_ACTION_THRESHOLD_PERCENTAGE);
         const LOCKIN_ACTION_STEP_DELTA: f32 =
             ACTION_STEP_DELTA_DEFAULT * (1.0 - LOCKIN_ACTION_THRESHOLD_PERCENTAGE);
+        
         // if you are not moving and need to take more than 85% of your remaining step we play no sound.
         if motion.moving == false && action.delta >= LOCKIN_ACTION_STEP_DELTA {
             continue;
@@ -112,16 +112,19 @@ pub(crate) fn tick_footstep(
             config.ride_height_step_offset,
             -config.ride_height_step_offset
         );
+
         if motion.sprinting == true || motion.moving == false {
             scale = 1.45;
-            offset *= 1.2; // this is kinda arbitrary.
+            offset *= 1.2; // this is kinda arbitrary. but this little bit of kick is applied when you start sprinting from a stand still.
+
         }
 
         // reduce the time by elaspsed times the scale.
         action.delta -= time.delta_seconds() * scale;
         let vol: f64 = ternary!(motion.moving, 0.5, 0.25);
 
-        if action.delta <= BUMP_REMAINING_ACTION_STEP && action.bumped == false {
+        // bump the riding height when the delta is less than the bump threshold.
+        if config.enable_view_bobbing && action.delta <= BUMP_REMAINING_ACTION_STEP && action.bumped == false {
             motion.current_ride_height = config.ride_height + (offset * (2.0 * vol as f32));
             action.bumped = true;
         }
@@ -222,6 +225,7 @@ pub fn update_player_stance(
             &mut Rotation,
             &mut Stance,
             &mut Motion,
+            &mut Body,
             &RayCaster,
             &RayHits,
         ),
@@ -244,6 +248,7 @@ pub fn update_player_stance(
         mut rotation,
         mut stance,
         mut motion,
+        mut body,
         caster,
         ray_hits,
     ) in &mut query
@@ -326,6 +331,8 @@ pub fn update_player_stance(
                         &mut external_impulse,
                         &mut linear_vel,
                         ray_length,
+                        &motion,
+                        &body,
                     );
                 }
             }

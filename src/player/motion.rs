@@ -13,7 +13,7 @@ use avian3d::prelude::*;
 use crate::KeyBindings;
 
 use super::{
-    stance::Stance, Player, PlayerControlConfig
+    body::Body, stance::Stance, Player, PlayerControlConfig
 };
 
 #[derive(Component)]
@@ -81,8 +81,6 @@ pub fn update_player_motion(
             motion.movement_vec.z *= player_config.movement_decay;
             linear_vel.x = motion.movement_vec.x;
             linear_vel.z = motion.movement_vec.z;
-
-
         }
     }
 }
@@ -112,12 +110,14 @@ pub fn apply_jump_force(
     external_impulse: &mut ExternalImpulse,
     linear_vel: &mut LinearVelocity,
     ray_length: f32,
+    motion: &Motion,
+    body: &Body
 ) {
     // Apply the stance cooldown now that we are jumping.
     stance.lockout = config.stance_lockout;
 
     let half_jump_strength: f32 = config.jump_strength / 2.0;
-    let jump_factor: f32 = compute_clamped_jump_force_factor(&config, ray_length);
+    let jump_factor: f32 = compute_clamped_jump_force_factor(&config, &body, &motion, ray_length);
 
     // make this value changable.
     let dynamic_jump_strength: f32 = half_jump_strength + (half_jump_strength * jump_factor);
@@ -165,14 +165,15 @@ pub fn apply_jump_force(
 /// let jump_force_factor = compute_clamped_jump_force_factor(ray_length);
 /// println!("Jump Force Factor: {}", jump_force_factor);
 /// ```
-fn compute_clamped_jump_force_factor(config: &Res<PlayerControlConfig>, ray_length: f32) -> f32 {
+fn compute_clamped_jump_force_factor(player_config: &Res<PlayerControlConfig>, body: &Body, motion: &Motion, ray_length: f32) -> f32 {
     // Constants defined elsewhere in the code
-    let full_standing_ray_length: f32 = config.ride_height;
-    let half_standing_ray_length: f32 = config.ride_height - (config.capsule_height / 4.0);
+    let full_standing_ray_length: f32 = motion.current_ride_height;
+    let half_standing_ray_length: f32 = motion.current_ride_height - (body.current_body_height / 4.0);
+    // This value represents the range of acceptable ray lengths for the player.
     let standing_ray_length_range: f32 = full_standing_ray_length - half_standing_ray_length;
 
     // Ensure the input is within the specified range
-    let clamped_ray_length = f32::clamp(ray_length, half_standing_ray_length, config.ride_height);
+    let clamped_ray_length = f32::clamp(ray_length, half_standing_ray_length, motion.current_ride_height);
 
     // Apply the linear transformation
     // Step 1: Normalize clamped_ray_length to a value between 0.0 and 1.0.
@@ -180,7 +181,7 @@ fn compute_clamped_jump_force_factor(config: &Res<PlayerControlConfig>, ray_leng
         (clamped_ray_length - half_standing_ray_length) / standing_ray_length_range;
 
     // Step 2: Subtract the normalized distance from CAPSULE_HEIGHT.
-    let result: f32 = config.capsule_height - normalized_distance;
+    let result: f32 = player_config.capsule_height - normalized_distance;
 
     // Ensure the output is within the range [0.0, 1.0].
     f32::clamp(result, 0.0, 1.0)

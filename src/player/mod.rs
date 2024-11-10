@@ -89,7 +89,7 @@ pub fn spawn_player(player_config: Res<PlayerControlConfig>, mut commands: Comma
             global_transform: GlobalTransform::default(),
             downward_ray: RayCaster::new(Vec3::ZERO, Dir3::NEG_Y),
             ray_hits: RayHits::default(),
-            body: Body { body_scale: 1.0 },
+            body: Body { current_body_height: 1.0 },
             motion: Motion {
                 movement_vec: Vec3::from_array([0.0, 0.0, 0.0]),
                 current_movement_speed: player_config.movement_speed,

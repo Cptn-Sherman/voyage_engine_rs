@@ -19,6 +19,8 @@ pub fn get_text_section_array(strings: Vec<String>, style: TextStyle) -> Vec<Tex
     text_sections
 }
 
+
+
 pub fn gen_text_section(
     value: Option<String>,
     size: Option<f32>,
@@ -33,4 +35,16 @@ pub fn gen_text_section(
             color: color.unwrap_or(Color::WHITE),
         },
     )
+}
+
+// pub fn get_text_style() -> TextStyle {
+//     TextStyle {
+//         font: Handle::Weak(Font::default()),
+//         font_size: DEFAULT_FONT_SIZE,
+//         color: Color::WHITE,
+//     }
+// }
+
+enum TextType {
+    Default,
 }

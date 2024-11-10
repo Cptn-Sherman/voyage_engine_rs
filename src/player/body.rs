@@ -2,5 +2,5 @@ use bevy::prelude::Component;
 
 #[derive(Component)]
 pub struct Body {
-    pub body_scale: f32,
+    pub current_body_height: f32,
 }

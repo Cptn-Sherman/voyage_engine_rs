@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 
+mod camera;
 mod player;
 mod terrain;
 mod user_interface;
@@ -35,6 +36,8 @@ use bevy_blur_regions::{BlurRegionsCamera, BlurRegionsPlugin};
 use bevy_infinite_grid::{InfiniteGridBundle, InfiniteGridPlugin};
 use bevy_kira_audio::{Audio, AudioControl, AudioEasing, AudioPlugin, AudioTween};
 use bevy_turborand::prelude::RngPlugin;
+use camera::camera::create_camera;
+use camera::config::CameraConfig;
 use chrono::{DateTime, Local};
 use player::PlayerPlugin;
 use terrain::bevy_mesh::{mesh_for_model, Model};
@@ -42,14 +45,14 @@ use terrain::bevy_mesh::{mesh_for_model, Model};
 use std::f32::consts::{FRAC_PI_4, PI};
 use std::time::Duration;
 
-
 use crate::utils::CHUNK_SIZE_I32;
 use bevy::log::LogPlugin;
 use bevy_dev_console::prelude::*;
 use transvoxel::{transition_sides, voxel_source::Block};
 use user_interface::DebugInterfacePlugin;
 use utils::{
-    detect_toggle_cursor, format_value_f32, generate_plane_mesh, get_valid_extension, increase_render_adapter_wgpu_limits, CHUNK_SIZE_F32
+    detect_toggle_cursor, format_value_f32, generate_plane_mesh, get_valid_extension,
+    increase_render_adapter_wgpu_limits, CHUNK_SIZE_F32,
 };
 
 #[derive(Component)]
@@ -67,7 +70,7 @@ pub struct KeyBindings {
     pub toggle_sprint: KeyCode,
     pub toggle_grab_cursor: KeyCode,
     pub interact: KeyCode,
-    pub take_screenshot: KeyCode,
+    pub screenshot_key: KeyCode,
 }
 
 impl Default for KeyBindings {
@@ -82,7 +85,7 @@ impl Default for KeyBindings {
             toggle_sprint: KeyCode::ShiftLeft,
             toggle_grab_cursor: KeyCode::Escape,
             interact: KeyCode::KeyE,
-            take_screenshot: KeyCode::Equal,
+            screenshot_key: KeyCode::Equal,
         }
     }
 }
@@ -94,6 +97,11 @@ fn main() {
         .insert_resource(EngineSettings { ..default() })
         .insert_resource(DirectionalLightShadowMap { size: 4098 })
         .insert_resource(RenderAssetBytesPerFrame::new(1_000_000_000))
+        .insert_resource(CameraConfig {
+            tonemapping: Tonemapping::Reinhard,
+            volumetric_density: 0.0025,
+            hdr: true,
+        })
         .add_plugins((
             DefaultPlugins.set(LogPlugin {
                 custom_layer: custom_log_layer,
@@ -107,7 +115,6 @@ fn main() {
             PhysicsPlugins::default(),
             AvianPickupPlugin::default(),
             AvianInterpolationPlugin::default(),
-            #[cfg(feature = "use-debug-plugin")]
             PhysicsDebugPlugin::default(),
             BlurRegionsPlugin::default(),
             DebugInterfacePlugin,
@@ -205,7 +212,7 @@ fn animate_light_direction(
         transform.rotation = Quat::from_euler(
             EulerRot::ZYX,
             0.0,
-            time.elapsed_seconds() * 0.05 * PI / 5.0,
+            time.elapsed_seconds() * 0.0005 * PI / 5.0,
             -FRAC_PI_4 * 0.5,
         );
     }
@@ -213,41 +220,6 @@ fn animate_light_direction(
 
 #[derive(Component)]
 struct CameraThing;
-
-fn create_camera(mut commands: Commands) {
-    commands.spawn(Camera2dBundle {
-        camera: Camera {
-            order: 1,
-            hdr: true,
-            clear_color: ClearColorConfig::None,
-            ..default()
-        },
-
-        ..default()
-    });
-
-    commands
-        .spawn((
-            BlurRegionsCamera::default(),
-            Camera3dBundle {
-                camera: Camera {
-                    hdr: true,
-                    ..default()
-                },
-                transform: Transform::from_xyz(16.0, 8.0, 16.0).looking_at(Vec3::ZERO, Vec3::Y),
-                tonemapping: Tonemapping::TonyMcMapface,
-                ..Default::default()
-            },
-            VolumetricFogSettings {
-                density: 0.0025,
-                ..Default::default()
-            },
-            ShadowFilteringMethod::Temporal,
-            CameraThing,
-        ))
-        .insert(ScreenSpaceAmbientOcclusionBundle::default())
-        .insert(TemporalAntiAliasBundle::default());
-}
 
 struct TargetDepth(f32);
 impl Default for TargetDepth {
@@ -360,8 +332,6 @@ fn setup(
     });
 }
 
-
-
 /** This system was taken from the screenshot example: https://bevyengine.org/examples/Window/screenshot/ */
 fn take_screenshot(
     settings: Res<EngineSettings>,
@@ -370,7 +340,7 @@ fn take_screenshot(
     main_window: Query<Entity, With<PrimaryWindow>>,
     mut screenshot_manager: ResMut<ScreenshotManager>,
 ) {
-    if keys.just_pressed(key_bindings.take_screenshot) {
+    if keys.just_pressed(key_bindings.screenshot_key) {
         // get the formated path as string.
         let date: DateTime<Local> = Local::now();
         let formated_date: chrono::format::DelayedFormat<chrono::format::StrftimeItems> =
