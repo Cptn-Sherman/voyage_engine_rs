@@ -38,6 +38,7 @@ use bevy_kira_audio::{Audio, AudioControl, AudioEasing, AudioPlugin, AudioTween}
 use bevy_turborand::prelude::RngPlugin;
 use camera::camera::create_camera;
 use camera::config::CameraConfig;
+use camera::take_screenshot;
 use chrono::{DateTime, Local};
 use config::{EngineSettings, KeyBindings};
 use player::PlayerPlugin;
@@ -49,7 +50,7 @@ use bevy::log::LogPlugin;
 use bevy_dev_console::prelude::*;
 use user_interface::DebugInterfacePlugin;
 use utils::{
-    detect_toggle_cursor, generate_plane_mesh, get_valid_extension,
+    detect_toggle_cursor, generate_plane_mesh,
     increase_render_adapter_wgpu_limits,
 };
 
@@ -229,7 +230,7 @@ fn setup(
         PbrBundle {
             mesh: meshes.add(Sphere::default().mesh().ico(5).unwrap()),
             transform: Transform::from_xyz(2.0, 25.0, 2.0),
-            material: materials.add(Color::from(YELLOW)),
+            material: materials.add(Color::srgb(0.0, 0.0, 0.9)),
             ..default()
         },
     ));
@@ -245,34 +246,7 @@ fn setup(
     });
 }
 
-/** This system was taken from the screenshot example: https://bevyengine.org/examples/Window/screenshot/ */
-fn take_screenshot(
-    settings: Res<EngineSettings>,
-    key_bindings: Res<KeyBindings>,
-    keys: Res<ButtonInput<KeyCode>>,
-    main_window: Query<Entity, With<PrimaryWindow>>,
-    mut screenshot_manager: ResMut<ScreenshotManager>,
-) {
-    if keys.just_pressed(key_bindings.screenshot_key) {
-        // get the formated path as string.
-        let date: DateTime<Local> = Local::now();
-        let formated_date: chrono::format::DelayedFormat<chrono::format::StrftimeItems> =
-            date.format("%Y-%m-%d_%H-%M-%S%.3f");
-        let path: String = format!(
-            "./voyage_screenshot-{}.{}",
-            formated_date.to_string(),
-            get_valid_extension(&settings.format, utils::ExtensionType::Screenshot)
-        );
 
-        // attempt to save the screenshot to disk and bubble up.
-        match screenshot_manager.save_screenshot_to_disk(main_window.single(), path) {
-            Ok(_) => info!("Screenshot saved successfully."),
-            Err(e) => {
-                error!("Failed to save screenshot: {}", e);
-            }
-        }
-    }
-}
 
 #[derive(Resource, Default)]
 pub struct InputState {
