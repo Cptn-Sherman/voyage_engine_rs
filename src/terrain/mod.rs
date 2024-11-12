@@ -7,13 +7,16 @@ use bevy::{
 
 use crate::{utils::{convert_to_chunk_coordinate, format_value_f32}, CameraThing};
 
+pub mod bevy_mesh;
+pub mod chunk_mesh;
+
 #[derive(Resource)]
 pub struct TerrainPlugin;
+
 
 pub struct Voxel {
     is_occupied: bool,
 }
-pub mod bevy_mesh;
 
 // Define the Octree node
 enum OctreeNode {

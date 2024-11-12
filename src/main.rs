@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 
 mod camera;
+pub mod config;
 mod player;
 mod terrain;
 mod user_interface;
@@ -11,11 +12,10 @@ use avian_pickup::AvianPickupPlugin;
 use bevy::color::palettes::css::YELLOW;
 use bevy::ecs::event::ManualEventReader;
 use bevy::input::mouse::MouseMotion;
-use bevy::pbr::{VolumetricFogSettings, VolumetricLight};
-use bevy::render::render_asset::{RenderAssetBytesPerFrame, RenderAssetUsages};
+use bevy::pbr::VolumetricLight;
+use bevy::render::render_asset::RenderAssetBytesPerFrame;
 
 use bevy::render::mesh::Mesh;
-use bevy::render::mesh::{Indices, Mesh as BevyMesh, PrimitiveTopology, VertexAttributeValues};
 use bevy::render::texture::{
     ImageAddressMode, ImageLoaderSettings, ImageSampler, ImageSamplerDescriptor,
 };
@@ -23,72 +23,38 @@ use bevy::render::view::screenshot::ScreenshotManager;
 use bevy::window::PrimaryWindow;
 use bevy::{
     core_pipeline::{
-        experimental::taa::{TemporalAntiAliasBundle, TemporalAntiAliasPlugin},
+        experimental::taa::TemporalAntiAliasPlugin,
         tonemapping::Tonemapping,
     },
-    pbr::{DirectionalLightShadowMap, ScreenSpaceAmbientOcclusionBundle, ShadowFilteringMethod},
+    pbr::DirectionalLightShadowMap,
     prelude::*,
 };
 use bevy_vector_shapes::prelude::*;
 
 use avian3d::prelude::*;
-use bevy_blur_regions::{BlurRegionsCamera, BlurRegionsPlugin};
+use bevy_blur_regions::BlurRegionsPlugin;
 use bevy_infinite_grid::{InfiniteGridBundle, InfiniteGridPlugin};
 use bevy_kira_audio::{Audio, AudioControl, AudioEasing, AudioPlugin, AudioTween};
 use bevy_turborand::prelude::RngPlugin;
 use camera::camera::create_camera;
 use camera::config::CameraConfig;
 use chrono::{DateTime, Local};
+use config::{EngineSettings, KeyBindings};
 use player::PlayerPlugin;
-use terrain::bevy_mesh::{mesh_for_model, Model};
 
 use std::f32::consts::{FRAC_PI_4, PI};
 use std::time::Duration;
 
-use crate::utils::CHUNK_SIZE_I32;
 use bevy::log::LogPlugin;
 use bevy_dev_console::prelude::*;
-use transvoxel::{transition_sides, voxel_source::Block};
 use user_interface::DebugInterfacePlugin;
 use utils::{
-    detect_toggle_cursor, format_value_f32, generate_plane_mesh, get_valid_extension,
-    increase_render_adapter_wgpu_limits, CHUNK_SIZE_F32,
+    detect_toggle_cursor, generate_plane_mesh, get_valid_extension,
+    increase_render_adapter_wgpu_limits,
 };
 
 #[derive(Component)]
 struct Sun;
-
-/// Key configuration
-#[derive(Resource)]
-pub struct KeyBindings {
-    pub move_forward: KeyCode,
-    pub move_backward: KeyCode,
-    pub move_left: KeyCode,
-    pub move_right: KeyCode,
-    pub move_ascend: KeyCode,
-    pub move_descend: KeyCode,
-    pub toggle_sprint: KeyCode,
-    pub toggle_grab_cursor: KeyCode,
-    pub interact: KeyCode,
-    pub screenshot_key: KeyCode,
-}
-
-impl Default for KeyBindings {
-    fn default() -> Self {
-        Self {
-            move_forward: KeyCode::KeyW,
-            move_backward: KeyCode::KeyS,
-            move_left: KeyCode::KeyA,
-            move_right: KeyCode::KeyD,
-            move_ascend: KeyCode::Space,
-            move_descend: KeyCode::ShiftLeft,
-            toggle_sprint: KeyCode::ShiftLeft,
-            toggle_grab_cursor: KeyCode::Escape,
-            interact: KeyCode::KeyE,
-            screenshot_key: KeyCode::Equal,
-        }
-    }
-}
 
 fn main() {
     App::new()
@@ -149,59 +115,6 @@ fn start_background_audio(asset_server: Res<AssetServer>, audio: Res<Audio>) {
         ))
         .with_volume(0.15)
         .looped();
-}
-
-// A unit struct to help identify the FPS UI component, since there may be many Text components
-#[derive(Component)]
-struct Chunk;
-
-fn build_chunk_mesh(cx: i32, cy: i32, cz: i32) -> BevyMesh {
-    let block: Block<f32> = Block::from(
-        [
-            cx as f32 * CHUNK_SIZE_F32,
-            cy as f32 * CHUNK_SIZE_F32,
-            cz as f32 * CHUNK_SIZE_F32,
-        ],
-        CHUNK_SIZE_F32,
-        CHUNK_SIZE_I32 as usize,
-    );
-    let transition_sides = transition_sides::no_side();
-    mesh_for_model(&Model::Noise, false, &block, &transition_sides)
-}
-
-pub fn create_voxel_mesh(
-    mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
-) {
-    let radius = 4;
-    let length = radius;
-    let start_x = -radius;
-    let start_z = -radius;
-
-    for i in start_x..length {
-        for j in start_z..length {
-            let x = i;
-            let z = j;
-            info!(
-                "Building Voxel Mesh @[{}, {}, {}]",
-                format_value_f32(x as f32, None, true),
-                format_value_f32(0.0, None, true),
-                format_value_f32(z as f32, None, true)
-            );
-            let bevy_mesh = build_chunk_mesh(x, 0, z);
-            // This object does not alter the transform as the transvoxel mesh using this information to sample the noise fields.
-            commands.spawn(PbrBundle {
-                mesh: meshes.add(bevy_mesh),
-                material: materials.add(StandardMaterial {
-                    base_color: Color::WHITE.into(),
-                    ..default()
-                }),
-                transform: Transform::from_xyz(0.0, 0.0, 0.0),
-                ..default()
-            });
-        }
-    }
 }
 
 fn animate_light_direction(
@@ -357,20 +270,6 @@ fn take_screenshot(
             Err(e) => {
                 error!("Failed to save screenshot: {}", e);
             }
-        }
-    }
-}
-
-// This will be read from a toml file in the future.
-#[derive(Resource)]
-struct EngineSettings {
-    format: String,
-}
-
-impl Default for EngineSettings {
-    fn default() -> Self {
-        EngineSettings {
-            format: "png".to_owned(),
         }
     }
 }
