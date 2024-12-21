@@ -15,7 +15,8 @@
 - Find Better Footstep sounds
 - Store User Interface themes in toml
 - Make player controller configurable with TOML
-
+- Add [Bevy_Mod_Scripting](https://crates.io/crates/bevy_mod_scripting) for Lua script support.
+- Use [Bevy_Tween](https://github.com/djeedai/bevy_tweening) for some nice animations.
 --- 
 
 ## Questions: 

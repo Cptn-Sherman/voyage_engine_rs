@@ -9,7 +9,6 @@ mod utils;
 
 use avian_interpolation3d::AvianInterpolationPlugin;
 use avian_pickup::AvianPickupPlugin;
-use bevy::color::palettes::css::YELLOW;
 use bevy::ecs::event::ManualEventReader;
 use bevy::input::mouse::MouseMotion;
 use bevy::pbr::VolumetricLight;
@@ -19,8 +18,6 @@ use bevy::render::mesh::Mesh;
 use bevy::render::texture::{
     ImageAddressMode, ImageLoaderSettings, ImageSampler, ImageSamplerDescriptor,
 };
-use bevy::render::view::screenshot::ScreenshotManager;
-use bevy::window::PrimaryWindow;
 use bevy::{
     core_pipeline::{
         experimental::taa::TemporalAntiAliasPlugin,
@@ -39,7 +36,6 @@ use bevy_turborand::prelude::RngPlugin;
 use camera::camera::create_camera;
 use camera::config::CameraConfig;
 use camera::take_screenshot;
-use chrono::{DateTime, Local};
 use config::{EngineSettings, KeyBindings};
 use player::PlayerPlugin;
 
