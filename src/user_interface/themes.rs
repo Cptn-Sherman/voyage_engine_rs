@@ -1,4 +1,4 @@
-use bevy::{asset::Handle, color::Color, prelude::{Bundle, Entity, Text}, text::{self, Font, FontSmoothing, TextColor, TextFont}};
+use bevy::{asset::Handle, color::Color, prelude::{Bundle, Text}, text::{ Font, FontSmoothing, TextColor, TextFont}};
 
 pub const DEFAULT_FONT_PATH: &str = "fonts/ashlanderPixel_fixed.ttf";
 pub const DEFAULT_FONT_SIZE: f32 = 14.0;

@@ -69,15 +69,15 @@ macro_rules! ternary {
 /// The `double_for_loop` macro expands into a nested for loop that iterates over the given iterators and invokes the provided callback for each combination of values.
 ///
 /// It is important to note that macros should be used judiciously, considering the readability and maintainability of the code.
-macro_rules! double_for_loop {
-    ($var1:ident in $iter1:expr, $var2:ident in $iter2:expr, $callback:expr) => {
-        for $var1 in $iter1 {
-            for $var2 in $iter2 {
-                $callback
-            }
-        }
-    };
-}
+// macro_rules! double_for_loop {
+//     ($var1:ident in $iter1:expr, $var2:ident in $iter2:expr, $callback:expr) => {
+//         for $var1 in $iter1 {
+//             for $var2 in $iter2 {
+//                 $callback
+//             }
+//         }
+//     };
+// }
 
 use bevy::{
     asset::{Assets, Handle}, input::ButtonInput, log::{info, warn}, math::Vec2, prelude::{Image, KeyCode, Mesh, Query, Res, ResMut, With}, render::{mesh::{Indices, PrimitiveTopology, VertexAttributeValues}, render_asset::RenderAssetUsages, render_resource::{Extent3d, TextureDimension, TextureFormat}, renderer::RenderAdapter}, window::{CursorGrabMode, PrimaryWindow, Window}

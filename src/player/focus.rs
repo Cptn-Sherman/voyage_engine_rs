@@ -1,4 +1,4 @@
-use bevy::{input::mouse::{AccumulatedMouseMotion, MouseMotion}, prelude::*, window::{CursorGrabMode, PrimaryWindow}};
+use bevy::{input::mouse::AccumulatedMouseMotion, prelude::*, window::{CursorGrabMode, PrimaryWindow}};
 
 use super::config::PlayerControlConfig;
 
@@ -13,7 +13,6 @@ pub struct Focus {
 // This function and many of its helpers are ripped from, bevy_fly_cam.
 pub fn camera_look_system(
     primary_window: Query<&Window, With<PrimaryWindow>>,
-    motion: Res<Events<MouseMotion>>,
     config: Res<PlayerControlConfig>,
     accumulated_mouse_motion: ResMut<AccumulatedMouseMotion>,
     mut camera_query: Query<&mut Transform, With<Camera3d>>,

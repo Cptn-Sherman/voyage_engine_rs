@@ -1,4 +1,4 @@
-use bevy::{asset::Assets, color::{palettes::css::WHITE, Color}, log::info, pbr::{MeshMaterial3d, PbrBundle, StandardMaterial}, prelude::{Commands, Component, Mesh, Mesh3d, ResMut, Transform}, utils::default};
+use bevy::{asset::Assets, color::palettes::css::WHITE, log::info, pbr::{MeshMaterial3d, StandardMaterial}, prelude::{Commands, Component, Mesh, Mesh3d, ResMut, Transform}, utils::default};
 use transvoxel::{prelude::Block, transition_sides};
 
 use crate::utils::{format_value_f32, CHUNK_SIZE_F32, CHUNK_SIZE_I32};

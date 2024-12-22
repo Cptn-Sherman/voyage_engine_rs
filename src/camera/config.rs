@@ -1,4 +1,4 @@
-use bevy::{core_pipeline::tonemapping::Tonemapping, pbr::{ShadowFilteringMethod, VolumetricFogSettings}, prelude::{Camera, Resource, Transform}};
+use bevy::{core_pipeline::tonemapping::Tonemapping, prelude::Resource};
 
 
 #[derive(Resource)]

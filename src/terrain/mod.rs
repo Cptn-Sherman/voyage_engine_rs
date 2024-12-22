@@ -1,6 +1,6 @@
 use bevy::{
     prelude::{
-         App, Camera, Plugin, Query, Res, ResMut, Resource, Transform, Update, With,
+         App, Plugin, Query, Res, ResMut, Resource, Transform, Update, With,
     },
     time::{Time, Timer, TimerMode}, log::{warn, info},
 };

@@ -1,6 +1,4 @@
-use super::{
-    body::{self, Body}, motion::{apply_jump_force, apply_spring_force, Motion}, Player
-};
+
 use crate::player::config::GetDownwardRayLengthMax;
 use crate::{player::config::PlayerControlConfig, ternary, utils::exp_decay};
 use avian3d::prelude::*;
@@ -17,6 +15,10 @@ use bevy::{
 };
 use bevy_kira_audio::{Audio, AudioControl, AudioSource};
 use bevy_turborand::{DelegatedRng, GlobalRng};
+
+use super::body::Body;
+use super::motion::{apply_jump_force, apply_spring_force, Motion};
+use super::Player;
 #[derive(Debug, PartialEq, Clone)]
 // each of these stance types needs to have a movement speed calculation, a
 pub enum StanceType {
@@ -96,7 +98,7 @@ pub(crate) fn tick_footstep(
             ACTION_STEP_DELTA_DEFAULT * (1.0 - BUMP_ACTION_THRESHOLD_PERCENTAGE);
         const LOCKIN_ACTION_STEP_DELTA: f32 =
             ACTION_STEP_DELTA_DEFAULT * (1.0 - LOCKIN_ACTION_THRESHOLD_PERCENTAGE);
-        
+
         // if you are not moving and need to take more than 85% of your remaining step we play no sound.
         if motion.moving == false && action.delta >= LOCKIN_ACTION_STEP_DELTA {
             continue;
@@ -114,7 +116,6 @@ pub(crate) fn tick_footstep(
         if motion.sprinting == true || motion.moving == false {
             scale = 1.45;
             offset *= 1.2; // this is kinda arbitrary. but this little bit of kick is applied when you start sprinting from a stand still.
-
         }
 
         // reduce the time by elaspsed times the scale.
@@ -122,7 +123,10 @@ pub(crate) fn tick_footstep(
         let vol: f64 = ternary!(motion.moving, 0.5, 0.25);
 
         // bump the riding height when the delta is less than the bump threshold.
-        if config.enable_view_bobbing && action.delta <= BUMP_REMAINING_ACTION_STEP && action.bumped == false {
+        if config.enable_view_bobbing
+            && action.delta <= BUMP_REMAINING_ACTION_STEP
+            && action.bumped == false
+        {
             motion.current_ride_height = config.ride_height + (offset * (2.0 * vol as f32));
             action.bumped = true;
         }
@@ -355,8 +359,10 @@ pub fn update_player_stance(
     }
 }
 
-pub fn lock_rotation(mut query: Query<(&mut LockedAxes, &mut AngularVelocity, &mut Rotation, &mut Stance), With<Player>>) {
-    for (locked_axes,mut angular_velocity, mut rotation, stance) in &mut query {
+pub fn lock_rotation(
+    mut query: Query<(&mut AngularVelocity, &mut Rotation, &mut Stance), With<Player>>,
+) {
+    for (mut angular_velocity, mut rotation, stance) in &mut query {
         match stance.current {
             StanceType::Standing | StanceType::Landing => {
                 rotation.0 = Quat::IDENTITY;

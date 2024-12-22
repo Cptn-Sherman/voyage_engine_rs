@@ -3,12 +3,9 @@ use bevy::prelude::*;
 
 use crate::player::{body::Body, config::PlayerControlConfig, motion::Motion, stance::Stance, Player};
 
-
-// ! bug: right now the player can crouch and will collide with the terrain. Which causes them to fallover and get stuck on the ground.  
-
 pub fn toggle_crouching(
     keys: Res<ButtonInput<KeyCode>>,
-    mut player_config: ResMut<PlayerControlConfig>,
+    player_config: ResMut<PlayerControlConfig>,
     mut query: Query<(&mut Body, &mut Stance, &mut Motion, &mut Collider), With<Player>>,
 ) {
     for (mut body, mut stance, mut motion, mut collider) in query.iter_mut() {
