@@ -1,4 +1,4 @@
-use bevy::{asset::Assets, color::Color, log::info, pbr::{PbrBundle, StandardMaterial}, prelude::{Commands, Component, Mesh, ResMut, Transform}, utils::default};
+use bevy::{asset::Assets, color::{palettes::css::WHITE, Color}, log::info, pbr::{MeshMaterial3d, PbrBundle, StandardMaterial}, prelude::{Commands, Component, Mesh, Mesh3d, ResMut, Transform}, utils::default};
 use transvoxel::{prelude::Block, transition_sides};
 
 use crate::utils::{format_value_f32, CHUNK_SIZE_F32, CHUNK_SIZE_I32};
@@ -44,15 +44,15 @@ pub fn create_voxel_mesh(
             );
             let bevy_mesh = build_chunk_mesh(x, 0, z);
             // This object does not alter the transform as the transvoxel mesh using this information to sample the noise fields.
-            commands.spawn(PbrBundle {
-                mesh: meshes.add(bevy_mesh),
-                material: materials.add(StandardMaterial {
-                    base_color: Color::WHITE.into(),
+            
+            commands.spawn((
+                Mesh3d(meshes.add(bevy_mesh)),
+                MeshMaterial3d(materials.add(StandardMaterial {
+                    base_color: WHITE.into(),
                     ..default()
-                }),
-                transform: Transform::from_xyz(0.0, 0.0, 0.0),
-                ..default()
-            });
+                })),
+                Transform::from_xyz(0.0, 0.0, 0.0),
+            ));
         }
     }
 }

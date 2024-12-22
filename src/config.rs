@@ -36,13 +36,13 @@ impl Default for KeyBindings {
 // This will be read from a toml file in the future.
 #[derive(Resource)]
 pub struct EngineSettings {
-    pub format: String,
+    pub screenshot_format: String,
 }
 
 impl Default for EngineSettings {
     fn default() -> Self {
         EngineSettings {
-            format: "png".to_owned(),
+            screenshot_format: "png".to_owned(),
         }
     }
 }

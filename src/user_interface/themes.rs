@@ -1,4 +1,4 @@
-use bevy::{asset::Handle, color::Color, text::{self, Font, TextSection, TextStyle}};
+use bevy::{asset::Handle, color::Color, prelude::{Bundle, Entity, Text}, text::{self, Font, FontSmoothing, TextColor, TextFont}};
 
 pub const DEFAULT_FONT_PATH: &str = "fonts/ashlanderPixel_fixed.ttf";
 pub const DEFAULT_FONT_SIZE: f32 = 14.0;
@@ -10,15 +10,6 @@ pub const RED_TEXT_COLOR: Color = Color::srgb(1.0, 0.0, 0.0);
 pub const GOLD_TEXT_COLOR: Color = Color::srgb(1.0 , 0.72, 0.0);
 pub const BORDER_COLOR: Color = Color::srgb(0.8 , 0.8, 0.8);
 
-pub fn get_text_section_array(strings: Vec<String>, style: TextStyle) -> Vec<TextSection> {
-// create a list of gen_text_sections from a list of strings
-    let text_sections = vec![
-        // gen_text_section(Some("Hello".to_string()), None, None, font),
-        // gen_text_section(Some("World".to_string()), None, None, font),
-    ];
-    text_sections
-}
-
 
 
 pub fn gen_text_section(
@@ -26,14 +17,15 @@ pub fn gen_text_section(
     size: Option<f32>,
     color: Option<Color>,
     font: Handle<Font>,
-) -> TextSection {
-    TextSection::new(
-        value.unwrap_or("".to_string()),
-        TextStyle {
+) -> impl Bundle { 
+    (
+        Text::new(value.unwrap_or_default()),
+        TextFont {
             font,
             font_size: size.unwrap_or(DEFAULT_FONT_SIZE),
-            color: color.unwrap_or(Color::WHITE),
+            font_smoothing: FontSmoothing::AntiAliased,
         },
+        TextColor(color.unwrap_or(Color::WHITE)),
     )
 }
 

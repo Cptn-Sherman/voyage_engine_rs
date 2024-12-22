@@ -1,6 +1,13 @@
-
-use bevy::{core_pipeline::{experimental::taa::TemporalAntiAliasBundle, tonemapping::Tonemapping}, math::Vec3, pbr::{ScreenSpaceAmbientOcclusionBundle, ShadowFilteringMethod, VolumetricFogSettings}, prelude::{Camera, Camera2dBundle, Camera3dBundle, ClearColorConfig, Commands, Res, Transform}, render::camera, utils::default};
-use bevy_blur_regions::BlurRegionsCamera;
+use bevy::{
+    core_pipeline::tonemapping::Tonemapping,
+    math::Vec3,
+    pbr::{
+        FogVolume, ScreenSpaceAmbientOcclusion, ScreenSpaceReflections, VolumetricFog,
+        VolumetricFogSettings,
+    },
+    prelude::{Camera, Camera3d, ClearColorConfig, Commands, Res, Transform},
+    utils::default,
+};
 
 use crate::CameraThing;
 
@@ -15,41 +22,33 @@ pub fn create_camera(mut commands: Commands, camera_config: Res<CameraConfig>) {
     // ******************************************
     commands
         .spawn((
-            BlurRegionsCamera::default(),
-            Camera3dBundle {
-                camera: Camera {
-                    hdr: camera_config.hdr,
-                    ..default()
-                },
-                transform: Transform::from_xyz(0.0, 0.0, 0.0).looking_to(Vec3::ZERO, Vec3::Y),
-                tonemapping: Tonemapping::TonyMcMapface,
-                ..Default::default()
+            Camera3d::default(),
+            Camera {
+                hdr: camera_config.hdr,
+                ..default()
             },
-            VolumetricFogSettings {
-                density: camera_config.volumetric_density,
-                ..Default::default()
-            },
-            ShadowFilteringMethod::Temporal,
+            ScreenSpaceAmbientOcclusion { ..default() },
+            ScreenSpaceReflections { ..default() },
+            Transform::from_xyz(0.0, 0.0, 0.0).looking_to(Vec3::ZERO, Vec3::Y),
+            Tonemapping::TonyMcMapface,
             CameraThing,
+            // BlurRegionsCamera::default(),
         ))
-        .insert(ScreenSpaceAmbientOcclusionBundle::default())
-        .insert(TemporalAntiAliasBundle::default());
-    
-
+        .insert(VolumetricFog {
+            // This value is explicitly set to 0 since we have no environment map light
+            ambient_intensity: 0.0,
+            ..default()
+        });
 
     // ******************************************
     // ** This is the 2D camera that will render the 2D UI on top of the 3D world.
     // ** It has an order of 1, so it will render on top of the 3D camera.
     // ** It has no clear color, so it will render on top of the 3D camera without clearing the screen.
     // ******************************************
-    commands.spawn(Camera2dBundle {
-        camera: Camera {
-            order: 1, 
-            hdr: camera_config.hdr,
-            clear_color: ClearColorConfig::None, 
-            ..default()
-        },
+    commands.spawn(Camera {
+        order: 1,
+        hdr: camera_config.hdr,
+        clear_color: ClearColorConfig::None,
         ..default()
     });
-
 }

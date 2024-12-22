@@ -369,7 +369,7 @@ pub fn increase_render_adapter_wgpu_limits(render_adapter: Res<RenderAdapter>) {
 pub fn grab_cursor(mut primary_window: Query<&mut Window, With<PrimaryWindow>>) {
     if let Ok(mut window) = primary_window.get_single_mut() {
         // Check if the cursor is already grabbed
-        if window.cursor.grab_mode != CursorGrabMode::Locked {
+        if window.cursor_options.grab_mode != CursorGrabMode::Locked {
             toggle_grab_cursor(&mut window);
         }
     } else {
@@ -393,15 +393,15 @@ pub fn detect_toggle_cursor(
 
 /// Grabs/ungrabs mouse cursor
 pub fn toggle_grab_cursor(window: &mut Window) {
-    match window.cursor.grab_mode {
+    match window.cursor_options.grab_mode {
         CursorGrabMode::None => {
             // Set the cursor position to the center of the window
-            window.cursor.grab_mode = CursorGrabMode::Confined;
-            window.cursor.visible = false;
+            window.cursor_options.grab_mode = CursorGrabMode::Confined;
+            window.cursor_options.visible = false;
         }
         _ => {
-            window.cursor.grab_mode = CursorGrabMode::None;
-            window.cursor.visible = true;
+            window.cursor_options.grab_mode = CursorGrabMode::None;
+            window.cursor_options.visible = true;
         }
     }
     // set the cursor to the center of the screen.

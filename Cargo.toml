@@ -6,25 +6,20 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-bevy = { version = "0.14.2", features = ["dynamic_linking"] }
-avian3d = { git = "https://github.com/Jondolf/avian", version = "0.1.2", feature = "use-debug-plugin" }
-bevy_mod_picking = "0.19.1"
-bevy_kira_audio = { version = "0.20.0", features = ["mp3"] }
-noise = "0.8.2"
-transvoxel = "1.0.0"
-num-traits = "0.2.14"
-num-integer = "0.1.45"
+bevy = { version = "0.15.0", features = ["dynamic_linking"] }
+avian3d = { version = "0.2.0", feature = "use-debug-plugin" }
+bevy_turborand = "0.10.0"
+bevy_flycam = "0.15.0"
+bevy_kira_audio = { version = "0.21.0", features = ["mp3"] }
+bevy_vector_shapes = "0.9.3"
+#bevy_blur_regions = "0.5.0"
+#bevy_dev_console = { git = "https://github.com/doonv/bevy_dev_console.git", version = "0.1.0" }
+noise = "0.9.0"
+transvoxel = "1.1.0"
+num-traits = "0.2.19"
+num-integer = "0.1.46"
 acacia = "0.2.0"
-chrono = "0.4.38"
-bevy_infinite_grid = { git = "https://github.com/tychedelia/bevy_infinite_grid.git" }
-bevy_turborand = "0.9.0"
-avian_interpolation3d = { git = "https://github.com/janhohenheim/avian_interpolation", version = "0.1.0" }
-avian_pickup = { git = "https://github.com/janhohenheim/avian_pickup", version = "0.1.0" }
-bevy_blur_regions = "0.4.0"
-bevy_vector_shapes = "0.8.2"
-bevy_dev_console = { git = "https://github.com/doonv/bevy_dev_console.git", version = "0.1.0" }
-with = "0.0.0"
-bevy_flycam = "0.14.1"
+chrono = "0.4.39"
 
 [workspace]
 resolver = "2" # Important! wgpu/Bevy needs this!

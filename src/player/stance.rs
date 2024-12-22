@@ -1,5 +1,5 @@
 use super::{
-    body::Body, motion::{apply_jump_force, apply_spring_force, Motion}, Player
+    body::{self, Body}, motion::{apply_jump_force, apply_spring_force, Motion}, Player
 };
 use crate::player::config::GetDownwardRayLengthMax;
 use crate::{player::config::PlayerControlConfig, ternary, utils::exp_decay};
@@ -14,11 +14,9 @@ use bevy::{
         Resource, With,
     },
     time::Time,
-    utils::info,
 };
 use bevy_kira_audio::{Audio, AudioControl, AudioSource};
 use bevy_turborand::{DelegatedRng, GlobalRng};
-use dynamics::rigid_body;
 #[derive(Debug, PartialEq, Clone)]
 // each of these stance types needs to have a movement speed calculation, a
 pub enum StanceType {
@@ -120,7 +118,7 @@ pub(crate) fn tick_footstep(
         }
 
         // reduce the time by elaspsed times the scale.
-        action.delta -= time.delta_seconds() * scale;
+        action.delta -= time.delta_secs() * scale;
         let vol: f64 = ternary!(motion.moving, 0.5, 0.25);
 
         // bump the riding height when the delta is less than the bump threshold.
@@ -222,11 +220,9 @@ pub fn update_player_stance(
             &mut ExternalForce,
             &mut ExternalImpulse,
             &mut GravityScale,
-            &mut Rotation,
             &mut Stance,
             &mut Motion,
             &mut Body,
-            &RayCaster,
             &RayHits,
         ),
         With<Player>,
@@ -245,22 +241,20 @@ pub fn update_player_stance(
         mut external_force,
         mut external_impulse,
         mut gravity_scale,
-        mut rotation,
         mut stance,
         mut motion,
-        mut body,
-        caster,
+        body,
         ray_hits,
     ) in &mut query
     {
         // We update stance_lockout.
-        stance.lockout -= time.delta_seconds();
+        stance.lockout -= time.delta_secs();
         stance.lockout = f32::clamp(stance.lockout, 0.0, 1.0);
 
         // Compute the ray_length to a hit, if we don't hit anything we assume the ground is infinitly far away.
         let mut ray_length: f32 = f32::INFINITY;
         if let Some(hit) = ray_hits.iter_sorted().next() {
-            ray_length = Vec3::length(caster.direction * hit.time_of_impact);
+            ray_length = hit.distance;
         }
 
         // Compute the next stance for the player.
@@ -350,7 +344,7 @@ pub fn update_player_stance(
             motion.current_ride_height,
             motion.target_ride_height,
             6.0,
-            time.delta_seconds(),
+            time.delta_secs(),
         );
 
         // Update the gravity scale.
@@ -362,13 +356,9 @@ pub fn update_player_stance(
 }
 
 pub fn lock_rotation(mut query: Query<(&mut LockedAxes, &mut AngularVelocity, &mut Rotation, &mut Stance), With<Player>>) {
-    for (mut locked_axes,mut angular_velocity, mut rotation, stance) in &mut query {
+    for (locked_axes,mut angular_velocity, mut rotation, stance) in &mut query {
         match stance.current {
             StanceType::Standing | StanceType::Landing => {
-                // *locked_axes = locked_axes
-                //     .lock_rotation_x()
-                //     .lock_rotation_y()
-                //     .lock_rotation_z();
                 rotation.0 = Quat::IDENTITY;
                 angular_velocity.0 = Vec3::ZERO;
             }

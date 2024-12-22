@@ -7,55 +7,31 @@ mod terrain;
 mod user_interface;
 mod utils;
 
-use avian_interpolation3d::AvianInterpolationPlugin;
-use avian_pickup::AvianPickupPlugin;
-use bevy::ecs::event::ManualEventReader;
-use bevy::input::mouse::MouseMotion;
-use bevy::pbr::VolumetricLight;
+use bevy::image::{ImageAddressMode, ImageLoaderSettings, ImageSampler, ImageSamplerDescriptor};
+use bevy::pbr::{FogVolume, VolumetricLight};
 use bevy::render::render_asset::RenderAssetBytesPerFrame;
 
 use bevy::render::mesh::Mesh;
-use bevy::render::texture::{
-    ImageAddressMode, ImageLoaderSettings, ImageSampler, ImageSamplerDescriptor,
-};
-use bevy::{
-    core_pipeline::{
-        experimental::taa::TemporalAntiAliasPlugin,
-        tonemapping::Tonemapping,
-    },
-    pbr::DirectionalLightShadowMap,
-    prelude::*,
-};
-use bevy_vector_shapes::prelude::*;
+
+use bevy::{core_pipeline::tonemapping::Tonemapping, pbr::DirectionalLightShadowMap, prelude::*};
 
 use avian3d::prelude::*;
-use bevy_blur_regions::BlurRegionsPlugin;
-use bevy_infinite_grid::{InfiniteGridBundle, InfiniteGridPlugin};
-use bevy_kira_audio::{Audio, AudioControl, AudioEasing, AudioPlugin, AudioTween};
-use bevy_turborand::prelude::RngPlugin;
-use camera::camera::create_camera;
+use bevy_kira_audio::{Audio, AudioControl, AudioEasing, AudioTween};
 use camera::config::CameraConfig;
 use camera::take_screenshot;
 use config::{EngineSettings, KeyBindings};
-use player::PlayerPlugin;
+
 
 use std::f32::consts::{FRAC_PI_4, PI};
 use std::time::Duration;
 
-use bevy::log::LogPlugin;
-use bevy_dev_console::prelude::*;
-use user_interface::DebugInterfacePlugin;
-use utils::{
-    detect_toggle_cursor, generate_plane_mesh,
-    increase_render_adapter_wgpu_limits,
-};
+use utils::{detect_toggle_cursor, generate_plane_mesh};
 
 #[derive(Component)]
 struct Sun;
 
 fn main() {
     App::new()
-        .init_resource::<InputState>()
         .init_resource::<KeyBindings>()
         .insert_resource(EngineSettings { ..default() })
         .insert_resource(DirectionalLightShadowMap { size: 4098 })
@@ -66,29 +42,19 @@ fn main() {
             hdr: true,
         })
         .add_plugins((
-            DefaultPlugins.set(LogPlugin {
-                custom_layer: custom_log_layer,
-                ..default()
-            }),
-            RngPlugin::default(),
-            TemporalAntiAliasPlugin,
-            DevConsolePlugin,
-            Shape2dPlugin::default(),
-            // Disabling SyncPlugin is optional, but will get you a performance boost.
-            PhysicsPlugins::default(),
-            AvianPickupPlugin::default(),
-            AvianInterpolationPlugin::default(),
-            PhysicsDebugPlugin::default(),
-            BlurRegionsPlugin::default(),
-            DebugInterfacePlugin,
-            PlayerPlugin,
-            InfiniteGridPlugin,
-            AudioPlugin,
+            DefaultPlugins,
+            // DevConsolePlugin::default().with_log_layer(custom_log_layer),
+            // RngPlugin::new().with_rng_seed(0),
+            // PhysicsPlugins::default().with_length_unit(100.0),
+            // PhysicsDebugPlugin::default(),
+            // DebugInterfacePlugin,
+            // PlayerPlugin,
+            // AudioPlugin,
         ))
-        .add_systems(
-            PreStartup,
-            (create_camera, increase_render_adapter_wgpu_limits),
-        )
+        // .add_systems(
+        //     PreStartup,
+        //     (create_camera, increase_render_adapter_wgpu_limits),
+        // )
         .add_systems(Startup, (setup, start_background_audio).chain())
         .add_systems(
             Update,
@@ -102,7 +68,7 @@ fn main() {
 }
 
 fn start_background_audio(asset_server: Res<AssetServer>, audio: Res<Audio>) {
-    // ! DO NOT DISTRIBUTE - This music file is for internal testing only. !
+    // ! DO NOT DISTRIBUTE - This music file is for internal testing only!
     audio
         .into_inner()
         .play(asset_server.load("audio\\liminal-spaces-ambient.ogg"))
@@ -122,7 +88,7 @@ fn animate_light_direction(
         transform.rotation = Quat::from_euler(
             EulerRot::ZYX,
             0.0,
-            time.elapsed_seconds() * 0.0005 * PI / 5.0,
+            time.delta_secs() * 0.0005 * PI / 5.0,
             -FRAC_PI_4 * 0.5,
         );
     }
@@ -156,32 +122,26 @@ fn setup(
     mut materials: ResMut<Assets<StandardMaterial>>,
     asset_server: Res<AssetServer>,
 ) {
-    // set up the infinite grid with default settings.
-    commands.spawn(InfiniteGridBundle::default());
-
     // create the 'Sun' with volumetric Lighting enabled.
-    commands
-        .spawn((
-            DirectionalLightBundle {
-                directional_light: DirectionalLight {
-                    color: Color::srgb(1.0, 0.92, 0.80),
-                    illuminance: 80000.0,
-                    shadows_enabled: true,
-                    shadow_depth_bias: 0.02,
-                    shadow_normal_bias: 1.0,
-                    ..default()
-                },
-                transform: Transform::from_rotation(Quat::from_euler(
-                    EulerRot::ZYX,
-                    0.0,
-                    PI / 3.,
-                    -PI / 4.,
-                )),
-                ..default()
-            },
-            Sun,
-        ))
-        .insert(VolumetricLight);
+    commands.spawn((
+        DirectionalLight {
+            color: Color::srgb(1.0, 0.92, 0.80),
+            illuminance: 80000.0,
+            shadows_enabled: true,
+            shadow_depth_bias: 0.02,
+            shadow_normal_bias: 1.0,
+            ..default()
+        },
+        VolumetricLight,
+        Transform::from_rotation(Quat::from_euler(EulerRot::ZYX, 0.0, PI / 3., -PI / 4.)),
+        Sun,
+    ));
+
+    // Add the fog volume.
+    commands.spawn((
+        FogVolume::default(),
+        Transform::from_scale(Vec3::splat(35.0)),
+    ));
 
     // Plane
     let plane_size: f32 = 128.0;
@@ -210,12 +170,14 @@ fn setup(
     commands.spawn((
         RigidBody::Static,
         Collider::cuboid(plane_size, plane_thickness, plane_size),
-        PbrBundle {
-            mesh: generate_plane_mesh(&mut meshes, plane_size, plane_size, 1.0 / 16.0),
-            transform: Transform::from_xyz(0.0, 2.0, 0.0),
-            material: proto_material.clone(),
-            ..default()
-        },
+        Transform::from_xyz(0.0, 2.0, 0.0),
+        MeshMaterial3d(proto_material.clone()),
+        Mesh3d(generate_plane_mesh(
+            &mut meshes,
+            plane_size,
+            plane_size,
+            1.0 / 16.0,
+        )),
     ));
 
     // spawn a ball with physics and a material
@@ -223,28 +185,11 @@ fn setup(
         RigidBody::Dynamic,
         Collider::sphere(0.5),
         Mass(5.0),
-        PbrBundle {
-            mesh: meshes.add(Sphere::default().mesh().ico(5).unwrap()),
-            transform: Transform::from_xyz(2.0, 25.0, 2.0),
-            material: materials.add(Color::srgb(0.0, 0.0, 0.9)),
+        Mesh3d(meshes.add(Sphere::default().mesh().ico(5).unwrap())),
+        MeshMaterial3d(materials.add(StandardMaterial {
+            base_color: Color::srgb(0.0, 0.0, 0.9),
             ..default()
-        },
+        })),
+        Transform::from_xyz(2.0, 25.0, 2.0),
     ));
-
-    commands.spawn(SceneBundle {
-        scene: asset_server.load("models/FlightHelmet/FlightHelmet.gltf#Scene0"),
-        transform: Transform::from_xyz(-16.0, 2.0, 16.0).with_scale(Vec3 {
-            x: 16.0,
-            y: 16.0,
-            z: 16.0,
-        }),
-        ..default()
-    });
-}
-
-
-
-#[derive(Resource, Default)]
-pub struct InputState {
-    reader_motion: ManualEventReader<MouseMotion>,
 }

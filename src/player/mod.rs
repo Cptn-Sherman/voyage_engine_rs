@@ -1,25 +1,23 @@
 use avian3d::prelude::*;
-use avian_pickup::{
-    actor::AvianPickupActor,
-    input::{AvianPickupAction, AvianPickupInput},
-};
 use bevy::{log::info, prelude::*};
 
+use crate::{utils::grab_cursor, CameraThing};
 use body::Body;
 use config::PlayerControlConfig;
 use focus::{camera_look_system, Focus};
 use motion::{update_player_motion, Motion};
-use stance::{load_footstep_sfx, lock_rotation, play_footstep_sfx, tick_footstep, update_player_stance, ActionStep, FootstepEvent, Stance, StanceType, ACTION_STEP_DELTA_DEFAULT};
+use stance::{
+    load_footstep_sfx, lock_rotation, play_footstep_sfx, tick_footstep, update_player_stance,
+    ActionStep, FootstepEvent, Stance, StanceType, ACTION_STEP_DELTA_DEFAULT,
+};
 use states::{crouched::toggle_crouching, grounded::sprinting::toggle_sprint};
-use crate::{utils::grab_cursor, CameraThing};
 
-
+pub mod body;
 pub mod config;
+pub mod focus;
 pub mod motion;
 pub mod stance;
-pub mod focus;
 pub mod states;
-pub mod body;
 
 pub struct PlayerPlugin;
 
@@ -28,7 +26,13 @@ impl Plugin for PlayerPlugin {
         app.insert_resource(PlayerControlConfig::default()); // later we will load from some toml file
         app.add_systems(
             Startup,
-            (load_footstep_sfx, spawn_player, attached_camera_system, grab_cursor).chain(),
+            (
+                load_footstep_sfx,
+                spawn_player,
+                attached_camera_system,
+                grab_cursor,
+            )
+                .chain(),
         );
         app.add_systems(
             Update,
@@ -71,7 +75,6 @@ pub struct PlayerBundle {
     focus: Focus,
     stance: Stance,
     action_step: ActionStep,
-    pickup_actor: AvianPickupActor,
 }
 
 pub fn spawn_player(player_config: Res<PlayerControlConfig>, mut commands: Commands) {
@@ -89,7 +92,9 @@ pub fn spawn_player(player_config: Res<PlayerControlConfig>, mut commands: Comma
             global_transform: GlobalTransform::default(),
             downward_ray: RayCaster::new(Vec3::ZERO, Dir3::NEG_Y),
             ray_hits: RayHits::default(),
-            body: Body { current_body_height: 1.0 },
+            body: Body {
+                current_body_height: 1.0,
+            },
             motion: Motion {
                 movement_vec: Vec3::from_array([0.0, 0.0, 0.0]),
                 current_movement_speed: player_config.movement_speed,
@@ -113,7 +118,6 @@ pub fn spawn_player(player_config: Res<PlayerControlConfig>, mut commands: Comma
                 delta: ACTION_STEP_DELTA_DEFAULT,
                 bumped: false,
             },
-            pickup_actor: AvianPickupActor::default(),
         },
         Player,
     ));
@@ -142,7 +146,7 @@ fn attached_camera_system(
             if camera_parent.is_none() {
                 commands
                     .entity(player_entity)
-                    .push_children(&[camera_entity]);
+                    .add_children(&[camera_entity]);
                 info!("Attached Camera to player character as child");
             } else {
                 info!("Camera parent already exists, will not set player as parent! ");

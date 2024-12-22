@@ -1,9 +1,8 @@
 use bevy::{
     input::ButtonInput,
     log::{info, warn},
-    math::{Quat, Vec3},
+    math::Vec3,
     prelude::{Camera3d, Component, KeyCode, Query, Res, With, Without},
-    render::camera::Camera,
     time::Time,
     transform::components::Transform,
 };
@@ -32,7 +31,7 @@ pub fn update_player_motion(
     player_config: Res<PlayerControlConfig>,
     key_bindings: Res<KeyBindings>,
     camera_query: Query<&mut Transform, (With<Camera3d>, Without<Player>)>,
-    mut query: Query<(&mut LinearVelocity, &mut Rotation, &mut Motion, &mut Stance), With<Player>>,
+    mut query: Query<(&mut LinearVelocity, &mut Motion, &mut Stance), With<Player>>,
 ) {
     if camera_query.is_empty()
         || camera_query.iter().len() > 1
@@ -43,7 +42,7 @@ pub fn update_player_motion(
     }
 
     for camera_transform in camera_query.iter() {
-        for (mut linear_vel, mut rotation, mut motion, mut _stance) in &mut query {
+        for (mut linear_vel, mut motion, mut _stance) in &mut query {
             // Perform the movement checks.
             let mut movement_vector: Vec3 = Vec3::ZERO.clone();
 
@@ -75,7 +74,7 @@ pub fn update_player_motion(
 
             // apply the total movement vector.
             motion.movement_vec +=
-                movement_vector.normalize_or_zero() * speed_vector * time.delta_seconds();
+                movement_vector.normalize_or_zero() * speed_vector * time.delta_secs();
             // Appy decay to Linear Velocity on the X and Z directions and apply to the velocity.
             motion.movement_vec.x *= player_config.movement_decay;
             motion.movement_vec.z *= player_config.movement_decay;
