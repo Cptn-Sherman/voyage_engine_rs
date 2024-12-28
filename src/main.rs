@@ -7,25 +7,28 @@ mod terrain;
 mod user_interface;
 mod utils;
 
+use bevy::core_pipeline::experimental::taa::TemporalAntiAliasPlugin;
 use bevy::image::{ImageAddressMode, ImageLoaderSettings, ImageSampler, ImageSamplerDescriptor};
-use bevy::pbr::{FogVolume, VolumetricLight};
-use bevy::render::render_asset::RenderAssetBytesPerFrame;
+use bevy::pbr::VolumetricLight;
 
 use bevy::render::mesh::Mesh;
 
 use bevy::{core_pipeline::tonemapping::Tonemapping, pbr::DirectionalLightShadowMap, prelude::*};
 
 use avian3d::prelude::*;
-use bevy_kira_audio::{Audio, AudioControl, AudioEasing, AudioTween};
+use bevy_kira_audio::{Audio, AudioControl, AudioEasing, AudioPlugin, AudioTween};
+use camera::camera::create_camera;
 use camera::config::CameraConfig;
 use camera::take_screenshot;
 use config::{EngineSettings, KeyBindings};
+use player::PlayerPlugin;
+use user_interface::DebugInterfacePlugin;
 
 
 use std::f32::consts::{FRAC_PI_4, PI};
 use std::time::Duration;
 
-use utils::{detect_toggle_cursor, generate_plane_mesh};
+use utils::{detect_toggle_cursor, generate_plane_mesh, increase_render_adapter_wgpu_limits};
 
 #[derive(Component)]
 struct Sun;
@@ -35,7 +38,7 @@ fn main() {
         .init_resource::<KeyBindings>()
         .insert_resource(EngineSettings { ..default() })
         .insert_resource(DirectionalLightShadowMap { size: 4098 })
-        .insert_resource(RenderAssetBytesPerFrame::new(1_000_000_000))
+        // .insert_resource(RenderAssetBytesPerFrame::new(2_000_000_000)) ! <- disabling for now because this causes a crash for fog volumes.
         .insert_resource(CameraConfig {
             tonemapping: Tonemapping::Reinhard,
             volumetric_density: 0.0025,
@@ -45,16 +48,17 @@ fn main() {
             DefaultPlugins,
             // DevConsolePlugin::default().with_log_layer(custom_log_layer),
             // RngPlugin::new().with_rng_seed(0),
-            // PhysicsPlugins::default().with_length_unit(100.0),
-            // PhysicsDebugPlugin::default(),
-            // DebugInterfacePlugin,
-            // PlayerPlugin,
-            // AudioPlugin,
+            PhysicsPlugins::default(),
+            PhysicsDebugPlugin::default(),
+            DebugInterfacePlugin,
+            TemporalAntiAliasPlugin,
+            PlayerPlugin,
+            AudioPlugin,
         ))
-        // .add_systems(
-        //     PreStartup,
-        //     (create_camera, increase_render_adapter_wgpu_limits),
-        // )
+        .add_systems(
+            PreStartup,
+            (create_camera, increase_render_adapter_wgpu_limits),
+        )
         .add_systems(Startup, (setup, start_background_audio).chain())
         .add_systems(
             Update,
@@ -135,12 +139,6 @@ fn setup(
         VolumetricLight,
         Transform::from_rotation(Quat::from_euler(EulerRot::ZYX, 0.0, PI / 3., -PI / 4.)),
         Sun,
-    ));
-
-    // Add the fog volume.
-    commands.spawn((
-        FogVolume::default(),
-        Transform::from_scale(Vec3::splat(35.0)),
     ));
 
     // Plane

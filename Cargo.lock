@@ -664,15 +664,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "bevy_flycam"
-version = "0.15.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "83039a8e4f7e92c96c97b0b3ac738a54781f77ce5086d3ae39698219586a7f1d"
-dependencies = [
- "bevy",
-]
-
-[[package]]
 name = "bevy_gilrs"
 version = "0.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4883,12 +4874,11 @@ checksum = "0b928f33d975fc6ad9f86c8f283853ad26bdd5b10b7f1542aa2fa15e2289105a"
 
 [[package]]
 name = "voyage_engine"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "acacia",
  "avian3d",
  "bevy",
- "bevy_flycam",
  "bevy_kira_audio",
  "bevy_turborand",
  "bevy_vector_shapes",

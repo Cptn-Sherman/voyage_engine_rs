@@ -1,6 +1,6 @@
 [package]
 name = "voyage_engine"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -9,7 +9,6 @@ edition = "2021"
 bevy = { version = "0.15.0", features = ["dynamic_linking"] }
 avian3d = { version = "0.2.0", feature = "use-debug-plugin" }
 bevy_turborand = "0.10.0"
-bevy_flycam = "0.15.0"
 bevy_kira_audio = { version = "0.21.0", features = ["mp3"] }
 bevy_vector_shapes = "0.9.3"
 #bevy_blur_regions = "0.5.0"
