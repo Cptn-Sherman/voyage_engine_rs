@@ -17,7 +17,7 @@ use bevy::{core_pipeline::tonemapping::Tonemapping, pbr::DirectionalLightShadowM
 
 use avian3d::prelude::*;
 use bevy_kira_audio::{Audio, AudioControl, AudioEasing, AudioPlugin, AudioTween};
-use camera::camera::create_camera;
+use camera::camera::{create_camera, create_fly_camera, swap_camera_target};
 use camera::config::CameraConfig;
 use camera::take_screenshot;
 use config::{EngineSettings, KeyBindings};
@@ -57,7 +57,7 @@ fn main() {
         ))
         .add_systems(
             PreStartup,
-            (create_camera, increase_render_adapter_wgpu_limits),
+            (create_camera, create_fly_camera, increase_render_adapter_wgpu_limits),
         )
         .add_systems(Startup, (setup, start_background_audio).chain())
         .add_systems(
@@ -65,6 +65,7 @@ fn main() {
             (
                 animate_light_direction,
                 detect_toggle_cursor,
+                swap_camera_target,
                 take_screenshot,
             ),
         )

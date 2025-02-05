@@ -13,6 +13,7 @@ pub struct KeyBindings {
     pub toggle_grab_cursor: KeyCode,
     pub interact: KeyCode,
     pub screenshot_key: KeyCode,
+    pub toggle_camera_mode: KeyCode,
 }
 
 impl Default for KeyBindings {
@@ -28,6 +29,7 @@ impl Default for KeyBindings {
             toggle_grab_cursor: KeyCode::Escape,
             interact: KeyCode::KeyE,
             screenshot_key: KeyCode::Equal,
+            toggle_camera_mode: KeyCode::F3,
         }
     }
 }
