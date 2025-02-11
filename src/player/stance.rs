@@ -175,11 +175,11 @@ impl FootstepDirection {
 }
 
 #[derive(Resource)]
-pub struct MyAudioHandle(Handle<AudioSource>);
+pub struct FootstepAudioHandle(Handle<AudioSource>);
 
 pub fn load_footstep_sfx(mut commands: Commands, asset_server: Res<AssetServer>) {
     let handle = asset_server.load("audio\\footstep-fx.mp3");
-    commands.insert_resource(MyAudioHandle(handle.clone()));
+    commands.insert_resource(FootstepAudioHandle(handle.clone()));
 }
 
 // todo: move this somewhere more appropriate.
@@ -190,7 +190,7 @@ pub fn play_footstep_sfx(
     mut ev_footstep: EventReader<FootstepEvent>,
     mut global_rng: ResMut<GlobalRng>,
     audio: Res<Audio>,
-    my_audio_handle: Res<MyAudioHandle>,
+    my_audio_handle: Res<FootstepAudioHandle>,
 ) {
     let mut should_play: bool = false;
     let mut panning: f64 = 0.5;

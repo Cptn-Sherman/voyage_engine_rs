@@ -17,13 +17,16 @@ use bevy::{core_pipeline::tonemapping::Tonemapping, pbr::DirectionalLightShadowM
 
 use avian3d::prelude::*;
 use bevy_kira_audio::{Audio, AudioControl, AudioEasing, AudioPlugin, AudioTween};
-use camera::camera::{create_camera, create_fly_camera, swap_camera_target};
+use bevy_turborand::prelude::RngPlugin;
+use camera::camera::{
+    create_camera, create_fly_camera, load_toggle_camera_soundfxs, play_toggle_camera_soundfx, swap_camera_target, ToggleCameraEvent
+};
 use camera::config::CameraConfig;
 use camera::take_screenshot;
 use config::{EngineSettings, KeyBindings};
+use player::stance::load_footstep_sfx;
 use player::PlayerPlugin;
 use user_interface::DebugInterfacePlugin;
-
 
 use std::f32::consts::{FRAC_PI_4, PI};
 use std::time::Duration;
@@ -46,8 +49,8 @@ fn main() {
         })
         .add_plugins((
             DefaultPlugins,
-            // DevConsolePlugin::default().with_log_layer(custom_log_layer),
-            // RngPlugin::new().with_rng_seed(0),
+            //DevConsolePlugin::default().with_log_layer(custom_log_layer),
+            RngPlugin::new().with_rng_seed(0),
             PhysicsPlugins::default(),
             PhysicsDebugPlugin::default(),
             DebugInterfacePlugin,
@@ -57,18 +60,27 @@ fn main() {
         ))
         .add_systems(
             PreStartup,
-            (create_camera, create_fly_camera, increase_render_adapter_wgpu_limits),
+            (
+                create_camera,
+                create_fly_camera,
+                increase_render_adapter_wgpu_limits,
+            ),
         )
-        .add_systems(Startup, (setup, start_background_audio).chain())
+        .add_systems(
+            Startup,
+            (setup, start_background_audio, load_toggle_camera_soundfxs).chain(),
+        )
         .add_systems(
             Update,
             (
                 animate_light_direction,
                 detect_toggle_cursor,
                 swap_camera_target,
+                play_toggle_camera_soundfx,
                 take_screenshot,
             ),
         )
+        .add_event::<ToggleCameraEvent>()
         .run();
 }
 

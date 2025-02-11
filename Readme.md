@@ -1,6 +1,7 @@
 
 
 ## Todo: 
+- Bug: player collider capsule does not shrink when crouched.
 - Looking at the ground causes you to walk slower becuase we care about the y component of the camera. Use XZ and normalize
 - You can full height jump while crouched becuase the ray is short when testing the jump height. You hit 200/200 which feels wrong.
 - Crouching should be lower but you bottom out and fall over

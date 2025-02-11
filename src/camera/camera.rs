@@ -1,8 +1,15 @@
 use bevy::{
     core_pipeline::{
         experimental::taa::TemporalAntiAliasing, motion_blur::MotionBlur, tonemapping::Tonemapping,
-    }, math::Vec3, pbr::{ScreenSpaceAmbientOcclusion, ScreenSpaceReflections, VolumetricFog}, prelude::*, render::camera, utils::default
+    },
+    math::Vec3,
+    pbr::{ScreenSpaceAmbientOcclusion, ScreenSpaceReflections, VolumetricFog},
+    prelude::*,
+    render::camera,
+    utils::default,
 };
+use bevy_kira_audio::{Audio, AudioControl, AudioSource};
+use bevy_turborand::GlobalRng;
 
 use crate::{config::KeyBindings, player::Player, CameraThing};
 
@@ -29,6 +36,36 @@ pub fn create_camera(mut commands: Commands, camera_config: Res<CameraConfig>) {
             ambient_intensity: 0.0,
             ..default()
         });
+}
+
+#[derive(Event, Clone)]
+pub struct ToggleCameraEvent {}
+
+#[derive(Resource)]
+pub struct ToggleCameraModeAudioHandle(Handle<AudioSource>);
+
+pub fn load_toggle_camera_soundfxs(mut commands: Commands, asset_server: Res<AssetServer>) {
+    let handle = asset_server.load("audio\\Blip-003.wav");
+    commands.insert_resource(ToggleCameraModeAudioHandle(handle.clone()));
+}
+
+pub fn play_toggle_camera_soundfx(
+    mut _ev_footstep: EventReader<ToggleCameraEvent>,
+    audio: Res<Audio>,
+    my_audio_handle: Res<ToggleCameraModeAudioHandle>,
+) {
+    let mut should_play: bool = false;
+
+    for _ev in _ev_footstep.read() {
+        should_play = true;
+    }
+
+    if should_play {
+        audio
+            .into_inner()
+            .play(my_audio_handle.0.clone())
+            .with_volume(0.5);
+    }
 }
 
 #[derive(Component)]
@@ -78,19 +115,18 @@ pub fn create_fly_camera(mut commands: Commands) {
 
 pub fn swap_camera_target(
     mut commands: Commands,
+    mut ev_toggle_cam: EventWriter<ToggleCameraEvent>,
     keys: Res<ButtonInput<KeyCode>>,
     key_bindings: Res<KeyBindings>,
     player_query: Query<Entity, With<Player>>,
     fly_camera_query: Query<Entity, With<FlyCamera>>,
     mut camera_query: Query<(Entity, &mut Transform, Option<&Parent>), With<CameraThing>>,
 ) {
-
     if !keys.just_pressed(key_bindings.toggle_camera_mode) {
         return;
     }
 
-
-    let mut valid_queries: bool = true; 
+    let mut valid_queries: bool = true;
     if player_query.is_empty() {
         warn!("Player Query was empty, cannot swap camera parent target!");
         valid_queries = false;
@@ -101,7 +137,7 @@ pub fn swap_camera_target(
         valid_queries = false;
     }
 
-    if  camera_query.is_empty() {
+    if camera_query.is_empty() {
         warn!("Camera Query was empty, cannot swap camera parent target!");
         valid_queries = false;
     }
@@ -116,7 +152,7 @@ pub fn swap_camera_target(
     let mut fly_camera = fly_camera_query.iter().next().unwrap();
     let (camera, mut camera_transform, camera_parent) = camera_query.iter_mut().next().unwrap();
     let camera_parent_unwrapped = camera_parent.unwrap();
-    // check the camera to see what its parented to. 
+    // check the camera to see what its parented to.
     // If its parented to the player, then we want to parent it to the fly camera.
     // else it is parented to the fly camera, and we want it parented to the player.
     if **camera_parent_unwrapped == player {
@@ -128,4 +164,7 @@ pub fn swap_camera_target(
         commands.entity(player).add_children(&[camera]);
         info!("Attached camera to player entity.");
     }
+
+    ev_toggle_cam.send(ToggleCameraEvent {});
+    info!("Sent an event");
 }
