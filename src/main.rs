@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-mod camera;
+pub mod camera;
 pub mod config;
 mod player;
 mod terrain;
@@ -18,13 +18,9 @@ use bevy::{core_pipeline::tonemapping::Tonemapping, pbr::DirectionalLightShadowM
 use avian3d::prelude::*;
 use bevy_kira_audio::{Audio, AudioControl, AudioEasing, AudioPlugin, AudioTween};
 use bevy_turborand::prelude::RngPlugin;
-use camera::camera::{
-    create_camera, create_fly_camera, load_toggle_camera_soundfxs, play_toggle_camera_soundfx, swap_camera_target, ToggleCameraEvent
-};
-use camera::config::CameraConfig;
-use camera::take_screenshot;
+
+use camera::{create_camera, create_fly_camera, load_toggle_camera_soundfxs, play_toggle_camera_soundfx, swap_camera_target, take_screenshot, CameraConfig, ToggleCameraEvent};
 use config::{EngineSettings, KeyBindings};
-use player::stance::load_footstep_sfx;
 use player::PlayerPlugin;
 use user_interface::DebugInterfacePlugin;
 
@@ -111,8 +107,7 @@ fn animate_light_direction(
     }
 }
 
-#[derive(Component)]
-struct CameraThing;
+
 
 struct TargetDepth(f32);
 impl Default for TargetDepth {

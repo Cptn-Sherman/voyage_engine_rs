@@ -1,7 +1,7 @@
 use avian3d::prelude::*;
 use bevy::{log::info, prelude::*};
 
-use crate::{utils::grab_cursor, CameraThing};
+use crate::{camera::CameraThing, utils::grab_cursor};
 use body::Body;
 use config::PlayerControlConfig;
 use focus::{camera_look_system, Focus};

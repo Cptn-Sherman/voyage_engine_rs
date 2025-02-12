@@ -5,7 +5,7 @@ use bevy::{
     time::{Time, Timer, TimerMode}, log::{warn, info},
 };
 
-use crate::{utils::{convert_to_chunk_coordinate, format_value_f32}, CameraThing};
+use crate::{camera::CameraThing, utils::{convert_to_chunk_coordinate, format_value_f32}};
 
 pub mod bevy_mesh;
 pub mod chunk_mesh;

@@ -1,3 +1,4 @@
+use crate::{config::KeyBindings, player::Player};
 use bevy::{
     core_pipeline::{
         experimental::taa::TemporalAntiAliasing, motion_blur::MotionBlur, tonemapping::Tonemapping,
@@ -5,15 +6,43 @@ use bevy::{
     math::Vec3,
     pbr::{ScreenSpaceAmbientOcclusion, ScreenSpaceReflections, VolumetricFog},
     prelude::*,
-    render::camera,
     utils::default,
 };
 use bevy_kira_audio::{Audio, AudioControl, AudioSource};
-use bevy_turborand::GlobalRng;
 
-use crate::{config::KeyBindings, player::Player, CameraThing};
+use bevy::{
+    input::ButtonInput,
+    prelude::{Commands, Entity, KeyCode, Query, Res, With},
+    render::view::screenshot::{save_to_disk, Capturing, Screenshot},
+    window::{SystemCursorIcon, Window},
+    winit::cursor::CursorIcon,
+};
+use chrono::{DateTime, Local};
 
-use super::config::CameraConfig;
+use crate::{
+    config::EngineSettings,
+    utils::{self, get_valid_extension},
+};
+
+#[derive(Component)]
+pub struct CameraThing;
+
+#[derive(Resource)]
+pub struct CameraConfig {
+    pub(crate) tonemapping: Tonemapping,
+    pub(crate) volumetric_density: f32,
+    pub(crate) hdr: bool,
+}
+
+impl Default for CameraConfig {
+    fn default() -> Self {
+        Self {
+            tonemapping: Tonemapping::TonyMcMapface,
+            volumetric_density: 0.0025,
+            hdr: true,
+        }
+    }
+}
 
 pub fn create_camera(mut commands: Commands, camera_config: Res<CameraConfig>) {
     commands
@@ -36,6 +65,16 @@ pub fn create_camera(mut commands: Commands, camera_config: Res<CameraConfig>) {
             ambient_intensity: 0.0,
             ..default()
         });
+}
+
+#[derive(Component)]
+pub struct FlyCamera;
+
+pub fn create_fly_camera(mut commands: Commands) {
+    commands.spawn((
+        Transform::from_xyz(0.0, 5.0, 0.0).looking_to(Vec3::ZERO, Vec3::Y),
+        FlyCamera,
+    ));
 }
 
 #[derive(Event, Clone)]
@@ -66,16 +105,6 @@ pub fn play_toggle_camera_soundfx(
             .play(my_audio_handle.0.clone())
             .with_volume(0.5);
     }
-}
-
-#[derive(Component)]
-pub struct FlyCamera;
-
-pub fn create_fly_camera(mut commands: Commands) {
-    commands.spawn((
-        Transform::from_xyz(0.0, 5.0, 0.0).looking_to(Vec3::ZERO, Vec3::Y),
-        FlyCamera,
-    ));
 }
 
 // pub fn move_fly_camera(mut query: Query<(&mut Transform, With<FlyCamera>)>, time: Res<Time>) {
@@ -148,8 +177,8 @@ pub fn swap_camera_target(
 
     // this is not safe, should handle none option
     // we first ensure that each of these entities has only one instance
-    let mut player = player_query.iter().next().unwrap();
-    let mut fly_camera = fly_camera_query.iter().next().unwrap();
+    let player = player_query.iter().next().unwrap();
+    let fly_camera = fly_camera_query.iter().next().unwrap();
     let (camera, mut camera_transform, camera_parent) = camera_query.iter_mut().next().unwrap();
     let camera_parent_unwrapped = camera_parent.unwrap();
     // check the camera to see what its parented to.
@@ -167,4 +196,52 @@ pub fn swap_camera_target(
 
     ev_toggle_cam.send(ToggleCameraEvent {});
     info!("Sent an event");
+}
+
+/** This system was taken from the screenshot example: https://bevyengine.org/examples/Window/screenshot/ */
+pub fn take_screenshot(
+    mut commands: Commands,
+    settings: Res<EngineSettings>,
+    key_bindings: Res<KeyBindings>,
+    keys: Res<ButtonInput<KeyCode>>,
+) {
+    if keys.just_pressed(key_bindings.screenshot_key) {
+        // get the formated path as string.
+        let date: DateTime<Local> = Local::now();
+        let formated_date: chrono::format::DelayedFormat<chrono::format::StrftimeItems> =
+            date.format("%Y-%m-%d_%H-%M-%S%.3f");
+        let path: String = format!(
+            "./voyage_screenshot-{}.{}",
+            formated_date.to_string(),
+            get_valid_extension(
+                &settings.screenshot_format,
+                utils::ExtensionType::Screenshot
+            )
+        );
+
+        commands
+            .spawn(Screenshot::primary_window())
+            .observe(save_to_disk(path));
+    }
+}
+
+fn screenshot_saving(
+    mut commands: Commands,
+    screenshot_saving: Query<Entity, With<Capturing>>,
+    windows: Query<Entity, With<Window>>,
+) {
+    let Ok(window) = windows.get_single() else {
+        return;
+    };
+    match screenshot_saving.iter().count() {
+        0 => {
+            commands.entity(window).remove::<CursorIcon>();
+        }
+        x if x > 0 => {
+            commands
+                .entity(window)
+                .insert(CursorIcon::from(SystemCursorIcon::Progress));
+        }
+        _ => {}
+    }
 }

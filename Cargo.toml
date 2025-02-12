@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 bevy = { version = "0.15.0", features = ["dynamic_linking"] }
-avian3d = { version = "0.2.0", feature = "use-debug-plugin" }
+avian3d = { version = "0.2.0" }
 bevy_turborand = "0.10.0"
 bevy_kira_audio = { version = "0.21.0", features = ["mp3", "wav"] }
 bevy_vector_shapes = "0.9.3"

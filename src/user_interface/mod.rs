@@ -7,7 +7,6 @@ use bevy::{
         DiagnosticsStore, EntityCountDiagnosticsPlugin, FrameTimeDiagnosticsPlugin,
         SystemInformationDiagnosticsPlugin,
     },
-    ecs::bundle,
     prelude::*,
 };
 use themes::{BORDER_COLOR, DEFAULT_FONT_PATH};
