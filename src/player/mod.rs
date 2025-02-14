@@ -1,7 +1,7 @@
 use avian3d::prelude::*;
 use bevy::{log::info, prelude::*};
 
-use crate::{camera::CameraThing, utils::grab_cursor};
+use crate::{camera::GameCamera, utils::grab_cursor};
 use body::Body;
 use config::PlayerControlConfig;
 use focus::{camera_look_system, Focus};
@@ -129,7 +129,7 @@ fn attached_camera_system(
     mut player_query: Query<(Entity, &mut Transform), (With<Player>, Without<Camera>)>,
     mut camera_query: Query<
         (Entity, &mut Transform, Option<&Parent>),
-        (With<Camera3d>, With<CameraThing>, Without<Player>),
+        (With<Camera3d>, With<GameCamera>, Without<Player>),
     >,
 ) {
     if camera_query.is_empty()

@@ -38,20 +38,18 @@ pub fn update_player_motion(
         || query.is_empty()
         || query.iter().len() > 1
     {
-        warn!("Player Motion System did not expected 1 camera(s) recieved {}, and 1 player(s) recieved {}", camera_query.iter().len(), query.iter().len());
+        warn!("Player Motion System did not expected 1 camera(s) recieved {}, and 1 player(s) recieved {}. Expect Instablity!", camera_query.iter().len(), query.iter().len());
     }
 
     for camera_transform in camera_query.iter() {
         for (mut linear_vel, mut motion, mut _stance) in &mut query {
             // Perform the movement checks.
             let mut movement_vector: Vec3 = Vec3::ZERO.clone();
-
             let speed_vector: Vec3 = Vec3::from([
                 motion.current_movement_speed,
                 motion.current_movement_speed,
                 motion.current_movement_speed,
             ]);
-
             if keys.pressed(key_bindings.move_forward) {
                 movement_vector += camera_transform.forward().as_vec3();
             }
@@ -64,14 +62,12 @@ pub fn update_player_motion(
             if keys.pressed(key_bindings.move_right) {
                 movement_vector += camera_transform.right().as_vec3();
             }
-
             // set the motion.moving when the magnituted of the movement_vector is greater than some arbitrary threshold.
             if movement_vector.length() <= 0.01 {
                 motion.moving = false;
             } else {
                 motion.moving = true;
             }
-
             // apply the total movement vector.
             motion.movement_vec +=
                 movement_vector.normalize_or_zero() * speed_vector * time.delta_secs();
@@ -97,7 +93,6 @@ pub fn apply_spring_force(
     let spring_offset = f32::abs(ray_length) - ride_height;
     let spring_force =
         (spring_offset * config.ride_spring_strength) - (-linear_vel.y * config.ride_spring_damper);
-
     /* Now we apply our spring force vector in the direction to return the bodies distance from the ground towards RIDE_HEIGHT. */
     external_force.clear();
     external_force.apply_force(Vec3::from((0.0, -spring_force, 0.0)));

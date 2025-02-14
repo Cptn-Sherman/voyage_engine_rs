@@ -5,7 +5,7 @@ use bevy::{
     time::{Time, Timer, TimerMode}, log::{warn, info},
 };
 
-use crate::{camera::CameraThing, utils::{convert_to_chunk_coordinate, format_value_f32}};
+use crate::{camera::GameCamera, utils::{convert_to_chunk_coordinate, format_value_f32}};
 
 pub mod bevy_mesh;
 pub mod chunk_mesh;
@@ -82,7 +82,7 @@ pub fn check_lod_position(
     time: Res<Time>,
     mut timer: ResMut<LODRecalculateTimer>,
     mut tracked_pos: ResMut<LODPostionTracker>,
-    camera_query: Query<&Transform, With<CameraThing>>,
+    camera_query: Query<&Transform, With<GameCamera>>,
 ) {
     // guard: timer hasn't finished, return early.
     if !timer.0.tick(time.delta()).just_finished() {

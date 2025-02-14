@@ -25,7 +25,7 @@ use crate::{
 };
 
 #[derive(Component)]
-pub struct CameraThing;
+pub struct GameCamera;
 
 #[derive(Resource)]
 pub struct CameraConfig {
@@ -59,7 +59,7 @@ pub fn create_camera(mut commands: Commands, camera_config: Res<CameraConfig>) {
             ScreenSpaceAmbientOcclusion { ..default() },
             ScreenSpaceReflections { ..default() },
             MotionBlur { ..default() },
-            CameraThing,
+            GameCamera,
         ))
         .insert(VolumetricFog {
             ambient_intensity: 0.0,
@@ -68,12 +68,12 @@ pub fn create_camera(mut commands: Commands, camera_config: Res<CameraConfig>) {
 }
 
 #[derive(Component)]
-pub struct FlyCamera;
+pub struct FreeCamera;
 
-pub fn create_fly_camera(mut commands: Commands) {
+pub fn create_free_camera(mut commands: Commands) {
     commands.spawn((
         Transform::from_xyz(0.0, 5.0, 0.0).looking_to(Vec3::ZERO, Vec3::Y),
-        FlyCamera,
+        FreeCamera,
     ));
 }
 
@@ -133,27 +133,26 @@ pub fn play_toggle_camera_soundfx(
     }
 }
 
-pub fn move_fly_camera(
-    camera_query: Query<&mut Transform, (With<Camera3d>, Without<FlyCamera>)>,
-    mut query: Query<&mut Transform, With<FlyCamera>>,
+pub fn move_free_camera(
+    mut free_entity_query: Query<&mut Transform, With<FreeCamera>>,
+    camera_query: Query<&mut Transform, (With<Camera3d>, Without<FreeCamera>)>,
     keys: Res<ButtonInput<KeyCode>>,
     key_bindings: Res<KeyBindings>,
     time: Res<Time>,
 ) {
     if camera_query.is_empty()
         || camera_query.iter().len() > 1
-        || query.is_empty()
-        || query.iter().len() > 1
+        || free_entity_query.is_empty()
+        || free_entity_query.iter().len() > 1
     {
-        warn!("Player Motion System did not expected 1 camera(s) recieved {}, and 1 player(s) recieved {}. Expect Instablity!", camera_query.iter().len(), query.iter().len());
+        warn!("Free Camera Motion System did not recieve expected 1 camera(s) recieved {}, and 1 player(s) recieved {}. Expect Instablity!", camera_query.iter().len(), free_entity_query.iter().len());
         return;
     }
     for camera_transform in camera_query.iter() {
-        for mut transform in query.iter_mut() {
+        for mut transform in free_entity_query.iter_mut() {
             let mut movement_vector: Vec3 = Vec3::ZERO.clone();
-
-            let speed_vector: Vec3 = Vec3::from([10.0, 10.0, 10.0]);
-
+            let speed_vector: Vec3 = Vec3::from([20.0, 20.0, 20.0]);
+            // WASD Movement
             if keys.pressed(key_bindings.move_forward) {
                 movement_vector += camera_transform.forward().as_vec3();
             }
@@ -166,16 +165,14 @@ pub fn move_fly_camera(
             if keys.pressed(key_bindings.move_right) {
                 movement_vector += camera_transform.right().as_vec3();
             }
-
+            // Ascend and Descend
             if keys.pressed(key_bindings.move_ascend) {
                 movement_vector += Vec3::Y;
             }
-
             if keys.pressed(key_bindings.move_descend) {
                 movement_vector -= Vec3::Y;
             }
-
-
+            // Scale the vector by the elapsed time.
             movement_vector *= speed_vector * time.delta_secs();
             transform.translation += movement_vector;
         }
@@ -188,8 +185,8 @@ pub fn swap_camera_target(
     keys: Res<ButtonInput<KeyCode>>,
     key_bindings: Res<KeyBindings>,
     player_query: Query<Entity, With<Player>>,
-    fly_camera_query: Query<Entity, With<FlyCamera>>,
-    mut camera_query: Query<(Entity, &mut Transform, Option<&Parent>), With<CameraThing>>,
+    free_camera_query: Query<Entity, With<FreeCamera>>,
+    mut camera_query: Query<(Entity, &mut Transform, Option<&Parent>), With<GameCamera>>,
 ) {
     if !keys.just_pressed(key_bindings.toggle_camera_mode) {
         return;
@@ -201,7 +198,7 @@ pub fn swap_camera_target(
         valid_queries = false;
     }
 
-    if fly_camera_query.is_empty() {
+    if free_camera_query.is_empty() {
         warn!("Fly Camera Query was empty, cannot swap camera parent target!");
         valid_queries = false;
     }
@@ -218,7 +215,7 @@ pub fn swap_camera_target(
     // this is not safe, should handle none option
     // we first ensure that each of these entities has only one instance
     let player = player_query.iter().next().unwrap();
-    let fly_camera = fly_camera_query.iter().next().unwrap();
+    let free_camera = free_camera_query.iter().next().unwrap();
     let (camera, mut camera_transform, camera_parent) = camera_query.iter_mut().next().unwrap();
     let camera_parent_unwrapped = camera_parent.unwrap();
     // check the camera to see what its parented to.
@@ -226,7 +223,7 @@ pub fn swap_camera_target(
     // else it is parented to the fly camera, and we want it parented to the player.
     if **camera_parent_unwrapped == player {
         camera_transform.translation = Vec3::from_array([0.0, 0.0, 0.0]);
-        commands.entity(fly_camera).add_children(&[camera]);
+        commands.entity(free_camera).add_children(&[camera]);
         info!("Attached camera to fly_camera entity.");
         ev_toggle_cam.send(ToggleCameraEvent {
             mode: CameraMode::FreeCam,

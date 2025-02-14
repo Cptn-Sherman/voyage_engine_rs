@@ -19,7 +19,7 @@ use avian3d::prelude::*;
 use bevy_kira_audio::{Audio, AudioControl, AudioEasing, AudioPlugin, AudioTween};
 use bevy_turborand::prelude::RngPlugin;
 
-use camera::{create_camera, create_fly_camera, load_toggle_camera_soundfxs, move_fly_camera, play_toggle_camera_soundfx, swap_camera_target, take_screenshot, CameraConfig, ToggleCameraEvent};
+use camera::{create_camera, create_free_camera, load_toggle_camera_soundfxs, move_free_camera, play_toggle_camera_soundfx, swap_camera_target, take_screenshot, CameraConfig, ToggleCameraEvent};
 use config::{EngineSettings, KeyBindings};
 use player::PlayerPlugin;
 use user_interface::DebugInterfacePlugin;
@@ -58,7 +58,7 @@ fn main() {
             PreStartup,
             (
                 create_camera,
-                create_fly_camera,
+                create_free_camera,
                 increase_render_adapter_wgpu_limits,
             ),
         )
@@ -72,7 +72,7 @@ fn main() {
                 animate_light_direction,
                 detect_toggle_cursor,
                 swap_camera_target,
-                move_fly_camera,
+                move_free_camera,
                 play_toggle_camera_soundfx,
                 take_screenshot,
             ),
