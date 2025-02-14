@@ -404,7 +404,7 @@ fn determine_next_stance(
 
     if next_stance != previous_stance {
         info!(
-            "Detected Stance Change:{:#?} -> {:#?}",
+            "Stance Changed: {:#?} -> {:#?}",
             previous_stance, next_stance
         );
     }

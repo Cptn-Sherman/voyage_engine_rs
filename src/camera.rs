@@ -78,69 +78,109 @@ pub fn create_fly_camera(mut commands: Commands) {
 }
 
 #[derive(Event, Clone)]
-pub struct ToggleCameraEvent {}
+pub struct ToggleCameraEvent {
+    mode: CameraMode,
+}
+
+#[derive(Clone)]
+pub enum CameraMode {
+    FirstPerson,
+    FreeCam,
+}
 
 #[derive(Resource)]
-pub struct ToggleCameraModeAudioHandle(Handle<AudioSource>);
+pub struct ToggleCameraFreeModeAudioHandle(Handle<AudioSource>);
+
+#[derive(Resource)]
+pub struct ToggleCameraFirstModeAudioHandle(Handle<AudioSource>);
 
 pub fn load_toggle_camera_soundfxs(mut commands: Commands, asset_server: Res<AssetServer>) {
-    let handle = asset_server.load("audio\\Blip-003.wav");
-    commands.insert_resource(ToggleCameraModeAudioHandle(handle.clone()));
+    let free_handle = asset_server.load("audio\\Blip-003.wav");
+    let first_handle = asset_server.load("audio\\Blip-004.wav");
+    commands.insert_resource(ToggleCameraFreeModeAudioHandle(free_handle.clone()));
+    commands.insert_resource(ToggleCameraFirstModeAudioHandle(first_handle.clone()));
 }
 
 pub fn play_toggle_camera_soundfx(
     mut _ev_footstep: EventReader<ToggleCameraEvent>,
     audio: Res<Audio>,
-    my_audio_handle: Res<ToggleCameraModeAudioHandle>,
+    free_handle: Res<ToggleCameraFreeModeAudioHandle>,
+    first_handle: Res<ToggleCameraFirstModeAudioHandle>,
 ) {
     let mut should_play: bool = false;
+    let mut mode: CameraMode = CameraMode::FreeCam;
 
     for _ev in _ev_footstep.read() {
         should_play = true;
+        mode = _ev.mode.clone();
     }
 
     if should_play {
-        audio
-            .into_inner()
-            .play(my_audio_handle.0.clone())
-            .with_volume(0.5);
+        match mode {
+            CameraMode::FirstPerson => {
+                audio
+                    .into_inner()
+                    .play(first_handle.0.clone())
+                    .with_volume(0.5);
+            }
+            CameraMode::FreeCam => {
+                audio
+                    .into_inner()
+                    .play(free_handle.0.clone())
+                    .with_volume(0.5);
+            }
+        }
     }
 }
 
-// pub fn move_fly_camera(mut query: Query<(&mut Transform, With<FlyCamera>)>, time: Res<Time>) {
-//     for (mut transform,) in query.iter_mut() {
-//         let mut translation = transform.translation;
-//         let mut rotation = transform.rotation;
+pub fn move_fly_camera(
+    camera_query: Query<&mut Transform, (With<Camera3d>, Without<FlyCamera>)>,
+    mut query: Query<&mut Transform, With<FlyCamera>>,
+    keys: Res<ButtonInput<KeyCode>>,
+    key_bindings: Res<KeyBindings>,
+    time: Res<Time>,
+) {
+    if camera_query.is_empty()
+        || camera_query.iter().len() > 1
+        || query.is_empty()
+        || query.iter().len() > 1
+    {
+        warn!("Player Motion System did not expected 1 camera(s) recieved {}, and 1 player(s) recieved {}. Expect Instablity!", camera_query.iter().len(), query.iter().len());
+        return;
+    }
+    for camera_transform in camera_query.iter() {
+        for mut transform in query.iter_mut() {
+            let mut movement_vector: Vec3 = Vec3::ZERO.clone();
 
-//         let speed = 10.0;
+            let speed_vector: Vec3 = Vec3::from([10.0, 10.0, 10.0]);
 
-//         if bevy::input::keyboard::is_key_pressed(&bevy::input::keyboard::KeyCode::KeyW) {
-//             translation += rotation.mul_vec3(Vec3::Z) * speed * time.delta_seconds();
-//         }
+            if keys.pressed(key_bindings.move_forward) {
+                movement_vector += camera_transform.forward().as_vec3();
+            }
+            if keys.pressed(key_bindings.move_backward) {
+                movement_vector += camera_transform.back().as_vec3();
+            }
+            if keys.pressed(key_bindings.move_left) {
+                movement_vector += camera_transform.left().as_vec3();
+            }
+            if keys.pressed(key_bindings.move_right) {
+                movement_vector += camera_transform.right().as_vec3();
+            }
 
-//         if bevy::input::keyboard::is_key_pressed(&bevy::input::keyboard::KeyCode::KeyS) {
-//             translation -= rotation.mul_vec3(Vec3::Z) * speed * time.delta_seconds();
-//         }
+            if keys.pressed(key_bindings.move_ascend) {
+                movement_vector += Vec3::Y;
+            }
 
-//         if bevy::input::keyboard::is_key_pressed(&bevy::input::keyboard::KeyCode::KeyA) {
-//             translation -= rotation.mul_vec3(Vec3::X) * speed * time.delta_seconds();
-//         }
+            if keys.pressed(key_bindings.move_descend) {
+                movement_vector -= Vec3::Y;
+            }
 
-//         if bevy::input::keyboard::is_key_pressed(&bevy::input::keyboard::KeyCode::KeyD) {
-//             translation += rotation.mul_vec3(Vec3::X) * speed * time.delta_seconds();
-//         }
 
-//         if bevy::input::keyboard::is_key_pressed(&bevy::input::keyboard::KeyCode::Space) {
-//             translation += Vec3::Y * speed * time.delta_seconds();
-//         }
-
-//         if bevy::input::keyboard::is_key_pressed(&bevy::input::keyboard::KeyCode::ShiftLeft) {
-//             translation -= Vec3::Y * speed * time.delta_seconds();
-//         }
-
-//         transform.translation = translation;
-//     }
-// }
+            movement_vector *= speed_vector * time.delta_secs();
+            transform.translation += movement_vector;
+        }
+    }
+}
 
 pub fn swap_camera_target(
     mut commands: Commands,
@@ -188,14 +228,17 @@ pub fn swap_camera_target(
         camera_transform.translation = Vec3::from_array([0.0, 0.0, 0.0]);
         commands.entity(fly_camera).add_children(&[camera]);
         info!("Attached camera to fly_camera entity.");
+        ev_toggle_cam.send(ToggleCameraEvent {
+            mode: CameraMode::FreeCam,
+        });
     } else {
         camera_transform.translation = Vec3::from_array([0.0, 1.0, 0.0]);
         commands.entity(player).add_children(&[camera]);
         info!("Attached camera to player entity.");
+        ev_toggle_cam.send(ToggleCameraEvent {
+            mode: CameraMode::FirstPerson,
+        });
     }
-
-    ev_toggle_cam.send(ToggleCameraEvent {});
-    info!("Sent an event");
 }
 
 /** This system was taken from the screenshot example: https://bevyengine.org/examples/Window/screenshot/ */
