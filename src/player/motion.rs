@@ -11,9 +11,7 @@ use avian3d::prelude::*;
 
 use crate::KeyBindings;
 
-use super::{
-    body::Body, stance::Stance, Player, PlayerControlConfig
-};
+use super::{body::Body, stance::Stance, Player, PlayerControlConfig};
 
 #[derive(Component)]
 pub struct Motion {
@@ -26,12 +24,12 @@ pub struct Motion {
 }
 
 pub fn update_player_motion(
-    time: Res<Time>,
-    keys: Res<ButtonInput<KeyCode>>,
+    mut query: Query<(&mut LinearVelocity, &mut Motion, &mut Stance), With<Player>>,
+    camera_query: Query<&mut Transform, (With<Camera3d>, Without<Player>)>,
     player_config: Res<PlayerControlConfig>,
     key_bindings: Res<KeyBindings>,
-    camera_query: Query<&mut Transform, (With<Camera3d>, Without<Player>)>,
-    mut query: Query<(&mut LinearVelocity, &mut Motion, &mut Stance), With<Player>>,
+    keys: Res<ButtonInput<KeyCode>>,
+    time: Res<Time>,
 ) {
     if camera_query.is_empty()
         || camera_query.iter().len() > 1
@@ -39,6 +37,7 @@ pub fn update_player_motion(
         || query.iter().len() > 1
     {
         warn!("Player Motion System did not expected 1 camera(s) recieved {}, and 1 player(s) recieved {}. Expect Instablity!", camera_query.iter().len(), query.iter().len());
+        return;
     }
 
     for camera_transform in camera_query.iter() {
@@ -105,7 +104,7 @@ pub fn apply_jump_force(
     linear_vel: &mut LinearVelocity,
     ray_length: f32,
     motion: &Motion,
-    body: &Body
+    body: &Body,
 ) {
     // Apply the stance cooldown now that we are jumping.
     stance.lockout = config.stance_lockout;
@@ -159,15 +158,25 @@ pub fn apply_jump_force(
 /// let jump_force_factor = compute_clamped_jump_force_factor(ray_length);
 /// println!("Jump Force Factor: {}", jump_force_factor);
 /// ```
-fn compute_clamped_jump_force_factor(player_config: &Res<PlayerControlConfig>, body: &Body, motion: &Motion, ray_length: f32) -> f32 {
+fn compute_clamped_jump_force_factor(
+    player_config: &Res<PlayerControlConfig>,
+    body: &Body,
+    motion: &Motion,
+    ray_length: f32,
+) -> f32 {
     // Constants defined elsewhere in the code
     let full_standing_ray_length: f32 = motion.current_ride_height;
-    let half_standing_ray_length: f32 = motion.current_ride_height - (body.current_body_height / 4.0);
+    let half_standing_ray_length: f32 =
+        motion.current_ride_height - (body.current_body_height / 4.0);
     // This value represents the range of acceptable ray lengths for the player.
     let standing_ray_length_range: f32 = full_standing_ray_length - half_standing_ray_length;
 
     // Ensure the input is within the specified range
-    let clamped_ray_length = f32::clamp(ray_length, half_standing_ray_length, motion.current_ride_height);
+    let clamped_ray_length = f32::clamp(
+        ray_length,
+        half_standing_ray_length,
+        motion.current_ride_height,
+    );
 
     // Apply the linear transformation
     // Step 1: Normalize clamped_ray_length to a value between 0.0 and 1.0.
