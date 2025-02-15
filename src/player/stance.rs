@@ -26,13 +26,6 @@ pub enum StanceType {
     Standing,
     Landing,
     Jumping,
-    Crouching,
-    Crawling,
-    Prone,
-    Sliding,
-    Vaulting,
-    Hanging,
-    Climbing,
 }
 
 impl StanceType {
@@ -41,14 +34,7 @@ impl StanceType {
             StanceType::Airborne => "Airborne",
             StanceType::Standing => "Standing",
             StanceType::Landing => "Landing",
-            StanceType::Jumping => "Jumping",
-            StanceType::Crouching => "Crouching",
-            StanceType::Crawling => "Crawling",
-            StanceType::Prone => "Prone",
-            StanceType::Sliding => "Sliding",
-            StanceType::Vaulting => "Vaulting",
-            StanceType::Hanging => "Hanging",
-            StanceType::Climbing => "Climbing",
+            StanceType::Jumping => "Jumping"
         }
     }
 }
@@ -81,9 +67,9 @@ pub struct ActionStep {
 }
 
 pub(crate) fn tick_footstep(
-    config: Res<PlayerControlConfig>,
     mut ev_footstep: EventWriter<FootstepEvent>,
     mut query: Query<(&mut ActionStep, &mut Motion, &Stance)>,
+    config: Res<PlayerControlConfig>,
     time: Res<Time>,
 ) {
     for (mut action, mut motion, stance) in query.iter_mut() {
@@ -334,13 +320,6 @@ pub fn update_player_stance(
                     );
                 }
             }
-            StanceType::Crouching => todo!(),
-            StanceType::Crawling => todo!(),
-            StanceType::Prone => todo!(),
-            StanceType::Sliding => todo!(),
-            StanceType::Vaulting => todo!(),
-            StanceType::Hanging => todo!(),
-            StanceType::Climbing => todo!(),
         }
 
         // Lerp current_ride_height to target_ride_height, this target_ride_height changes depending on the stance. Standing, Crouching, and Prone.

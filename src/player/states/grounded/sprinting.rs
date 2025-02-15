@@ -1,19 +1,23 @@
 use bevy::prelude::*;
 
-use crate::player::{config::PlayerControlConfig, motion::Motion, stance::Stance, Player};
+use crate::{config::KeyBindings, player::{config::PlayerControlConfig, motion::Motion, stance::{Stance, StanceType}, Player}};
 
 
 pub fn toggle_sprint(
-    keys: Res<ButtonInput<KeyCode>>,
-    player_config: Res<PlayerControlConfig>,
     mut query: Query<(&mut Motion, &Stance), With<Player>>,
+    player_config: Res<PlayerControlConfig>,
+    keys: Res<ButtonInput<KeyCode>>,
+    key_bindings: Res<KeyBindings>,
 ) {
     for (mut motion, stance) in query.iter_mut() {
-        // todo: replace with a crouch key binding.
-
-        // todo: also want to check if the player is currently grounded before allowing changes. If you are in the air you keep your speed.
-        motion.sprinting = keys.pressed(KeyCode::ShiftLeft);
-
+        
+        if stance.current == StanceType::Airborne {
+            //info!("Skipping while airborne, Motion Speed Locked at: {}", motion.current_movement_speed);
+            return;
+        }
+        
+        motion.sprinting = keys.pressed(key_bindings.toggle_sprint);
+        
         if motion.sprinting == true {
             if stance.crouched == true {
                 motion.current_movement_speed =
@@ -26,6 +30,6 @@ pub fn toggle_sprint(
             motion.current_movement_speed = player_config.movement_speed;
         }
 
-        info!("Motion Speed: {}", motion.current_movement_speed);
+        //info!("Motion Speed: {}", motion.current_movement_speed);
     }
 }
