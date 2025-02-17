@@ -29,7 +29,6 @@ pub fn toggle_sprint(
         } else {
             motion.current_movement_speed = player_config.movement_speed;
         }
-
         //info!("Motion Speed: {}", motion.current_movement_speed);
     }
 }

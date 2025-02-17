@@ -19,6 +19,8 @@ use bevy_turborand::{DelegatedRng, GlobalRng};
 use super::body::Body;
 use super::motion::{apply_jump_force, apply_spring_force, Motion};
 use super::Player;
+
+
 #[derive(Debug, PartialEq, Clone)]
 // each of these stance types needs to have a movement speed calculation, a
 pub enum StanceType {
