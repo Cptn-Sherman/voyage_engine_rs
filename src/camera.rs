@@ -108,6 +108,7 @@ pub fn play_toggle_camera_soundfx(
     first_handle: Res<ToggleCameraFirstModeAudioHandle>,
 ) {
     let mut should_play: bool = false;
+    let volume: f64 = 0.15;
     let mut mode: CameraMode = CameraMode::FreeCam;
 
     for _ev in _ev_footstep.read() {
@@ -121,13 +122,13 @@ pub fn play_toggle_camera_soundfx(
                 audio
                     .into_inner()
                     .play(first_handle.0.clone())
-                    .with_volume(0.5);
+                    .with_volume(volume);
             }
             CameraMode::FreeCam => {
                 audio
                     .into_inner()
                     .play(free_handle.0.clone())
-                    .with_volume(0.5);
+                    .with_volume(volume);
             }
         }
     }
