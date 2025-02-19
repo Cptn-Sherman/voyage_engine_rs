@@ -83,7 +83,7 @@ pub(crate) fn tick_footstep(
     for (mut action, mut motion, stance) in query.iter_mut() {
 
         // you must be on the ground for this sound to play.
-        if stance.current != StanceType::Standing {
+        if stance.current != StanceType::Standing && stance.current != StanceType::Landing {
             continue;
         }
         // if you are not moving and need to take more than 85% of your remaining step we play no sound.

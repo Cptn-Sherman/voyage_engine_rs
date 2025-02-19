@@ -46,7 +46,7 @@ pub fn compute_motion(
     let (mut linear_vel, mut motion, stance) = player_query.single_mut();
 
 
-    if stance.current != StanceType::Standing {
+    if stance.current != StanceType::Standing && stance.current != StanceType::Landing {
         return;
     }
 
