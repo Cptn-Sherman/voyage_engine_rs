@@ -9,7 +9,7 @@ use bevy::{
 
 use avian3d::prelude::*;
 
-use crate::{ternary, utils::exp_decay, KeyBindings};
+use crate::{utils::exp_decay, KeyBindings};
 
 use super::{body::Body, stance::Stance, Player, PlayerControlConfig};
 
@@ -46,7 +46,17 @@ pub fn compute_motion(
         for (mut linear_vel, mut motion, mut _stance) in &mut query {
             // Perform the movement checks.
 
-            let movement_speed_decay: f32 = ternary!(motion.sprinting, 0.5, 0.35);
+            let movement_speed_decay: f32; 
+
+            if motion.sprinting && motion.moving {
+                movement_speed_decay = 15.0;
+            } else if !motion.sprinting && !motion.moving {
+                movement_speed_decay = 15.0;
+            }else if motion.sprinting && !motion.moving {
+                movement_speed_decay = 20.0;
+            } else {
+                movement_speed_decay = 2.0;
+            }
 
             motion.current_movement_speed = exp_decay(
                 motion.current_movement_speed,
@@ -54,6 +64,8 @@ pub fn compute_motion(
                 movement_speed_decay,
                 time.delta_secs(),
             );
+
+            // info!("Current Movement Speed: {}", motion.current_movement_speed);
 
             let speed_vector: Vec3 = Vec3::from([
                 motion.current_movement_speed,
@@ -76,11 +88,11 @@ pub fn compute_motion(
                 movement_vector += camera_transform.right().as_vec3();
             }
 
-            // set the movement_vector based on gamepad input, should this be used to override wasd input... i dont know right now.
-            
+            // todo: set the movement_vector based on gamepad input, should this be used to override wasd input... i dont know right now.
             
 
-            // update state
+        
+            // Update State:
 
 
             // set the motion.moving when the magnituted of the movement_vector is greater than some arbitrary threshold.

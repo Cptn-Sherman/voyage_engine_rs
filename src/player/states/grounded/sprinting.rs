@@ -20,14 +20,14 @@ pub fn toggle_sprint(
         
         if motion.sprinting == true {
             if stance.crouched == true {
-                motion.current_movement_speed =
+                motion.target_movement_speed =
                 player_config.movement_speed * 0.5 * player_config.sprint_speed_factor;
             } else {
-                motion.current_movement_speed =
+                motion.target_movement_speed =
                     player_config.movement_speed * player_config.sprint_speed_factor;
             }
         } else {
-            motion.current_movement_speed = player_config.movement_speed;
+            motion.target_movement_speed = player_config.movement_speed;
         }
         //info!("Motion Speed: {}", motion.current_movement_speed);
     }

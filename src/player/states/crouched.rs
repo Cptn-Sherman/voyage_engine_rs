@@ -27,13 +27,13 @@ pub fn toggle_crouching(
             body.current_body_height = crouched_height;
             
             motion.target_ride_height = player_config.ride_height * player_config.crouched_height_factor;
-            motion.current_movement_speed = player_config.movement_speed / 2.0;
+            motion.target_movement_speed = player_config.movement_speed / 2.0;
         } else {
             collider.set_scale(Vec3::from([1.0, player_config.capsule_height, 1.0]), 4);
             body.current_body_height = player_config.capsule_height;
             
             motion.target_ride_height = player_config.ride_height;
-            motion.current_movement_speed = player_config.movement_speed;
+            motion.target_movement_speed = player_config.movement_speed;
         }
 
         info!("Updated collider scale to: {:?}", collider.scale());
