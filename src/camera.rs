@@ -17,7 +17,7 @@ use bevy::{
     window::{SystemCursorIcon, Window},
     winit::cursor::CursorIcon,
 };
-use chrono::{DateTime, Local};
+use chrono::Local;
 
 use crate::{
     config::EngineSettings,
@@ -107,29 +107,31 @@ pub fn play_toggle_camera_soundfx(
     free_handle: Res<ToggleCameraFreeModeAudioHandle>,
     first_handle: Res<ToggleCameraFirstModeAudioHandle>,
 ) {
+    let mut mode: CameraMode = CameraMode::FreeCam;
     let mut should_play: bool = false;
     let volume: f64 = 0.15;
-    let mut mode: CameraMode = CameraMode::FreeCam;
 
     for _ev in _ev_footstep.read() {
         should_play = true;
         mode = _ev.mode.clone();
     }
 
-    if should_play {
-        match mode {
-            CameraMode::FirstPerson => {
-                audio
-                    .into_inner()
-                    .play(first_handle.0.clone())
-                    .with_volume(volume);
-            }
-            CameraMode::FreeCam => {
-                audio
-                    .into_inner()
-                    .play(free_handle.0.clone())
-                    .with_volume(volume);
-            }
+    if !should_play {
+        return;
+    }
+
+    match mode {
+        CameraMode::FirstPerson => {
+            audio
+                .into_inner()
+                .play(first_handle.0.clone())
+                .with_volume(volume);
+        }
+        CameraMode::FreeCam => {
+            audio
+                .into_inner()
+                .play(free_handle.0.clone())
+                .with_volume(volume);
         }
     }
 }
@@ -149,34 +151,36 @@ pub fn move_free_camera(
         warn!("Free Camera Motion System did not recieve expected 1 camera(s) recieved {}, and 1 player(s) recieved {}. Expect Instablity!", camera_query.iter().len(), free_entity_query.iter().len());
         return;
     }
-    for camera_transform in camera_query.iter() {
-        for mut transform in free_entity_query.iter_mut() {
-            let mut movement_vector: Vec3 = Vec3::ZERO.clone();
-            let speed_vector: Vec3 = Vec3::from([20.0, 20.0, 20.0]);
-            // WASD Movement
-            if keys.pressed(key_bindings.move_forward) {
-                movement_vector += camera_transform.forward().as_vec3();
-            }
-            if keys.pressed(key_bindings.move_backward) {
-                movement_vector += camera_transform.back().as_vec3();
-            }
-            if keys.pressed(key_bindings.move_left) {
-                movement_vector += camera_transform.left().as_vec3();
-            }
-            if keys.pressed(key_bindings.move_right) {
-                movement_vector += camera_transform.right().as_vec3();
-            }
-            // Ascend and Descend
-            if keys.pressed(key_bindings.move_ascend) {
-                movement_vector += Vec3::Y;
-            }
-            if keys.pressed(key_bindings.move_descend) {
-                movement_vector -= Vec3::Y;
-            }
-            // Scale the vector by the elapsed time.
-            movement_vector *= speed_vector * time.delta_secs();
-            transform.translation += movement_vector;
+
+    let camera_transform: &Transform = camera_query.iter().next().unwrap();
+
+    for mut transform in free_entity_query.iter_mut() {
+        let mut movement_vector: Vec3 = Vec3::ZERO.clone();
+        let speed_vector: Vec3 = Vec3::from([20.0, 20.0, 20.0]);
+        // WASD Movement
+        if keys.pressed(key_bindings.move_forward) {
+            movement_vector += camera_transform.forward().as_vec3();
         }
+        if keys.pressed(key_bindings.move_backward) {
+            movement_vector += camera_transform.back().as_vec3();
+        }
+        if keys.pressed(key_bindings.move_left) {
+            movement_vector += camera_transform.left().as_vec3();
+        }
+        if keys.pressed(key_bindings.move_right) {
+            movement_vector += camera_transform.right().as_vec3();
+        }
+        // Ascend and Descend
+        if keys.pressed(key_bindings.move_ascend) {
+            movement_vector += Vec3::Y;
+        }
+        if keys.pressed(key_bindings.move_descend) {
+            movement_vector -= Vec3::Y;
+        }
+
+        // Scale the vector by the elapsed time.
+        movement_vector *= speed_vector * time.delta_secs();
+        transform.translation += movement_vector;
     }
 }
 
@@ -185,9 +189,9 @@ pub fn swap_camera_target(
     mut ev_toggle_cam: EventWriter<ToggleCameraEvent>,
     keys: Res<ButtonInput<KeyCode>>,
     key_bindings: Res<KeyBindings>,
+    mut camera_query: Query<(Entity, &mut Transform, Option<&Parent>), With<GameCamera>>,
     player_query: Query<Entity, With<Player>>,
     free_camera_query: Query<Entity, With<FreeCamera>>,
-    mut camera_query: Query<(Entity, &mut Transform, Option<&Parent>), With<GameCamera>>,
 ) {
     if !keys.just_pressed(key_bindings.toggle_camera_mode) {
         return;
@@ -219,6 +223,8 @@ pub fn swap_camera_target(
     let free_camera = free_camera_query.iter().next().unwrap();
     let (camera, mut camera_transform, camera_parent) = camera_query.iter_mut().next().unwrap();
     let camera_parent_unwrapped = camera_parent.unwrap();
+
+    
     // check the camera to see what its parented to.
     // If its parented to the player, then we want to parent it to the fly camera.
     // else it is parented to the fly camera, and we want it parented to the player.
@@ -246,30 +252,28 @@ pub fn take_screenshot(
     key_bindings: Res<KeyBindings>,
     keys: Res<ButtonInput<KeyCode>>,
 ) {
-    if keys.just_pressed(key_bindings.screenshot_key) {
-        // get the formated path as string.
-        let date: DateTime<Local> = Local::now();
-        let formated_date: chrono::format::DelayedFormat<chrono::format::StrftimeItems> =
-            date.format("%Y-%m-%d_%H-%M-%S%.3f");
-        let path: String = format!(
-            "./voyage_screenshot-{}.{}",
-            formated_date.to_string(),
-            get_valid_extension(
-                &settings.screenshot_format,
-                utils::ExtensionType::Screenshot
-            )
-        );
-
-        commands
-            .spawn(Screenshot::primary_window())
-            .observe(save_to_disk(path));
+    if !keys.just_pressed(key_bindings.screenshot_key) {
+        return;
     }
+  
+    let path: String = format!(
+        "./voyage_screenshot-{}.{}",
+        Local::now().format("%Y-%m-%d_%H-%M-%S%.3f").to_string(),
+        get_valid_extension(
+            &settings.screenshot_format,
+            utils::ExtensionType::Screenshot
+        )
+    );
+
+    commands
+        .spawn(Screenshot::primary_window())
+        .observe(save_to_disk(path));
 }
 
 fn screenshot_saving(
     mut commands: Commands,
-    screenshot_saving: Query<Entity, With<Capturing>>,
     windows: Query<Entity, With<Window>>,
+    screenshot_saving: Query<Entity, With<Capturing>>,
 ) {
     let Ok(window) = windows.get_single() else {
         return;

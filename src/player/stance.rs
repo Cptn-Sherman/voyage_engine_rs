@@ -1,4 +1,3 @@
-
 use crate::player::config::GetDownwardRayLengthMax;
 use crate::{player::config::PlayerControlConfig, ternary, utils::exp_decay};
 use avian3d::prelude::*;
@@ -20,7 +19,6 @@ use super::body::Body;
 use super::motion::{apply_jump_force, apply_spring_force, Motion};
 use super::Player;
 
-
 #[derive(Debug, PartialEq, Clone)]
 // each of these stance types needs to have a movement speed calculation, a
 pub enum StanceType {
@@ -36,7 +34,7 @@ impl StanceType {
             StanceType::Airborne => "Airborne",
             StanceType::Standing => "Standing",
             StanceType::Landing => "Landing",
-            StanceType::Jumping => "Jumping"
+            StanceType::Jumping => "Jumping",
         }
     }
 }
@@ -59,7 +57,15 @@ pub struct FootstepEvent {
 
 // this is the time in seconds between when the player takes a step. When running this is increased by the configured running speed multiplier.
 // todo: When the ActionStep happens that is the point in time we apply a small impulse downward so the spring can have a lil' bump.
-pub const ACTION_STEP_DELTA_DEFAULT: f32 = 0.60;
+
+// This is the time in seconds between each footstep. When sprinting this value is multiplied.
+pub const ACTION_STEP_DELTA_DEFAULT: f32 = 0.50;
+const LOCKIN_ACTION_THRESHOLD_PERCENTAGE: f32 = 0.05;
+const BUMP_ACTION_THRESHOLD_PERCENTAGE: f32 = 0.25;
+const BUMP_REMAINING_ACTION_STEP: f32 =
+    ACTION_STEP_DELTA_DEFAULT * (1.0 - BUMP_ACTION_THRESHOLD_PERCENTAGE);
+const LOCKIN_ACTION_STEP_DELTA: f32 =
+    ACTION_STEP_DELTA_DEFAULT * (1.0 - LOCKIN_ACTION_THRESHOLD_PERCENTAGE);
 
 #[derive(Component)]
 pub struct ActionStep {
@@ -75,59 +81,62 @@ pub(crate) fn tick_footstep(
     time: Res<Time>,
 ) {
     for (mut action, mut motion, stance) in query.iter_mut() {
+
+        if motion.moving == true {
+            info!("you are moving");
+        }
         // you must be on the ground for this sound to play.
         if stance.current != StanceType::Standing {
             continue;
         }
-
-        const LOCKIN_ACTION_THRESHOLD_PERCENTAGE: f32 = 0.05;
-        const BUMP_ACTION_THRESHOLD_PERCENTAGE: f32 = 0.25;
-        const BUMP_REMAINING_ACTION_STEP: f32 =
-            ACTION_STEP_DELTA_DEFAULT * (1.0 - BUMP_ACTION_THRESHOLD_PERCENTAGE);
-        const LOCKIN_ACTION_STEP_DELTA: f32 =
-            ACTION_STEP_DELTA_DEFAULT * (1.0 - LOCKIN_ACTION_THRESHOLD_PERCENTAGE);
-
         // if you are not moving and need to take more than 85% of your remaining step we play no sound.
-        if motion.moving == false && action.delta >= LOCKIN_ACTION_STEP_DELTA {
+        if motion.moving == false && action.delta >= LOCKIN_ACTION_STEP_DELTA
+        {
             continue;
         }
 
         // scale the speed based on if you are sprinting or if you are not moving and are resting your foot.
         // when this value is higher you finish your step sooner.
-        let mut scale: f32 = 1.0;
-        let mut offset: f32 = ternary!(
+        let mut step_speed_scale: f32 = 1.0;
+        let mut ride_height_offset: f32 = ternary!(
             motion.sprinting,
             config.ride_height_step_offset,
             -config.ride_height_step_offset
         );
 
         if motion.sprinting == true || motion.moving == false {
-            scale = 1.45;
-            offset *= 1.2; // this is kinda arbitrary. but this little bit of kick is applied when you start sprinting from a stand still.
+            step_speed_scale = 1.45;
+            ride_height_offset *= 1.2; // this is kinda arbitrary. but this little bit of kick is applied when you start sprinting from a stand still.
         }
 
         // reduce the time by elaspsed times the scale.
-        action.delta -= time.delta_secs() * scale;
+        action.delta -= time.delta_secs() * step_speed_scale;
         let vol: f64 = ternary!(motion.moving, 0.5, 0.25);
+        let current_ride_height_offset_scaler: f32 = ternary!(motion.moving, 1.0, 0.5);
 
         // bump the riding height when the delta is less than the bump threshold.
         if config.enable_view_bobbing
             && action.delta <= BUMP_REMAINING_ACTION_STEP
             && action.bumped == false
         {
-            motion.current_ride_height = config.ride_height + (offset * (2.0 * vol as f32));
+            motion.current_ride_height =
+                config.ride_height + (ride_height_offset * current_ride_height_offset_scaler);
             action.bumped = true;
         }
 
         // if the inter step delta has elapsed increase the delta, flip the dir, reset the bump, and queue the sound event.
         if action.delta <= 0.0 {
-            action.delta += ACTION_STEP_DELTA_DEFAULT;
-            action.dir = action.dir.flip();
-            action.bumped = false;
+            // send the play sound event.
             ev_footstep.send(FootstepEvent {
                 dir: action.dir.clone(),
                 volume: vol,
             });
+            // reset the delta.
+            action.delta += ACTION_STEP_DELTA_DEFAULT;
+            // reset the bumped flag.
+            action.bumped = false;
+            // flip the direction of the footstep panning.
+            action.dir = action.dir.flip();
         }
     }
 }
@@ -144,6 +153,9 @@ impl Default for FootstepDirection {
     }
 }
 
+
+// todo: update this to use constants so you can customize the offset from each ear. 
+// Maybe obsolete if a 3D sound implementation is used instead. Would be nice for ui. 
 impl FootstepDirection {
     fn value(&self) -> f64 {
         match self {

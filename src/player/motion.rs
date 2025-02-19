@@ -9,21 +9,22 @@ use bevy::{
 
 use avian3d::prelude::*;
 
-use crate::KeyBindings;
+use crate::{ternary, utils::exp_decay, KeyBindings};
 
 use super::{body::Body, stance::Stance, Player, PlayerControlConfig};
 
 #[derive(Component)]
 pub struct Motion {
-    pub(crate) movement_vec: Vec3,
     pub(crate) current_movement_speed: f32,
+    pub(crate) target_movement_speed: f32,
     pub(crate) current_ride_height: f32,
     pub(crate) target_ride_height: f32,
+    pub(crate) movement_vector: Vec3,
     pub(crate) sprinting: bool,
     pub(crate) moving: bool,
 }
 
-pub fn update_player_motion(
+pub fn compute_motion(
     mut query: Query<(&mut LinearVelocity, &mut Motion, &mut Stance), With<Player>>,
     camera_query: Query<&mut Transform, (With<Camera3d>, Without<Player>)>,
     player_config: Res<PlayerControlConfig>,
@@ -40,15 +41,28 @@ pub fn update_player_motion(
         return;
     }
 
-    for camera_transform in camera_query.iter() {
+
+    let camera_transform: &Transform =  camera_query.single();
         for (mut linear_vel, mut motion, mut _stance) in &mut query {
             // Perform the movement checks.
-            let mut movement_vector: Vec3 = Vec3::ZERO.clone();
+
+            let movement_speed_decay: f32 = ternary!(motion.sprinting, 0.5, 0.35);
+
+            motion.current_movement_speed = exp_decay(
+                motion.current_movement_speed,
+                motion.target_movement_speed,
+                movement_speed_decay,
+                time.delta_secs(),
+            );
+
             let speed_vector: Vec3 = Vec3::from([
                 motion.current_movement_speed,
                 motion.current_movement_speed,
                 motion.current_movement_speed,
             ]);
+
+            let mut movement_vector: Vec3 = Vec3::ZERO.clone();
+
             if keys.pressed(key_bindings.move_forward) {
                 movement_vector += camera_transform.forward().as_vec3();
             }
@@ -61,23 +75,31 @@ pub fn update_player_motion(
             if keys.pressed(key_bindings.move_right) {
                 movement_vector += camera_transform.right().as_vec3();
             }
+
+            // set the movement_vector based on gamepad input, should this be used to override wasd input... i dont know right now.
+            
+            
+
+            // update state
+
+
             // set the motion.moving when the magnituted of the movement_vector is greater than some arbitrary threshold.
-            if movement_vector.length() <= 0.01 {
-                motion.moving = false;
-            } else {
-                motion.moving = true;
-            }
+            motion.moving = movement_vector.length() >= 0.01;
+
             // apply the total movement vector.
-            motion.movement_vec +=
+            motion.movement_vector +=
                 movement_vector.normalize_or_zero() * speed_vector * time.delta_secs();
+
             // Appy decay to Linear Velocity on the X and Z directions and apply to the velocity.
-            motion.movement_vec.x *= player_config.movement_decay;
-            motion.movement_vec.z *= player_config.movement_decay;
-            linear_vel.x = motion.movement_vec.x;
-            linear_vel.z = motion.movement_vec.z;
+            // update this to us the nice lerp instead of multiplying 
+            motion.movement_vector.x *= player_config.movement_decay;
+            motion.movement_vector.z *= player_config.movement_decay;
+            // dont need to lerp here just setting the real value to .
+            linear_vel.x = motion.movement_vector.x;
+            linear_vel.z = motion.movement_vector.z;
         }
     }
-}
+
 
 pub fn apply_spring_force(
     config: &Res<PlayerControlConfig>,
