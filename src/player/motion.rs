@@ -11,7 +11,7 @@ use avian3d::prelude::*;
 
 use crate::{utils::exp_decay, KeyBindings};
 
-use super::{body::Body, stance::Stance, Player, PlayerControlConfig};
+use super::{body::Body, stance::{Stance, StanceType}, Player, PlayerControlConfig};
 
 #[derive(Component)]
 pub struct Motion {
@@ -25,7 +25,7 @@ pub struct Motion {
 }
 
 pub fn compute_motion(
-    mut query: Query<(&mut LinearVelocity, &mut Motion, &mut Stance), With<Player>>,
+    mut player_query: Query<(&mut LinearVelocity, &mut Motion, &Stance), With<Player>>,
     camera_query: Query<&mut Transform, (With<Camera3d>, Without<Player>)>,
     player_config: Res<PlayerControlConfig>,
     key_bindings: Res<KeyBindings>,
@@ -34,84 +34,85 @@ pub fn compute_motion(
 ) {
     if camera_query.is_empty()
         || camera_query.iter().len() > 1
-        || query.is_empty()
-        || query.iter().len() > 1
+        || player_query.is_empty()
+        || player_query.iter().len() > 1
     {
-        warn!("Player Motion System did not expected 1 camera(s) recieved {}, and 1 player(s) recieved {}. Expect Instablity!", camera_query.iter().len(), query.iter().len());
+        warn!("Player Motion System did not expected 1 camera(s) recieved {}, and 1 player(s) recieved {}. Expect Instablity!", camera_query.iter().len(), player_query.iter().len());
         return;
     }
 
+    let camera_transform: &Transform = camera_query.single();
 
-    let camera_transform: &Transform =  camera_query.single();
-        for (mut linear_vel, mut motion, mut _stance) in &mut query {
-            // Perform the movement checks.
-
-            let movement_speed_decay: f32; 
-
-            if motion.sprinting && motion.moving {
-                movement_speed_decay = 15.0;
-            } else if !motion.sprinting && !motion.moving {
-                movement_speed_decay = 15.0;
-            }else if motion.sprinting && !motion.moving {
-                movement_speed_decay = 20.0;
-            } else {
-                movement_speed_decay = 2.0;
-            }
-
-            motion.current_movement_speed = exp_decay(
-                motion.current_movement_speed,
-                motion.target_movement_speed,
-                movement_speed_decay,
-                time.delta_secs(),
-            );
-
-            // info!("Current Movement Speed: {}", motion.current_movement_speed);
-
-            let speed_vector: Vec3 = Vec3::from([
-                motion.current_movement_speed,
-                motion.current_movement_speed,
-                motion.current_movement_speed,
-            ]);
-
-            let mut movement_vector: Vec3 = Vec3::ZERO.clone();
-
-            if keys.pressed(key_bindings.move_forward) {
-                movement_vector += camera_transform.forward().as_vec3();
-            }
-            if keys.pressed(key_bindings.move_backward) {
-                movement_vector += camera_transform.back().as_vec3();
-            }
-            if keys.pressed(key_bindings.move_left) {
-                movement_vector += camera_transform.left().as_vec3();
-            }
-            if keys.pressed(key_bindings.move_right) {
-                movement_vector += camera_transform.right().as_vec3();
-            }
-
-            // todo: set the movement_vector based on gamepad input, should this be used to override wasd input... i dont know right now.
-            
-
-        
-            // Update State:
+    let (mut linear_vel, mut motion, stance) = player_query.single_mut();
 
 
-            // set the motion.moving when the magnituted of the movement_vector is greater than some arbitrary threshold.
-            motion.moving = movement_vector.length() >= 0.01;
-
-            // apply the total movement vector.
-            motion.movement_vector +=
-                movement_vector.normalize_or_zero() * speed_vector * time.delta_secs();
-
-            // Appy decay to Linear Velocity on the X and Z directions and apply to the velocity.
-            // update this to us the nice lerp instead of multiplying 
-            motion.movement_vector.x *= player_config.movement_decay;
-            motion.movement_vector.z *= player_config.movement_decay;
-            // dont need to lerp here just setting the real value to .
-            linear_vel.x = motion.movement_vector.x;
-            linear_vel.z = motion.movement_vector.z;
-        }
+    if stance.current != StanceType::Standing {
+        return;
     }
 
+    // Perform the movement checks.
+
+    let movement_speed_decay: f32;
+
+    if motion.sprinting && motion.moving {
+        movement_speed_decay = 15.0;
+    } else if !motion.sprinting && !motion.moving {
+        movement_speed_decay = 15.0;
+    } else if motion.sprinting && !motion.moving {
+        movement_speed_decay = 20.0;
+    } else {
+        movement_speed_decay = 2.0;
+    }
+
+    motion.current_movement_speed = exp_decay(
+        motion.current_movement_speed,
+        motion.target_movement_speed,
+        movement_speed_decay,
+        time.delta_secs(),
+    );
+
+    // info!("Current Movement Speed: {}", motion.current_movement_speed);
+
+    let speed_vector: Vec3 = Vec3::from([
+        motion.current_movement_speed,
+        motion.current_movement_speed,
+        motion.current_movement_speed,
+    ]);
+
+    let mut movement_vector: Vec3 = Vec3::ZERO.clone();
+
+    if keys.pressed(key_bindings.move_forward) {
+        movement_vector += camera_transform.forward().as_vec3();
+    }
+    if keys.pressed(key_bindings.move_backward) {
+        movement_vector += camera_transform.back().as_vec3();
+    }
+    if keys.pressed(key_bindings.move_left) {
+        movement_vector += camera_transform.left().as_vec3();
+    }
+    if keys.pressed(key_bindings.move_right) {
+        movement_vector += camera_transform.right().as_vec3();
+    }
+
+    // todo: set the movement_vector based on gamepad input, should this be used to override wasd input... i dont know right now.
+
+    // Update State:
+
+    // set the motion.moving when the magnituted of the movement_vector is greater than some arbitrary threshold.
+    motion.moving = movement_vector.length() >= 0.01;
+
+    // apply the total movement vector.
+    motion.movement_vector +=
+        movement_vector.normalize_or_zero() * speed_vector * time.delta_secs();
+
+    // Appy decay to Linear Velocity on the X and Z directions and apply to the velocity.
+    // update this to us the nice lerp instead of multiplying
+    motion.movement_vector.x *= player_config.movement_decay;
+    motion.movement_vector.z *= player_config.movement_decay;
+    // dont need to lerp here just setting the real value to .
+    linear_vel.x = motion.movement_vector.x;
+    linear_vel.z = motion.movement_vector.z;
+}
 
 pub fn apply_spring_force(
     config: &Res<PlayerControlConfig>,

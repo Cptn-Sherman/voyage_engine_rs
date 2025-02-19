@@ -82,9 +82,6 @@ pub(crate) fn tick_footstep(
 ) {
     for (mut action, mut motion, stance) in query.iter_mut() {
 
-        if motion.moving == true {
-            info!("you are moving");
-        }
         // you must be on the ground for this sound to play.
         if stance.current != StanceType::Standing {
             continue;
