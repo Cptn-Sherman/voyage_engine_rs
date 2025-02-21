@@ -3,7 +3,10 @@ use avian3d::prelude::*;
 use bevy::{
     asset::{AssetServer, Handle},
     ecs::entity::Entity,
-    input::ButtonInput,
+    input::{
+        gamepad::{Gamepad, GamepadButton},
+        ButtonInput,
+    },
     log::{info, warn},
     math::{Quat, Vec3},
     prelude::{
@@ -219,6 +222,7 @@ pub fn update_player_stance(
     time: Res<Time>,
     keys: Res<ButtonInput<KeyCode>>,
     config: Res<PlayerControlConfig>,
+    gamepad_query: Query<(Entity, &Gamepad)>,
     mut query: Query<
         (
             &mut LinearVelocity,
@@ -256,6 +260,7 @@ pub fn update_player_stance(
         stance.lockout = f32::clamp(stance.lockout, 0.0, 1.0);
 
         // Compute the ray_length to a hit, if we don't hit anything we assume the ground is infinitly far away.
+        let mut ride_height: f32 = stance.current_ride_height;
         let mut ray_length: f32 = f32::INFINITY;
 
         // Find the first ray hit which is not the player collider.
@@ -266,12 +271,21 @@ pub fn update_player_stance(
             }
         }
 
-        let mut ride_height: f32 = stance.current_ride_height;
         // info!("ray_length: {}, ride_height: {}", ray_length, ride_height);
-
+        
+        let mut pad: Option<&Gamepad> = None;
+        if let Ok((_entity, gamepad)) = gamepad_query.get_single() {
+            pad = Some(gamepad);
+        }
         // Compute the next stance for the player.
-        let next_stance: StanceType =
-            determine_next_stance(&keys, &config, &mut stance, ray_length, ride_height);
+        let next_stance: StanceType = determine_next_stance(
+            &keys,
+            pad,
+            &config,
+            &mut stance,
+            ray_length,
+            ride_height,
+        );
 
         // handle footstep sound event when the state has changed and only then.
         if next_stance != stance.current {
@@ -375,6 +389,7 @@ pub fn lock_rotation(
 
 fn determine_next_stance(
     keys: &Res<ButtonInput<KeyCode>>,
+    gamepad: Option<&Gamepad>,
     config: &Res<PlayerControlConfig>,
     stance: &mut Stance,
     ray_length: f32,
@@ -383,14 +398,20 @@ fn determine_next_stance(
     let is_locked_out: bool = stance.lockout > 0.0;
     let previous_stance: StanceType = stance.current.clone();
     let mut next_stance: StanceType = stance.current.clone();
+
+    let mut jump_pressed = keys.pressed(KeyCode::Space);
+
+    if let Some(g) = gamepad {
+        if jump_pressed == false {
+            jump_pressed = g.pressed(GamepadButton::North);
+        }
+    }
+
     // If your locked in you cannot change state.
     if !is_locked_out {
         if ray_length > ride_height + config.ray_length_offset {
             next_stance = StanceType::Airborne;
-        } else if previous_stance == StanceType::Standing
-            && stance.lockout <= 0.0
-            && keys.pressed(KeyCode::Space)
-        {
+        } else if previous_stance == StanceType::Standing && stance.lockout <= 0.0 && jump_pressed {
             next_stance = StanceType::Jumping;
         } else if ray_length < ride_height {
             next_stance = StanceType::Standing;
