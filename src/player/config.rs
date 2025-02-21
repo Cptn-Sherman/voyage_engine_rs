@@ -34,7 +34,7 @@ impl Default for PlayerControlConfig {
             movement_decay: 0.90,
             look_sensitivity: 0.00012, // This value was taken from bevy_flycam.
             enable_view_bobbing: true,
-            crouched_height_factor: 0.45,
+            crouched_height_factor: 0.80,
         }
     }
 }
