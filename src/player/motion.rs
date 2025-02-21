@@ -1,25 +1,35 @@
 use bevy::{
-    input::ButtonInput,
+    ecs::{component::Component, entity::Entity},
+    input::{
+        gamepad::{Gamepad, GamepadAxis},
+        ButtonInput,
+    },
     log::{info, warn},
     math::Vec3,
-    prelude::{Camera3d, Component, KeyCode, Query, Res, With, Without},
+    prelude::{Camera3d, KeyCode, Query, Res, With, Without},
     time::Time,
     transform::components::Transform,
 };
 
 use avian3d::prelude::*;
 
-use crate::{utils::exp_decay, KeyBindings};
+use crate::{
+    utils::exp_decay,
+    KeyBindings,
+};
 
-use super::{body::Body, stance::{Stance, StanceType}, Player, PlayerControlConfig};
+use super::{
+    body::Body,
+    stance::{Stance, StanceType},
+    Player, PlayerControlConfig,
+};
 
 #[derive(Component)]
 pub struct Motion {
+    pub(crate) current_movement_vector: Vec3,
+    pub(crate) target_movement_vector: Vec3,
     pub(crate) current_movement_speed: f32,
     pub(crate) target_movement_speed: f32,
-    pub(crate) current_ride_height: f32,
-    pub(crate) target_ride_height: f32,
-    pub(crate) movement_vector: Vec3,
     pub(crate) sprinting: bool,
     pub(crate) moving: bool,
 }
@@ -28,6 +38,7 @@ pub fn compute_motion(
     mut player_query: Query<(&mut LinearVelocity, &mut Motion, &Stance), With<Player>>,
     camera_query: Query<&mut Transform, (With<Camera3d>, Without<Player>)>,
     player_config: Res<PlayerControlConfig>,
+    gamepads: Query<(Entity, &Gamepad)>,
     key_bindings: Res<KeyBindings>,
     keys: Res<ButtonInput<KeyCode>>,
     time: Res<Time>,
@@ -42,9 +53,7 @@ pub fn compute_motion(
     }
 
     let camera_transform: &Transform = camera_query.single();
-
     let (mut linear_vel, mut motion, stance) = player_query.single_mut();
-
 
     if stance.current != StanceType::Standing && stance.current != StanceType::Landing {
         return;
@@ -61,7 +70,7 @@ pub fn compute_motion(
     } else if motion.sprinting && !motion.moving {
         movement_speed_decay = 20.0;
     } else {
-        movement_speed_decay = 2.0;
+        movement_speed_decay = 5.0;
     }
 
     motion.current_movement_speed = exp_decay(
@@ -71,13 +80,26 @@ pub fn compute_motion(
         time.delta_secs(),
     );
 
-    // info!("Current Movement Speed: {}", motion.current_movement_speed);
+    motion.current_movement_vector.x = exp_decay(
+        motion.current_movement_vector.x,
+        motion.target_movement_vector.x,
+        10.0,
+        time.delta_secs(),
+    );
 
-    let speed_vector: Vec3 = Vec3::from([
-        motion.current_movement_speed,
-        motion.current_movement_speed,
-        motion.current_movement_speed,
-    ]);
+    motion.current_movement_vector.y = exp_decay(
+        motion.current_movement_vector.y,
+        motion.target_movement_vector.y,
+        10.0,
+        time.delta_secs(),
+    );
+
+    motion.current_movement_vector.z = exp_decay(
+        motion.current_movement_vector.z,
+        motion.target_movement_vector.z,
+        10.0,
+        time.delta_secs(),
+    );
 
     let mut movement_vector: Vec3 = Vec3::ZERO.clone();
 
@@ -94,24 +116,71 @@ pub fn compute_motion(
         movement_vector += camera_transform.right().as_vec3();
     }
 
-    // todo: set the movement_vector based on gamepad input, should this be used to override wasd input... i dont know right now.
+    if let Ok((_entity, gamepad)) = gamepads.get_single() {
+        let left_stick_x = gamepad.get(GamepadAxis::LeftStickX).unwrap_or_default();
+        let left_stick_y = gamepad.get(GamepadAxis::LeftStickY).unwrap_or_default();
+    
+        if left_stick_x.abs() > 0.1 {
+            movement_vector += camera_transform.right().as_vec3() * left_stick_x;
+        }
+    
+        if left_stick_y.abs() > 0.1 {
+            movement_vector += camera_transform.forward().as_vec3() * left_stick_y;
+        }
+    
+        if left_stick_y.abs() > 0.1 || left_stick_x.abs() > 0.1 {
+            // info!("left stick [{},{}]", left_stick_x, left_stick_y);
+        }
+    }
 
     // Update State:
 
     // set the motion.moving when the magnituted of the movement_vector is greater than some arbitrary threshold.
     motion.moving = movement_vector.length() >= 0.01;
 
-    // apply the total movement vector.
-    motion.movement_vector +=
-        movement_vector.normalize_or_zero() * speed_vector * time.delta_secs();
+    let movement_scale = f32::clamp(movement_vector.length(), 0.0, 1.0);
 
-    // Appy decay to Linear Velocity on the X and Z directions and apply to the velocity.
-    // update this to us the nice lerp instead of multiplying
-    motion.movement_vector.x *= player_config.movement_decay;
-    motion.movement_vector.z *= player_config.movement_decay;
+    if motion.sprinting == true {
+        if stance.crouched == true {
+            motion.target_movement_speed = player_config.movement_speed
+                * 0.5
+                * player_config.sprint_speed_factor
+                * movement_scale;
+        } else {
+            motion.target_movement_speed =
+                player_config.movement_speed * player_config.sprint_speed_factor * movement_scale;
+        }
+    } else {
+        if stance.crouched == false {
+            motion.target_movement_speed = player_config.movement_speed * movement_scale;
+        } else {
+            motion.target_movement_speed = player_config.movement_speed * 0.5 * movement_scale;
+        }
+    }
+
+    // info!("length of movement vector: {}", movement_scale);
+    motion.target_movement_vector = movement_vector.normalize_or_zero();
+
     // dont need to lerp here just setting the real value to .
-    linear_vel.x = motion.movement_vector.x;
-    linear_vel.z = motion.movement_vector.z;
+    linear_vel.x = motion.current_movement_vector.x * motion.current_movement_speed;
+    linear_vel.z = motion.current_movement_vector.z * motion.current_movement_speed;
+
+    // info!(
+    //     "Movement Speed current: {}, target: {}",
+    //     format_value_f32(motion.current_movement_speed, Some(4), true), format_value_f32(motion.target_movement_speed, Some(4), true)
+    // );
+    // info!(
+    //     "Current Movement Vector: [{}, {}, {}]",
+    //     format_value_f32(motion.current_movement_vector.x, Some(4), true),
+    //     format_value_f32(motion.current_movement_vector.y, Some(4), true),
+    //     format_value_f32(motion.current_movement_vector.z, Some(4), true)
+    // );
+    // info!(
+    //     "Linear Velocity: [{}, {}, {}]",
+    //     format_value_f32(linear_vel.x, Some(4), true),
+    //     format_value_f32(linear_vel.y, Some(4), true),
+    //     format_value_f32(linear_vel.z, Some(4), true)
+    // );
 }
 
 pub fn apply_spring_force(
@@ -133,19 +202,18 @@ pub fn apply_spring_force(
 }
 
 pub fn apply_jump_force(
-    config: &Res<PlayerControlConfig>,
+    player_config: &Res<PlayerControlConfig>,
     stance: &mut Stance,
     external_impulse: &mut ExternalImpulse,
     linear_vel: &mut LinearVelocity,
     ray_length: f32,
-    motion: &Motion,
     body: &Body,
 ) {
     // Apply the stance cooldown now that we are jumping.
-    stance.lockout = config.stance_lockout;
+    stance.lockout = player_config.stance_lockout;
 
-    let half_jump_strength: f32 = config.jump_strength / 2.0;
-    let jump_factor: f32 = compute_clamped_jump_force_factor(&config, &body, &motion, ray_length);
+    let half_jump_strength: f32 = player_config.jump_strength / 2.0;
+    let jump_factor: f32 = compute_clamped_jump_force_factor(&body, &stance, ray_length);
 
     // make this value changable.
     let dynamic_jump_strength: f32 = half_jump_strength + (half_jump_strength * jump_factor);
@@ -172,7 +240,7 @@ pub fn apply_jump_force(
 
     info!(
         "\tJumped with {}/{} due to distance to ground, jump_factor {}, of ray length: {}",
-        dynamic_jump_strength, config.jump_strength, jump_factor, ray_length
+        dynamic_jump_strength, player_config.jump_strength, jump_factor, ray_length
     );
 }
 
@@ -194,15 +262,14 @@ pub fn apply_jump_force(
 /// println!("Jump Force Factor: {}", jump_force_factor);
 /// ```
 fn compute_clamped_jump_force_factor(
-    player_config: &Res<PlayerControlConfig>,
     body: &Body,
-    motion: &Motion,
+    stance: &Stance,
     ray_length: f32,
 ) -> f32 {
     // Constants defined elsewhere in the code
-    let full_standing_ray_length: f32 = motion.current_ride_height;
+    let full_standing_ray_length: f32 = stance.current_ride_height;
     let half_standing_ray_length: f32 =
-        motion.current_ride_height - (body.current_body_height / 4.0);
+    stance.current_ride_height - (body.current_body_height / 4.0);
     // This value represents the range of acceptable ray lengths for the player.
     let standing_ray_length_range: f32 = full_standing_ray_length - half_standing_ray_length;
 
@@ -210,7 +277,7 @@ fn compute_clamped_jump_force_factor(
     let clamped_ray_length = f32::clamp(
         ray_length,
         half_standing_ray_length,
-        motion.current_ride_height,
+        stance.current_ride_height,
     );
 
     // Apply the linear transformation
@@ -219,7 +286,7 @@ fn compute_clamped_jump_force_factor(
         (clamped_ray_length - half_standing_ray_length) / standing_ray_length_range;
 
     // Step 2: Subtract the normalized distance from CAPSULE_HEIGHT.
-    let result: f32 = player_config.capsule_height - normalized_distance;
+    let result: f32 = body.current_body_height - normalized_distance;
 
     // Ensure the output is within the range [0.0, 1.0].
     f32::clamp(result, 0.0, 1.0)

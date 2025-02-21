@@ -12,10 +12,10 @@ pub struct Focus {
 
 // This function and many of its helpers are ripped from, bevy_fly_cam.
 pub fn camera_look_system(
+    mut camera_query: Query<&mut Transform, With<Camera3d>>,
+    accumulated_mouse_motion: ResMut<AccumulatedMouseMotion>,
     primary_window: Query<&Window, With<PrimaryWindow>>,
     config: Res<PlayerControlConfig>,
-    accumulated_mouse_motion: ResMut<AccumulatedMouseMotion>,
-    mut camera_query: Query<&mut Transform, With<Camera3d>>,
 ) {
     if let Ok(window) = primary_window.get_single() {
         for mut transform in camera_query.iter_mut() {

@@ -1,5 +1,5 @@
 use avian3d::prelude::*;
-use bevy::{log::info, prelude::*};
+use bevy::{log::info, math::VectorSpace, prelude::*};
 
 use crate::{camera::GameCamera, utils::grab_cursor};
 use body::Body;
@@ -10,7 +10,7 @@ use stance::{
     load_footstep_sfx, lock_rotation, play_footstep_sfx, tick_footstep, update_player_stance,
     ActionStep, FootstepEvent, Stance, StanceType, ACTION_STEP_DELTA_DEFAULT,
 };
-use states::{crouched::toggle_crouching, grounded::sprinting::toggle_sprint};
+use states::{crouched::toggle_crouching, grounded::sprinting::toggle_sprinting};
 
 pub mod body;
 pub mod config;
@@ -39,7 +39,7 @@ impl Plugin for PlayerPlugin {
             (
                 update_player_stance,
                 toggle_crouching,
-                toggle_sprint,
+                toggle_sprinting,
                 compute_motion,
                 lock_rotation,
                 play_footstep_sfx,
@@ -56,18 +56,14 @@ impl Plugin for PlayerPlugin {
 #[derive(Component)]
 pub struct Player;
 
+#[derive(Component)]
+pub struct PlayerColliderFlag;
+
 #[derive(Bundle)]
 pub struct PlayerBundle {
     linear_vel: LinearVelocity,
     external_force: ExternalForce,
     external_impulse: ExternalImpulse,
-    rigid_body: RigidBody,
-    locked_axes: LockedAxes,
-    mass: Mass,
-    gravity_scale: GravityScale,
-    collider: Collider,
-    transform: Transform,
-    global_transform: GlobalTransform,
     downward_ray: RayCaster,
     ray_hits: RayHits,
     body: Body,
@@ -75,53 +71,85 @@ pub struct PlayerBundle {
     focus: Focus,
     stance: Stance,
     action_step: ActionStep,
+    mass: Mass,
+    locked_axes: LockedAxes,
+    gravity_scale: GravityScale,
+    transform: Transform,
+    rigid_body: RigidBody,
 }
 
-pub fn spawn_player(player_config: Res<PlayerControlConfig>, mut commands: Commands) {
-    commands.spawn((
-        PlayerBundle {
-            linear_vel: LinearVelocity::ZERO,
-            external_force: ExternalForce::new([0.0, 0.0, 0.0].into()),
-            external_impulse: ExternalImpulse::new([0.0, 0.0, 0.0].into()),
-            rigid_body: RigidBody::Dynamic,
-            locked_axes: LockedAxes::new(),
-            mass: Mass(20.0),
-            gravity_scale: GravityScale(1.0),
-            collider: Collider::capsule(0.75, 0.5),
-            transform: Transform::from_xyz(0.0, 16.0, 0.0),
-            global_transform: GlobalTransform::default(),
-            downward_ray: RayCaster::new(Vec3::ZERO, Dir3::NEG_Y),
-            ray_hits: RayHits::default(),
-            body: Body {
-                current_body_height: 1.0,
+#[derive(Bundle)]
+pub struct PlayerColliderBundle {
+    collider: Collider,
+}
+
+pub fn spawn_player(
+    player_config: Res<PlayerControlConfig>,
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+) {
+    let mut collider = Collider::capsule(0.5, 1.0);
+    collider.set_scale(Vec3::from([1.0, 1.0, 1.0]), 10);
+
+    commands
+        .spawn((
+            PlayerBundle {
+                linear_vel: LinearVelocity::ZERO,
+                external_force: ExternalForce::new([0.0, 0.0, 0.0].into()),
+                external_impulse: ExternalImpulse::new([0.0, 0.0, 0.0].into()),
+                gravity_scale: GravityScale(1.0),
+                transform: Transform::from_xyz(0.0, 16.0, 0.0),
+                downward_ray: RayCaster::new(Vec3::ZERO, Dir3::NEG_Y),
+                ray_hits: RayHits::default(),
+                rigid_body: RigidBody::Dynamic,
+                locked_axes: LockedAxes::new(),
+                mass: Mass(20.0),
+                body: Body {
+                    current_body_height: 1.0,
+                },
+                motion: Motion {
+                    current_movement_vector: Vec3::from_array([0.0, 0.0, 0.0]),
+                    target_movement_vector: Vec3::from_array([0.0, 0.0, 0.0]),
+                    current_movement_speed: player_config.movement_speed,
+                    target_movement_speed: player_config.movement_speed,
+                    sprinting: false,
+                    moving: false,
+                },
+                focus: Focus {
+                    point_of_focus: Vec3::from_array([0.0, 0.0, 0.0]),
+                    face_direction: Vec3::from_array([0.0, 0.0, 0.0]),
+                    free_look: false,
+                },
+                stance: Stance {
+                    current_ride_height: player_config.ride_height,
+                    target_ride_height: player_config.ride_height,
+                    current: StanceType::Standing,
+                    crouched: false,
+                    lockout: 0.0,
+                },
+                action_step: ActionStep {
+                    dir: stance::FootstepDirection::Right,
+                    delta: ACTION_STEP_DELTA_DEFAULT,
+                    bumped: false,
+                },
             },
-            motion: Motion {
-                current_movement_speed: player_config.movement_speed,
-                target_movement_speed: player_config.movement_speed,
-                current_ride_height: player_config.ride_height,
-                target_ride_height: player_config.ride_height,
-                movement_vector: Vec3::from_array([0.0, 0.0, 0.0]),
-                sprinting: false,
-                moving: false,
-            },
-            focus: Focus {
-                point_of_focus: Vec3::from_array([0.0, 0.0, 0.0]),
-                face_direction: Vec3::from_array([0.0, 0.0, 0.0]),
-                free_look: false,
-            },
-            stance: Stance {
-                current: StanceType::Standing,
-                crouched: false,
-                lockout: 0.0,
-            },
-            action_step: ActionStep {
-                dir: stance::FootstepDirection::Right,
-                delta: ACTION_STEP_DELTA_DEFAULT,
-                bumped: false,
-            },
-        },
-        Player,
-    ));
+            Mesh3d(meshes.add(Sphere::default().mesh().ico(5).unwrap())),
+            MeshMaterial3d(materials.add(StandardMaterial {
+                base_color: Color::srgb(1.0, 0.0, 0.0),
+                ..default()
+            })),
+            Player,
+        ))
+        .with_children(|parent| {
+            parent.spawn((
+                PlayerColliderBundle {
+
+                    collider: collider.clone(),
+                },
+                PlayerColliderFlag,
+            ));
+        });
     info!("Spawned Player Actor");
 }
 

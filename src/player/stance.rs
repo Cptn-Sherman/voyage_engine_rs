@@ -1,8 +1,8 @@
-use crate::player::config::GetDownwardRayLengthMax;
 use crate::{player::config::PlayerControlConfig, ternary, utils::exp_decay};
 use avian3d::prelude::*;
 use bevy::{
     asset::{AssetServer, Handle},
+    ecs::entity::Entity,
     input::ButtonInput,
     log::{info, warn},
     math::{Quat, Vec3},
@@ -15,9 +15,9 @@ use bevy::{
 use bevy_kira_audio::{Audio, AudioControl, AudioSource};
 use bevy_turborand::{DelegatedRng, GlobalRng};
 
-use super::body::Body;
 use super::motion::{apply_jump_force, apply_spring_force, Motion};
 use super::Player;
+use super::{body::Body, PlayerColliderBundle, PlayerColliderFlag};
 
 #[derive(Debug, PartialEq, Clone)]
 // each of these stance types needs to have a movement speed calculation, a
@@ -41,6 +41,8 @@ impl StanceType {
 
 #[derive(Component)]
 pub struct Stance {
+    pub(crate) current_ride_height: f32,
+    pub(crate) target_ride_height: f32,
     pub current: StanceType,
     pub crouched: bool,
     pub lockout: f32,
@@ -59,13 +61,14 @@ pub struct FootstepEvent {
 // todo: When the ActionStep happens that is the point in time we apply a small impulse downward so the spring can have a lil' bump.
 
 // This is the time in seconds between each footstep. When sprinting this value is multiplied.
-pub const ACTION_STEP_DELTA_DEFAULT: f32 = 0.50;
+pub const ACTION_STEP_DELTA_DEFAULT: f32 = 0.45;
 const LOCKIN_ACTION_THRESHOLD_PERCENTAGE: f32 = 0.05;
 const BUMP_ACTION_THRESHOLD_PERCENTAGE: f32 = 0.25;
 const BUMP_REMAINING_ACTION_STEP: f32 =
     ACTION_STEP_DELTA_DEFAULT * (1.0 - BUMP_ACTION_THRESHOLD_PERCENTAGE);
 const LOCKIN_ACTION_STEP_DELTA: f32 =
     ACTION_STEP_DELTA_DEFAULT * (1.0 - LOCKIN_ACTION_THRESHOLD_PERCENTAGE);
+const MAX_MOVEMENT_SPEED: f32 = 250.0;
 
 #[derive(Component)]
 pub struct ActionStep {
@@ -76,25 +79,28 @@ pub struct ActionStep {
 
 pub(crate) fn tick_footstep(
     mut ev_footstep: EventWriter<FootstepEvent>,
-    mut query: Query<(&mut ActionStep, &mut Motion, &Stance)>,
+    mut query: Query<(&mut ActionStep, &mut Stance, &Motion)>,
+    player_config: Res<PlayerControlConfig>,
     config: Res<PlayerControlConfig>,
     time: Res<Time>,
 ) {
-    for (mut action, mut motion, stance) in query.iter_mut() {
-
+    for (mut action, mut stance, motion) in query.iter_mut() {
         // you must be on the ground for this sound to play.
         if stance.current != StanceType::Standing && stance.current != StanceType::Landing {
             continue;
         }
         // if you are not moving and need to take more than 85% of your remaining step we play no sound.
-        if motion.moving == false && action.delta >= LOCKIN_ACTION_STEP_DELTA
-        {
+        if motion.moving == false && action.delta >= LOCKIN_ACTION_STEP_DELTA {
             continue;
         }
 
         // scale the speed based on if you are sprinting or if you are not moving and are resting your foot.
         // when this value is higher you finish your step sooner.
-        let mut step_speed_scale: f32 = 1.0;
+
+        let step_speed_scale: f32 = motion.current_movement_speed / player_config.movement_speed;
+
+        // info!("Step Speed Scale: {}", step_speed_scale);
+
         let mut ride_height_offset: f32 = ternary!(
             motion.sprinting,
             config.ride_height_step_offset,
@@ -102,13 +108,12 @@ pub(crate) fn tick_footstep(
         );
 
         if motion.sprinting == true || motion.moving == false {
-            step_speed_scale = 1.45;
             ride_height_offset *= 1.2; // this is kinda arbitrary. but this little bit of kick is applied when you start sprinting from a stand still.
         }
 
         // reduce the time by elaspsed times the scale.
         action.delta -= time.delta_secs() * step_speed_scale;
-        let vol: f64 = ternary!(motion.moving, 0.5, 0.25);
+        let vol: f64 = ternary!(motion.moving, 0.75, 0.50);
         let current_ride_height_offset_scaler: f32 = ternary!(motion.moving, 1.0, 0.5);
 
         // bump the riding height when the delta is less than the bump threshold.
@@ -116,7 +121,7 @@ pub(crate) fn tick_footstep(
             && action.delta <= BUMP_REMAINING_ACTION_STEP
             && action.bumped == false
         {
-            motion.current_ride_height =
+            stance.current_ride_height =
                 config.ride_height + (ride_height_offset * current_ride_height_offset_scaler);
             action.bumped = true;
         }
@@ -150,9 +155,8 @@ impl Default for FootstepDirection {
     }
 }
 
-
-// todo: update this to use constants so you can customize the offset from each ear. 
-// Maybe obsolete if a 3D sound implementation is used instead. Would be nice for ui. 
+// todo: update this to use constants so you can customize the offset from each ear.
+// Maybe obsolete if a 3D sound implementation is used instead. Would be nice for ui.
 impl FootstepDirection {
     fn value(&self) -> f64 {
         match self {
@@ -222,12 +226,12 @@ pub fn update_player_stance(
             &mut ExternalImpulse,
             &mut GravityScale,
             &mut Stance,
-            &mut Motion,
             &mut Body,
             &RayHits,
         ),
         With<Player>,
     >,
+    player_collider_query: Query<Entity, With<PlayerColliderFlag>>,
     mut ev_footstep: EventWriter<FootstepEvent>,
 ) {
     if query.is_empty() || query.iter().len() > 1 {
@@ -243,7 +247,6 @@ pub fn update_player_stance(
         mut external_impulse,
         mut gravity_scale,
         mut stance,
-        mut motion,
         body,
         ray_hits,
     ) in &mut query
@@ -254,13 +257,21 @@ pub fn update_player_stance(
 
         // Compute the ray_length to a hit, if we don't hit anything we assume the ground is infinitly far away.
         let mut ray_length: f32 = f32::INFINITY;
-        if let Some(hit) = ray_hits.iter_sorted().next() {
-            ray_length = hit.distance;
+
+        // Find the first ray hit which is not the player collider.
+        for hit in ray_hits.iter_sorted() {
+            if hit.entity != player_collider_query.single() {
+                ray_length = hit.distance;
+                break;
+            }
         }
+
+        let mut ride_height: f32 = stance.current_ride_height;
+        // info!("ray_length: {}, ride_height: {}", ray_length, ride_height);
 
         // Compute the next stance for the player.
         let next_stance: StanceType =
-            determine_next_stance(&keys, &config, &mut stance, ray_length);
+            determine_next_stance(&keys, &config, &mut stance, ray_length, ride_height);
 
         // handle footstep sound event when the state has changed and only then.
         if next_stance != stance.current {
@@ -283,13 +294,13 @@ pub fn update_player_stance(
             StanceType::Landing => {
                 // Set the gravity scale to zero.
                 next_gravity_scale = 0.0;
-                motion.current_ride_height = config.ride_height * 0.85;
+                ride_height *= 0.85;
                 apply_spring_force(
                     &config,
                     &mut linear_vel,
                     &mut external_force,
                     ray_length,
-                    motion.current_ride_height,
+                    ride_height,
                 );
             }
             StanceType::Standing => {
@@ -304,7 +315,7 @@ pub fn update_player_stance(
                     &mut linear_vel,
                     &mut external_force,
                     ray_length,
-                    motion.current_ride_height,
+                    ride_height,
                 );
             }
             StanceType::Airborne => {
@@ -326,7 +337,6 @@ pub fn update_player_stance(
                         &mut external_impulse,
                         &mut linear_vel,
                         ray_length,
-                        &motion,
                         &body,
                     );
                 }
@@ -334,9 +344,9 @@ pub fn update_player_stance(
         }
 
         // Lerp current_ride_height to target_ride_height, this target_ride_height changes depending on the stance. Standing, Crouching, and Prone.
-        motion.current_ride_height = exp_decay(
-            motion.current_ride_height,
-            motion.target_ride_height,
+        stance.current_ride_height = exp_decay(
+            stance.current_ride_height,
+            stance.target_ride_height,
             6.0,
             time.delta_secs(),
         );
@@ -368,26 +378,27 @@ fn determine_next_stance(
     config: &Res<PlayerControlConfig>,
     stance: &mut Stance,
     ray_length: f32,
+    ride_height: f32,
 ) -> StanceType {
     let is_locked_out: bool = stance.lockout > 0.0;
     let previous_stance: StanceType = stance.current.clone();
     let mut next_stance: StanceType = stance.current.clone();
     // If your locked in you cannot change state.
     if !is_locked_out {
-        if ray_length > config.get_downard_ray_length_max() {
+        if ray_length > ride_height + config.ray_length_offset {
             next_stance = StanceType::Airborne;
         } else if previous_stance == StanceType::Standing
             && stance.lockout <= 0.0
             && keys.pressed(KeyCode::Space)
         {
             next_stance = StanceType::Jumping;
-        } else if ray_length < config.ride_height {
+        } else if ray_length < ride_height {
             next_stance = StanceType::Standing;
         } else if previous_stance != StanceType::Standing
-            && ray_length < config.get_downard_ray_length_max()
+            && ray_length < ride_height + config.ray_length_offset
         {
             next_stance = StanceType::Landing;
-        } else if ray_length > config.get_downard_ray_length_max() {
+        } else if ray_length > ride_height + config.ray_length_offset {
             next_stance = StanceType::Airborne;
         }
     }

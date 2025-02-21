@@ -102,10 +102,10 @@ pub fn load_toggle_camera_soundfxs(mut commands: Commands, asset_server: Res<Ass
 }
 
 pub fn play_toggle_camera_soundfx(
+    first_handle: Res<ToggleCameraFirstModeAudioHandle>,
+    free_handle: Res<ToggleCameraFreeModeAudioHandle>,
     mut _ev_footstep: EventReader<ToggleCameraEvent>,
     audio: Res<Audio>,
-    free_handle: Res<ToggleCameraFreeModeAudioHandle>,
-    first_handle: Res<ToggleCameraFirstModeAudioHandle>,
 ) {
     let mut mode: CameraMode = CameraMode::FreeCam;
     let mut should_play: bool = false;
@@ -137,8 +137,8 @@ pub fn play_toggle_camera_soundfx(
 }
 
 pub fn move_free_camera(
-    mut free_entity_query: Query<&mut Transform, With<FreeCamera>>,
     camera_query: Query<&mut Transform, (With<Camera3d>, Without<FreeCamera>)>,
+    mut free_entity_query: Query<&mut Transform, With<FreeCamera>>,
     keys: Res<ButtonInput<KeyCode>>,
     key_bindings: Res<KeyBindings>,
     time: Res<Time>,

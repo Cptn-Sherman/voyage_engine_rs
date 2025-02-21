@@ -29,7 +29,7 @@ impl Default for PlayerControlConfig {
             ride_spring_damper: 300.0,
             stance_lockout: 0.25,
             jump_strength: 200.0,
-            movement_speed: 125.0,
+            movement_speed: 7.0,
             sprint_speed_factor: 2.0,
             movement_decay: 0.90,
             look_sensitivity: 0.00012, // This value was taken from bevy_flycam.
@@ -41,10 +41,4 @@ impl Default for PlayerControlConfig {
 
 pub trait GetDownwardRayLengthMax {
     fn get_downard_ray_length_max(&self) -> f32;
-}
-
-impl GetDownwardRayLengthMax for PlayerControlConfig {
-    fn get_downard_ray_length_max(&self) -> f32 {
-        self.ride_height + self.ray_length_offset
-    }
 }
