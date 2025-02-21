@@ -134,9 +134,9 @@ pub fn spawn_player(
                     bumped: false,
                 },
             },
-            Mesh3d(meshes.add(Sphere::default().mesh().ico(5).unwrap())),
+            Mesh3d(meshes.add(Sphere::new(0.2).mesh().ico(8).unwrap())),
             MeshMaterial3d(materials.add(StandardMaterial {
-                base_color: Color::srgb(1.0, 0.0, 0.0),
+                base_color: Color::srgb(1.0, 200.0 / 256.0, 0.0),
                 ..default()
             })),
             Player,
@@ -144,7 +144,6 @@ pub fn spawn_player(
         .with_children(|parent| {
             parent.spawn((
                 PlayerColliderBundle {
-
                     collider: collider.clone(),
                 },
                 PlayerColliderFlag,
