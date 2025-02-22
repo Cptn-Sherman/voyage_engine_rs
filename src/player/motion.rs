@@ -127,10 +127,6 @@ pub fn compute_motion(
         if left_stick_y.abs() > 0.1 {
             movement_vector += camera_transform.forward().as_vec3() * left_stick_y;
         }
-    
-        if left_stick_y.abs() > 0.1 || left_stick_x.abs() > 0.1 {
-            // info!("left stick [{},{}]", left_stick_x, left_stick_y);
-        }
     }
 
     // Update State:

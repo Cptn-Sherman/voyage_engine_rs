@@ -1,23 +1,20 @@
+use actions::{crouched::toggle_crouching, sprinting::toggle_sprinting, step::{load_footstep_sfx, play_footstep_sfx, tick_footstep, ActionStep, FootstepDirection, FootstepEvent, ACTION_STEP_DELTA_DEFAULT}};
 use avian3d::prelude::*;
-use bevy::{log::info, math::VectorSpace, prelude::*};
+use bevy::{log::info, prelude::*};
 
 use crate::{camera::GameCamera, utils::grab_cursor};
 use body::Body;
 use config::PlayerControlConfig;
 use focus::{camera_look_system, Focus};
 use motion::{compute_motion, Motion};
-use stance::{
-    load_footstep_sfx, lock_rotation, play_footstep_sfx, tick_footstep, update_player_stance,
-    ActionStep, FootstepEvent, Stance, StanceType, ACTION_STEP_DELTA_DEFAULT,
-};
-use states::{crouched::toggle_crouching, grounded::sprinting::toggle_sprinting};
+use stance::{lock_rotation, update_player_stance, Stance, StanceType};
 
+pub mod actions;
 pub mod body;
 pub mod config;
 pub mod focus;
 pub mod motion;
 pub mod stance;
-pub mod states;
 
 pub struct PlayerPlugin;
 
@@ -129,7 +126,7 @@ pub fn spawn_player(
                     lockout: 0.0,
                 },
                 action_step: ActionStep {
-                    dir: stance::FootstepDirection::Right,
+                    dir: FootstepDirection::Right,
                     delta: ACTION_STEP_DELTA_DEFAULT,
                     bumped: false,
                 },
