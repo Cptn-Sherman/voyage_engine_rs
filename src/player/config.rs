@@ -13,7 +13,8 @@ pub struct PlayerControlConfig {
     pub (crate) movement_speed: f32,
     pub (crate) sprint_speed_factor: f32,
     pub (crate) movement_decay: f32,
-    pub (crate) look_sensitivity: f32,
+    pub (crate) mouse_look_sensitivity: f32,
+    pub (crate) gamepad_look_sensitivity: f32,
     pub (crate) enable_view_bobbing: bool,
     pub (crate) crouched_height_factor: f32,
 }
@@ -32,7 +33,8 @@ impl Default for PlayerControlConfig {
             movement_speed: 7.0,
             sprint_speed_factor: 2.0,
             movement_decay: 0.90,
-            look_sensitivity: 0.00012, // This value was taken from bevy_flycam.
+            mouse_look_sensitivity: 0.00012, // This value was taken from bevy_flycam.
+            gamepad_look_sensitivity: 0.0012, // This value was made up by me!
             enable_view_bobbing: true,
             crouched_height_factor: 0.80,
         }
