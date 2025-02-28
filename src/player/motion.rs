@@ -15,7 +15,7 @@ use avian3d::prelude::*;
 
 use crate::{
     utils::exp_decay,
-    KeyBindings,
+    Bindings,
 };
 
 use super::{
@@ -39,7 +39,7 @@ pub fn compute_motion(
     camera_query: Query<&mut Transform, (With<Camera3d>, Without<Player>)>,
     player_config: Res<PlayerControlConfig>,
     gamepads: Query<(Entity, &Gamepad)>,
-    key_bindings: Res<KeyBindings>,
+    key_bindings: Res<Bindings>,
     keys: Res<ButtonInput<KeyCode>>,
     time: Res<Time>,
 ) {

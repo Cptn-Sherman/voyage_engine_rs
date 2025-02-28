@@ -1,4 +1,4 @@
-use crate::{config::KeyBindings, player::Player};
+use crate::{config::Bindings, player::Player};
 use bevy::{
     core_pipeline::{
         experimental::taa::TemporalAntiAliasing, motion_blur::MotionBlur, tonemapping::Tonemapping,
@@ -140,7 +140,7 @@ pub fn move_free_camera(
     camera_query: Query<&mut Transform, (With<Camera3d>, Without<FreeCamera>)>,
     mut free_entity_query: Query<&mut Transform, With<FreeCamera>>,
     keys: Res<ButtonInput<KeyCode>>,
-    key_bindings: Res<KeyBindings>,
+    key_bindings: Res<Bindings>,
     time: Res<Time>,
 ) {
     if camera_query.is_empty()
@@ -188,12 +188,12 @@ pub fn swap_camera_target(
     mut commands: Commands,
     mut ev_toggle_cam: EventWriter<ToggleCameraEvent>,
     keys: Res<ButtonInput<KeyCode>>,
-    key_bindings: Res<KeyBindings>,
+    key_bindings: Res<Bindings>,
     mut camera_query: Query<(Entity, &mut Transform, Option<&Parent>), With<GameCamera>>,
     player_query: Query<Entity, With<Player>>,
     free_camera_query: Query<Entity, With<FreeCamera>>,
 ) {
-    if !keys.just_pressed(key_bindings.toggle_camera_mode) {
+    if !keys.just_pressed(key_bindings.action_toggle_camera_mode) {
         return;
     }
 
@@ -249,10 +249,10 @@ pub fn swap_camera_target(
 pub fn take_screenshot(
     mut commands: Commands,
     settings: Res<EngineSettings>,
-    key_bindings: Res<KeyBindings>,
+    bindings: Res<Bindings>,
     keys: Res<ButtonInput<KeyCode>>,
 ) {
-    if !keys.just_pressed(key_bindings.screenshot_key) {
+    if !keys.just_pressed(bindings.action_screenshot.key) {
         return;
     }
   

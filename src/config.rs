@@ -1,23 +1,32 @@
-use bevy::prelude::{KeyCode, Resource};
+use bevy::{
+    input::gamepad::GamepadButton,
+    prelude::{KeyCode, Resource},
+};
+
+pub struct Binding {
+    pub key: KeyCode,
+    pub button: GamepadButton,
+}
 
 /// Key configuration
 #[derive(Resource)]
-pub struct KeyBindings {
+pub struct Bindings {
     pub move_forward: KeyCode,
     pub move_backward: KeyCode,
     pub move_left: KeyCode,
     pub move_right: KeyCode,
     pub move_ascend: KeyCode,
     pub move_descend: KeyCode,
-    pub toggle_sprint: KeyCode,
-    pub toggle_crouched: KeyCode,
-    pub toggle_grab_cursor: KeyCode,
-    pub interact: KeyCode,
-    pub screenshot_key: KeyCode,
-    pub toggle_camera_mode: KeyCode,
+    pub action_sprint: Binding,
+    pub action_interact: Binding,
+    pub action_toggle_crouched: Binding,
+
+    pub action_screenshot: Binding,
+    pub action_toggle_cursor_focus: KeyCode,
+    pub action_toggle_camera_mode: KeyCode,
 }
 
-impl Default for KeyBindings {
+impl Default for Bindings {
     fn default() -> Self {
         Self {
             move_forward: KeyCode::KeyW,
@@ -26,16 +35,27 @@ impl Default for KeyBindings {
             move_right: KeyCode::KeyD,
             move_ascend: KeyCode::Space,
             move_descend: KeyCode::ShiftLeft,
-            toggle_sprint: KeyCode::ShiftLeft,
-            toggle_crouched: KeyCode::ControlLeft,
-            toggle_grab_cursor: KeyCode::Escape,
-            interact: KeyCode::KeyE,
-            screenshot_key: KeyCode::Equal,
-            toggle_camera_mode: KeyCode::F3,
+            action_sprint: Binding {
+                key: KeyCode::ShiftLeft,
+                button: GamepadButton::LeftTrigger,
+            },
+            action_toggle_crouched: Binding {
+                key: KeyCode::ControlLeft,
+                button: GamepadButton::LeftThumb,
+            },
+            action_toggle_cursor_focus: KeyCode::Escape,
+            action_interact: Binding {
+                key: KeyCode::KeyE,
+                button: GamepadButton::East,
+            },
+            action_screenshot: Binding {
+                key: KeyCode::Equal,
+                button: GamepadButton::Start,
+            },
+            action_toggle_camera_mode: KeyCode::F3,
         }
     }
 }
-
 
 // This will be read from a toml file in the future.
 #[derive(Resource)]

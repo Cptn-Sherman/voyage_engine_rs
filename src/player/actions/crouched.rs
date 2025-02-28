@@ -1,17 +1,17 @@
 use avian3d::prelude::Collider;
 use bevy::prelude::*;
 
-use crate::{config::KeyBindings, player::{body::Body, config::PlayerControlConfig, stance::Stance, Player, PlayerColliderFlag}};
+use crate::{config::Bindings, player::{body::Body, config::PlayerControlConfig, stance::Stance, Player, PlayerColliderFlag}};
 
 pub fn toggle_crouching(
     mut player_query: Query<(&mut Body, &mut Stance), With<Player>>,
     mut player_collider_query:  Query<&mut Collider, With<PlayerColliderFlag>>, // , (With<PlayerCollider>, With<PlayerColliderFlag>, Without<Player>)
     player_config: ResMut<PlayerControlConfig>,
     keys: Res<ButtonInput<KeyCode>>,
-    key_bindings: Res<KeyBindings>,
+    key_bindings: Res<Bindings>,
 ) {
     for (mut body, mut stance) in player_query.iter_mut() {
-        if !keys.just_pressed(key_bindings.toggle_crouched) {
+        if !keys.just_pressed(key_bindings.action_toggle_crouched.key) {
             return;
         }
 

@@ -20,7 +20,7 @@ use bevy_kira_audio::{Audio, AudioControl, AudioEasing, AudioPlugin, AudioTween}
 use bevy_turborand::prelude::RngPlugin;
 
 use camera::{create_camera, create_free_camera, load_toggle_camera_soundfxs, move_free_camera, play_toggle_camera_soundfx, swap_camera_target, take_screenshot, CameraConfig, ToggleCameraEvent};
-use config::{EngineSettings, KeyBindings};
+use config::{EngineSettings, Bindings};
 use player::PlayerPlugin;
 use user_interface::DebugInterfacePlugin;
 
@@ -34,7 +34,7 @@ struct Sun;
 
 fn main() {
     App::new()
-        .init_resource::<KeyBindings>()
+        .init_resource::<Bindings>()
         .insert_resource(EngineSettings { ..default() })
         .insert_resource(DirectionalLightShadowMap { size: 4098 })
         // .insert_resource(RenderAssetBytesPerFrame::new(2_000_000_000)) ! <- disabling for now because this causes a crash for fog volumes.

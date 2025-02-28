@@ -84,7 +84,7 @@ use bevy::{
 };
 use std::fmt::Write;
 
-use crate::KeyBindings;
+use crate::Bindings;
 
 /// Formats a value as a string with optional decimal digits and support for negative space formatting.
 ///
@@ -379,11 +379,11 @@ pub fn grab_cursor(mut primary_window: Query<&mut Window, With<PrimaryWindow>>) 
 
 pub fn detect_toggle_cursor(
     keys: Res<ButtonInput<KeyCode>>,
-    key_bindings: Res<KeyBindings>,
+    key_bindings: Res<Bindings>,
     mut primary_window: Query<&mut Window, With<PrimaryWindow>>,
 ) {
     if let Ok(mut window) = primary_window.get_single_mut() {
-        if keys.just_pressed(key_bindings.toggle_grab_cursor) {
+        if keys.just_pressed(key_bindings.action_toggle_cursor_focus) {
             toggle_grab_cursor(&mut window);
         }
     } else {
