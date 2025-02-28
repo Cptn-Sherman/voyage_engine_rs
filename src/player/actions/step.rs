@@ -4,12 +4,20 @@ use bevy::{
         component::Component,
         event::{Event, EventReader, EventWriter},
         system::{Commands, Query, Res, ResMut, Resource},
-    }, time::Time,
+    },
+    time::Time,
 };
 use bevy_kira_audio::{Audio, AudioControl, AudioSource};
 use bevy_turborand::{DelegatedRng, GlobalRng};
 
-use crate::{player::{config::PlayerControlConfig, motion::Motion, stance::{Stance, StanceType}}, ternary};
+use crate::{
+    player::{
+        config::PlayerControlConfig,
+        motion::Motion,
+        stance::{Stance, StanceType},
+    },
+    ternary,
+};
 
 const PLAYBACK_RANGE: f64 = 0.4;
 
@@ -24,14 +32,13 @@ pub struct FootstepEvent {
 // todo: When the ActionStep happens that is the point in time we apply a small impulse downward so the spring can have a lil' bump.
 
 // This is the time in seconds between each footstep. When sprinting this value is multiplied.
-pub const ACTION_STEP_DELTA_DEFAULT: f32 = 0.45;
-const LOCKIN_ACTION_THRESHOLD_PERCENTAGE: f32 = 0.05;
-const BUMP_ACTION_THRESHOLD_PERCENTAGE: f32 = 0.25;
+pub const ACTION_STEP_DELTA_DEFAULT: f32 = 0.64;
+const LOCKIN_ACTION_THRESHOLD_PERCENTAGE: f32 = 0.1;
+const BUMP_ACTION_THRESHOLD_PERCENTAGE: f32 = 0.95;
 const BUMP_REMAINING_ACTION_STEP: f32 =
     ACTION_STEP_DELTA_DEFAULT * (1.0 - BUMP_ACTION_THRESHOLD_PERCENTAGE);
 const LOCKIN_ACTION_STEP_DELTA: f32 =
     ACTION_STEP_DELTA_DEFAULT * (1.0 - LOCKIN_ACTION_THRESHOLD_PERCENTAGE);
-const MAX_MOVEMENT_SPEED: f32 = 250.0;
 
 #[derive(Component)]
 pub struct ActionStep {
@@ -55,12 +62,16 @@ impl Default for FootstepDirection {
 
 // todo: update this to use constants so you can customize the offset from each ear.
 // Maybe obsolete if a 3D sound implementation is used instead. Would be nice for ui.
+
+const FOOTSTEP_CENTER: f64 = 0.5;
+const FOOTSTEP_OFFSET: f64 = 0.05;
+
 impl FootstepDirection {
     fn value(&self) -> f64 {
         match self {
-            FootstepDirection::None => 0.5,
-            FootstepDirection::Left => 0.3,
-            FootstepDirection::Right => 0.7,
+            FootstepDirection::None => FOOTSTEP_CENTER,
+            FootstepDirection::Left => FOOTSTEP_CENTER - FOOTSTEP_OFFSET,
+            FootstepDirection::Right => FOOTSTEP_CENTER + FOOTSTEP_OFFSET,
         }
     }
 
@@ -77,7 +88,7 @@ impl FootstepDirection {
 pub struct FootstepAudioHandle(Handle<AudioSource>);
 
 pub fn load_footstep_sfx(mut commands: Commands, asset_server: Res<AssetServer>) {
-    let handle = asset_server.load("audio\\footstep-fx.mp3");
+    let handle = asset_server.load("audio\\Concrete20.wav");
     commands.insert_resource(FootstepAudioHandle(handle.clone()));
 }
 

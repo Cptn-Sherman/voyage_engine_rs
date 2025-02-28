@@ -57,6 +57,11 @@ pub struct Player;
 pub struct PlayerColliderFlag;
 
 #[derive(Bundle)]
+pub struct PlayerColliderBundle {
+    collider: Collider,
+}
+
+#[derive(Bundle)]
 pub struct PlayerBundle {
     linear_vel: LinearVelocity,
     external_force: ExternalForce,
@@ -73,11 +78,6 @@ pub struct PlayerBundle {
     gravity_scale: GravityScale,
     transform: Transform,
     rigid_body: RigidBody,
-}
-
-#[derive(Bundle)]
-pub struct PlayerColliderBundle {
-    collider: Collider,
 }
 
 pub fn spawn_player(

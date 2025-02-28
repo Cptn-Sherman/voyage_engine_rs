@@ -61,16 +61,14 @@ pub fn compute_motion(
 
     // Perform the movement checks.
 
-    let movement_speed_decay: f32;
+    let mut movement_speed_decay: f32 = 5.0;
 
     if motion.sprinting && motion.moving {
-        movement_speed_decay = 15.0;
+        movement_speed_decay *= 10.0;
     } else if !motion.sprinting && !motion.moving {
-        movement_speed_decay = 15.0;
+        movement_speed_decay *= 3.0;
     } else if motion.sprinting && !motion.moving {
-        movement_speed_decay = 20.0;
-    } else {
-        movement_speed_decay = 5.0;
+        movement_speed_decay *= 10.0;
     }
 
     motion.current_movement_speed = exp_decay(
@@ -80,24 +78,26 @@ pub fn compute_motion(
         time.delta_secs(),
     );
 
+    let current_movement_vector_decay: f32 = 16.0;
+
     motion.current_movement_vector.x = exp_decay(
         motion.current_movement_vector.x,
         motion.target_movement_vector.x,
-        10.0,
+        current_movement_vector_decay,
         time.delta_secs(),
     );
 
     motion.current_movement_vector.y = exp_decay(
         motion.current_movement_vector.y,
         motion.target_movement_vector.y,
-        10.0,
+        current_movement_vector_decay,
         time.delta_secs(),
     );
 
     motion.current_movement_vector.z = exp_decay(
         motion.current_movement_vector.z,
         motion.target_movement_vector.z,
-        10.0,
+        current_movement_vector_decay,
         time.delta_secs(),
     );
 
