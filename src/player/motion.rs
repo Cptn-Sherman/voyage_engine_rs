@@ -60,7 +60,6 @@ pub fn compute_motion(
     }
 
     // Perform the movement checks.
-
     let mut movement_speed_decay: f32 = 5.0;
 
     if motion.sprinting && motion.moving {
@@ -157,7 +156,7 @@ pub fn compute_motion(
     // info!("length of movement vector: {}", movement_scale);
     motion.target_movement_vector = movement_vector.normalize_or_zero();
 
-    // dont need to lerp here just setting the real value to .
+    // we don't need to lerp here just setting the real value to as we already lerp the current_movement_vector and current_movement_speed.
     linear_vel.x = motion.current_movement_vector.x * motion.current_movement_speed;
     linear_vel.z = motion.current_movement_vector.z * motion.current_movement_speed;
 
