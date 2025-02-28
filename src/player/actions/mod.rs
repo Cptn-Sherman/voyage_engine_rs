@@ -1,3 +1,3 @@
-pub mod sprinting;
-pub mod crouched;
+pub mod sprint;
+pub mod crouch;
 pub mod step;

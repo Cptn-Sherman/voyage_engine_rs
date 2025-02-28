@@ -116,8 +116,8 @@ pub fn compute_motion(
     }
 
     if let Ok((_entity, gamepad)) = gamepads.get_single() {
-        let left_stick_x = gamepad.get(GamepadAxis::LeftStickX).unwrap_or_default();
-        let left_stick_y = gamepad.get(GamepadAxis::LeftStickY).unwrap_or_default();
+        let left_stick_x: f32 = gamepad.get(GamepadAxis::LeftStickX).unwrap_or_default();
+        let left_stick_y: f32 = gamepad.get(GamepadAxis::LeftStickY).unwrap_or_default();
     
         if left_stick_x.abs() > 0.1 {
             movement_vector += camera_transform.right().as_vec3() * left_stick_x;
@@ -133,7 +133,7 @@ pub fn compute_motion(
     // set the motion.moving when the magnituted of the movement_vector is greater than some arbitrary threshold.
     motion.moving = movement_vector.length() >= 0.01;
 
-    let movement_scale = f32::clamp(movement_vector.length(), 0.0, 1.0);
+    let movement_scale: f32 = f32::clamp(movement_vector.length(), 0.0, 1.0);
 
     if motion.sprinting == true {
         if stance.crouched == true {

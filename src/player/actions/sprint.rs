@@ -11,9 +11,9 @@ use crate::{
 
 pub fn toggle_sprinting(
     mut player_query: Query<(&mut Motion, &Stance), With<Player>>,
+    gamepad_query: Query<(Entity, &Gamepad)>,
     keys: Res<ButtonInput<KeyCode>>,
     bindings: Res<Bindings>,
-    gamepad_query: Query<(Entity, &Gamepad)>,
 ) {
     for (mut motion, stance) in player_query.iter_mut() {
         if stance.current == StanceType::Airborne {

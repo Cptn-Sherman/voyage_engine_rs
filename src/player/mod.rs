@@ -1,4 +1,4 @@
-use actions::{crouched::toggle_crouching, sprinting::toggle_sprinting, step::{load_footstep_sfx, play_footstep_sfx, tick_footstep, ActionStep, FootstepDirection, FootstepEvent, ACTION_STEP_DELTA_DEFAULT}};
+use actions::{crouch::toggle_crouching, sprint::toggle_sprinting, step::{load_footstep_sfx, play_footstep_sfx, tick_footstep, ActionStep, FootstepDirection, FootstepEvent, ACTION_STEP_DELTA_DEFAULT}};
 use avian3d::prelude::*;
 use bevy::{log::info, prelude::*};
 
