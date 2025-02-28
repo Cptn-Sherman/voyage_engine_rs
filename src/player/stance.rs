@@ -1,7 +1,12 @@
-use crate::{player::config::PlayerControlConfig, ternary, utils::exp_decay};
+use super::Player;
+use super::{
+    actions::step::{FootstepDirection, FootstepEvent},
+    motion::{apply_jump_force, apply_spring_force},
+};
+use super::{body::Body, PlayerColliderFlag};
+use crate::{player::config::PlayerControlConfig, utils::exp_decay};
 use avian3d::prelude::*;
 use bevy::{
-    asset::{AssetServer, Handle},
     ecs::entity::Entity,
     input::{
         gamepad::{Gamepad, GamepadButton},
@@ -9,18 +14,9 @@ use bevy::{
     },
     log::{info, warn},
     math::{Quat, Vec3},
-    prelude::{
-        Commands, Component, Event, EventReader, EventWriter, KeyCode, Query, Res, ResMut,
-        Resource, With,
-    },
+    prelude::{Component, EventWriter, KeyCode, Query, Res, With},
     time::Time,
 };
-use bevy_kira_audio::{Audio, AudioControl, AudioSource};
-use bevy_turborand::{DelegatedRng, GlobalRng};
-
-use super::{actions::step::{ActionStep, FootstepDirection, FootstepEvent}, motion::{apply_jump_force, apply_spring_force, Motion}};
-use super::Player;
-use super::{body::Body, PlayerColliderBundle, PlayerColliderFlag};
 
 #[derive(Debug, PartialEq, Clone)]
 // each of these stance types needs to have a movement speed calculation, a
@@ -106,20 +102,14 @@ pub fn update_player_stance(
         }
 
         // info!("ray_length: {}, ride_height: {}", ray_length, ride_height);
-        
+
         let mut pad: Option<&Gamepad> = None;
         if let Ok((_entity, gamepad)) = gamepad_query.get_single() {
             pad = Some(gamepad);
         }
         // Compute the next stance for the player.
-        let next_stance: StanceType = determine_next_stance(
-            &keys,
-            pad,
-            &config,
-            &mut stance,
-            ray_length,
-            ride_height,
-        );
+        let next_stance: StanceType =
+            determine_next_stance(&keys, pad, &config, &mut stance, ray_length, ride_height);
 
         // handle footstep sound event when the state has changed and only then.
         if next_stance != stance.current {
@@ -253,7 +243,6 @@ fn determine_next_stance(
     return next_stance;
 }
 
-
 pub fn lock_rotation(
     mut query: Query<(&mut AngularVelocity, &mut Rotation, &mut Stance), With<Player>>,
 ) {
@@ -267,4 +256,3 @@ pub fn lock_rotation(
         }
     }
 }
-
