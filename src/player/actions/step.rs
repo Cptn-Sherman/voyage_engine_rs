@@ -154,12 +154,15 @@ pub(crate) fn tick_footstep(
         );
 
         if motion.sprinting == true || motion.moving == false {
-            ride_height_offset *= 1.2; // this is kinda arbitrary. but this little bit of kick is applied when you start sprinting from a stand still.
+            ride_height_offset *= 1.4; // this is kinda arbitrary. but this little bit of kick is applied when you start sprinting from a stand still.
         }
 
         // reduce the time by elaspsed times the scale.
         action.delta -= time.delta_secs() * step_speed_scale;
-        let vol: f64 = ternary!(motion.moving, 0.75, 0.50);
+        let mut vol: f64 = ternary!(motion.moving, 0.75, 0.50);
+        if motion.sprinting {
+            vol += 0.15;
+        }
         let current_ride_height_offset_scaler: f32 = ternary!(motion.moving, 1.0, 0.5);
 
         // bump the riding height when the delta is less than the bump threshold.
