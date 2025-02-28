@@ -34,7 +34,7 @@ pub struct FootstepEvent {
 // This is the time in seconds between each footstep. When sprinting this value is multiplied.
 pub const ACTION_STEP_DELTA_DEFAULT: f32 = 0.64;
 const LOCKIN_ACTION_THRESHOLD_PERCENTAGE: f32 = 0.1;
-const BUMP_ACTION_THRESHOLD_PERCENTAGE: f32 = 0.95;
+const BUMP_ACTION_THRESHOLD_PERCENTAGE: f32 = 0.70;
 const BUMP_REMAINING_ACTION_STEP: f32 =
     ACTION_STEP_DELTA_DEFAULT * (1.0 - BUMP_ACTION_THRESHOLD_PERCENTAGE);
 const LOCKIN_ACTION_STEP_DELTA: f32 =

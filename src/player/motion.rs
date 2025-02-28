@@ -60,7 +60,7 @@ pub fn compute_motion(
     }
 
     // Perform the movement checks.
-    let mut movement_speed_decay: f32 = 5.0;
+    let mut movement_speed_decay: f32 = 100.0;
 
     if motion.sprinting && motion.moving {
         movement_speed_decay *= 10.0;

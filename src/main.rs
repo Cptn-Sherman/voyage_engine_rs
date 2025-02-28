@@ -40,7 +40,7 @@ fn main() {
         // .insert_resource(RenderAssetBytesPerFrame::new(2_000_000_000)) ! <- disabling for now because this causes a crash for fog volumes.
         .insert_resource(CameraConfig {
             tonemapping: Tonemapping::Reinhard,
-            volumetric_density: 0.0025,
+            volumetric_density: 0.0055,
             hdr: true,
         })
         .add_plugins((

@@ -19,7 +19,7 @@ impl BevyMeshBuilder {
     from our mesh, but UV coordinates all set to 0
     */
     pub fn build(self) -> Mesh {
-        let mut bevy_mesh = Mesh::new(TriangleList, RenderAssetUsages::RENDER_WORLD);
+        let mut bevy_mesh: BevyMesh = Mesh::new(TriangleList, RenderAssetUsages::RENDER_WORLD);
         bevy_mesh.insert_indices(Indices::U32(self.triangle_indices));
         bevy_mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, self.positions);
         bevy_mesh.insert_attribute(Mesh::ATTRIBUTE_NORMAL, self.normals);
