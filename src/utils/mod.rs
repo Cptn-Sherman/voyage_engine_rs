@@ -80,7 +80,7 @@ macro_rules! ternary {
 // }
 
 use bevy::{
-    asset::{Assets, Handle}, input::ButtonInput, log::{info, warn}, math::Vec2, prelude::{Image, KeyCode, Mesh, Query, Res, ResMut, With}, render::{mesh::{Indices, PrimitiveTopology, VertexAttributeValues}, render_asset::RenderAssetUsages, render_resource::{Extent3d, TextureDimension, TextureFormat}, renderer::RenderAdapter}, window::{CursorGrabMode, PrimaryWindow, Window}
+    asset::{Assets, Handle}, input::ButtonInput, log::{info, warn}, math::{Vec2, Vec3}, prelude::{Image, KeyCode, Mesh, Query, Res, ResMut, With}, render::{mesh::{Indices, PrimitiveTopology, VertexAttributeValues}, render_asset::RenderAssetUsages, render_resource::{Extent3d, TextureDimension, TextureFormat}, renderer::RenderAdapter}, window::{CursorGrabMode, PrimaryWindow, Window}
 };
 use std::fmt::Write;
 
@@ -346,13 +346,14 @@ pub fn get_valid_extension<'a>(extension: &'a str, ext_type: ExtensionType) -> &
     }
 }
 
-
-
 // Pulled this from Freya Holmer's Lerp smoothing is broken talk. https://www.youtube.com/watch?v=LSNQuFEDOyQ
 pub fn exp_decay(a: f32, b: f32, decay: f32, delta_time: f32) -> f32 {
     return b + (a - b) * (-decay * delta_time).exp()
 }
 
+pub fn exp_vec3_decay(a: Vec3, b: Vec3, decay: f32, delta_time: f32) -> Vec3 {
+    return b + (a - b) * (-decay * delta_time).exp()
+}
 
 pub fn increase_render_adapter_wgpu_limits(render_adapter: Res<RenderAdapter>) {
     render_adapter

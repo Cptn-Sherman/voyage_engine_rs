@@ -5,16 +5,16 @@ use bevy::{
         ButtonInput,
     },
     log::{info, warn},
-    math::Vec3,
+    math::{EulerRot, Quat, Vec3},
     prelude::{Camera3d, KeyCode, Query, Res, With, Without},
     time::Time,
     transform::components::Transform,
 };
 
-use avian3d::prelude::*;
+use avian3d::{math::PI, prelude::*};
 
 use crate::{
-    utils::exp_decay,
+    utils::{exp_decay, exp_vec3_decay},
     Bindings,
 };
 
@@ -24,18 +24,25 @@ use super::{
     Player, PlayerControlConfig,
 };
 
+const ANALOGE_STICK_DEADZONE: f32 = 0.1;
+
 #[derive(Component)]
 pub struct Motion {
     pub(crate) current_movement_vector: Vec3,
     pub(crate) target_movement_vector: Vec3,
     pub(crate) current_movement_speed: f32,
     pub(crate) target_movement_speed: f32,
+    pub(crate) current_lean: Vec3,
+    pub(crate) target_lean: Vec3,
     pub(crate) sprinting: bool,
     pub(crate) moving: bool,
 }
 
 pub fn compute_motion(
-    mut player_query: Query<(&mut LinearVelocity, &mut Motion, &Stance), With<Player>>,
+    mut player_query: Query<
+        (&mut LinearVelocity, &mut Transform, &mut Motion, &Stance),
+        With<Player>,
+    >,
     camera_query: Query<&mut Transform, (With<Camera3d>, Without<Player>)>,
     player_config: Res<PlayerControlConfig>,
     gamepads: Query<(Entity, &Gamepad)>,
@@ -53,13 +60,68 @@ pub fn compute_motion(
     }
 
     let camera_transform: &Transform = camera_query.single();
-    let (mut linear_vel, mut motion, stance) = player_query.single_mut();
+    let (mut linear_vel, mut player_transform, mut motion, stance) = player_query.single_mut();
 
     if stance.current != StanceType::Standing && stance.current != StanceType::Landing {
         return;
     }
 
     // Perform the movement checks.
+
+    // Update the Current Movement Vector
+
+    // this is the raw input vector
+    let mut input_vector: Vec3 = Vec3::ZERO.clone(); 
+    let mut movement_vector: Vec3 = Vec3::ZERO.clone();
+
+    if keys.pressed(key_bindings.move_forward) {
+        input_vector.z = 1.0;
+        movement_vector += player_transform.forward().as_vec3();
+    }
+    if keys.pressed(key_bindings.move_backward) {
+        input_vector.z = -1.0;
+        movement_vector += player_transform.back().as_vec3();
+    }
+    if keys.pressed(key_bindings.move_left) {
+        input_vector.x = 1.0;
+        movement_vector += player_transform.left().as_vec3();
+    }
+    if keys.pressed(key_bindings.move_right) {
+        input_vector.x = -1.0;
+        movement_vector += player_transform.right().as_vec3();
+    }
+
+    if let Ok((_entity, gamepad)) = gamepads.get_single() {
+        let left_stick_x: f32 = gamepad.get(GamepadAxis::LeftStickX).unwrap_or_default();
+        let left_stick_y: f32 = gamepad.get(GamepadAxis::LeftStickY).unwrap_or_default();
+
+        if left_stick_x.abs() > ANALOGE_STICK_DEADZONE {
+            movement_vector += player_transform.right().as_vec3() * left_stick_x;
+            input_vector.x = left_stick_x;
+        }
+
+        if left_stick_y.abs() > ANALOGE_STICK_DEADZONE {
+            movement_vector += player_transform.forward().as_vec3() * left_stick_y;
+            input_vector.y = left_stick_y;
+        }
+    }
+
+    let current_movement_vector_decay: f32 = 16.0;
+
+    motion.current_movement_vector = exp_vec3_decay(
+        motion.current_movement_vector,
+        motion.target_movement_vector,
+        current_movement_vector_decay,
+        time.delta_secs(),
+    );
+
+    // set the motion.moving when the magnituted of the movement_vector is greater than some arbitrary threshold.
+    motion.moving = movement_vector.length() >= 0.01;
+
+    let movement_scale: f32 = f32::clamp(movement_vector.length(), 0.0, 1.0);
+
+    // Update the Current Movement Speed
+
     let mut movement_speed_decay: f32 = 100.0;
 
     if motion.sprinting && motion.moving {
@@ -69,71 +131,6 @@ pub fn compute_motion(
     } else if motion.sprinting && !motion.moving {
         movement_speed_decay *= 10.0;
     }
-
-    motion.current_movement_speed = exp_decay(
-        motion.current_movement_speed,
-        motion.target_movement_speed,
-        movement_speed_decay,
-        time.delta_secs(),
-    );
-
-    let current_movement_vector_decay: f32 = 16.0;
-
-    motion.current_movement_vector.x = exp_decay(
-        motion.current_movement_vector.x,
-        motion.target_movement_vector.x,
-        current_movement_vector_decay,
-        time.delta_secs(),
-    );
-
-    motion.current_movement_vector.y = exp_decay(
-        motion.current_movement_vector.y,
-        motion.target_movement_vector.y,
-        current_movement_vector_decay,
-        time.delta_secs(),
-    );
-
-    motion.current_movement_vector.z = exp_decay(
-        motion.current_movement_vector.z,
-        motion.target_movement_vector.z,
-        current_movement_vector_decay,
-        time.delta_secs(),
-    );
-
-    let mut movement_vector: Vec3 = Vec3::ZERO.clone();
-
-    if keys.pressed(key_bindings.move_forward) {
-        movement_vector += camera_transform.forward().as_vec3();
-    }
-    if keys.pressed(key_bindings.move_backward) {
-        movement_vector += camera_transform.back().as_vec3();
-    }
-    if keys.pressed(key_bindings.move_left) {
-        movement_vector += camera_transform.left().as_vec3();
-    }
-    if keys.pressed(key_bindings.move_right) {
-        movement_vector += camera_transform.right().as_vec3();
-    }
-
-    if let Ok((_entity, gamepad)) = gamepads.get_single() {
-        let left_stick_x: f32 = gamepad.get(GamepadAxis::LeftStickX).unwrap_or_default();
-        let left_stick_y: f32 = gamepad.get(GamepadAxis::LeftStickY).unwrap_or_default();
-    
-        if left_stick_x.abs() > 0.1 {
-            movement_vector += camera_transform.right().as_vec3() * left_stick_x;
-        }
-    
-        if left_stick_y.abs() > 0.1 {
-            movement_vector += camera_transform.forward().as_vec3() * left_stick_y;
-        }
-    }
-
-    // Update State:
-
-    // set the motion.moving when the magnituted of the movement_vector is greater than some arbitrary threshold.
-    motion.moving = movement_vector.length() >= 0.01;
-
-    let movement_scale: f32 = f32::clamp(movement_vector.length(), 0.0, 1.0);
 
     if motion.sprinting == true {
         if stance.crouched == true {
@@ -153,8 +150,41 @@ pub fn compute_motion(
         }
     }
 
+    motion.current_movement_speed = exp_decay(
+        motion.current_movement_speed,
+        motion.target_movement_speed,
+        movement_speed_decay,
+        time.delta_secs(),
+    );
+
+    // Update the Curent Lean
+
+    let rotation_amount: f32 = 45.0 * PI / 180.0;
+    let mut rotation_euler: (f32, f32, f32) = player_transform.rotation.to_euler(EulerRot::default());
+    rotation_euler.1 = input_vector.x * rotation_amount;
+    rotation_euler.2 = input_vector.z * rotation_amount;
+    motion.target_lean = Vec3::from_array([rotation_euler.0, rotation_euler.1, rotation_euler.2]);
+
+    let current_lean_decay: f32 = 4.0;
+    //info!("input_vector: {} with rotation amount: {}", input_vector, rotation_amount);
+    motion.current_lean = exp_vec3_decay(
+        motion.current_lean,
+        motion.target_lean,
+        current_lean_decay,
+        time.delta_secs(),
+    );
+
     // info!("length of movement vector: {}", movement_scale);
     motion.target_movement_vector = movement_vector.normalize_or_zero();
+    // we should be leading with this  but we is not
+    // Update the player lean
+    player_transform.rotation = Quat::from_euler(
+        EulerRot::default(),
+        rotation_euler.0,
+        motion.current_lean.y,
+        motion.current_lean.z,
+    );
+    info!("player rotation: {}", player_transform.rotation);
 
     // we don't need to lerp here just setting the real value to as we already lerp the current_movement_vector and current_movement_speed.
     linear_vel.x = motion.current_movement_vector.x * motion.current_movement_speed;
@@ -256,15 +286,11 @@ pub fn apply_jump_force(
 /// let jump_force_factor = compute_clamped_jump_force_factor(ray_length);
 /// println!("Jump Force Factor: {}", jump_force_factor);
 /// ```
-fn compute_clamped_jump_force_factor(
-    body: &Body,
-    stance: &Stance,
-    ray_length: f32,
-) -> f32 {
+fn compute_clamped_jump_force_factor(body: &Body, stance: &Stance, ray_length: f32) -> f32 {
     // Constants defined elsewhere in the code
     let full_standing_ray_length: f32 = stance.current_ride_height;
     let half_standing_ray_length: f32 =
-    stance.current_ride_height - (body.current_body_height / 4.0);
+        stance.current_ride_height - (body.current_body_height / 4.0);
     // This value represents the range of acceptable ray lengths for the player.
     let standing_ray_length_range: f32 = full_standing_ray_length - half_standing_ray_length;
 

@@ -7,7 +7,7 @@ use body::Body;
 use config::PlayerControlConfig;
 use focus::{camera_look_system, Focus};
 use motion::{compute_motion, Motion};
-use stance::{lock_rotation, update_player_stance, Stance, StanceType};
+use stance::{ lock_angular_velocity, update_player_stance, Stance, StanceType};
 
 pub mod actions;
 pub mod body;
@@ -38,7 +38,7 @@ impl Plugin for PlayerPlugin {
                 toggle_crouching,
                 toggle_sprinting,
                 compute_motion,
-                lock_rotation,
+                lock_angular_velocity,
                 play_footstep_sfx,
                 tick_footstep,
                 camera_look_system,
@@ -110,6 +110,8 @@ pub fn spawn_player(
                     target_movement_vector: Vec3::from_array([0.0, 0.0, 0.0]),
                     current_movement_speed: player_config.movement_speed,
                     target_movement_speed: player_config.movement_speed,
+                    current_lean: Vec3::from_array([0.0, 0.0, 0.0]),
+                    target_lean: Vec3::from_array([0.0, 0.0, 0.0]),
                     sprinting: false,
                     moving: false,
                 },

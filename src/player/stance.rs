@@ -243,13 +243,13 @@ fn determine_next_stance(
     return next_stance;
 }
 
-pub fn lock_rotation(
-    mut query: Query<(&mut AngularVelocity, &mut Rotation, &mut Stance), With<Player>>,
+pub fn lock_angular_velocity(
+    mut query: Query<(&mut AngularVelocity, &Stance), With<Player>>,
 ) {
-    for (mut angular_velocity, mut rotation, stance) in &mut query {
+    for (mut angular_velocity, stance) in &mut query {
         match stance.current {
             StanceType::Standing | StanceType::Landing => {
-                rotation.0 = Quat::IDENTITY;
+                // rotation.0 = Quat::IDENTITY;
                 angular_velocity.0 = Vec3::ZERO;
             }
             _ => (),
