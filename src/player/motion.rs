@@ -11,7 +11,7 @@ use bevy::{
     transform::components::Transform,
 };
 
-use avian3d::{math::PI, prelude::*};
+use avian3d::prelude::*;
 
 use crate::{
     utils::{exp_decay, exp_vec3_decay},
@@ -43,7 +43,7 @@ pub fn compute_motion(
         (&mut LinearVelocity, &mut Transform, &mut Motion, &Stance),
         With<Player>,
     >,
-    camera_query: Query<&mut Transform, (With<Camera3d>, Without<Player>)>,
+    mut camera_query: Query<&mut Transform, (With<Camera3d>, Without<Player>)>,
     player_config: Res<PlayerControlConfig>,
     gamepads: Query<(Entity, &Gamepad)>,
     key_bindings: Res<Bindings>,
@@ -59,8 +59,8 @@ pub fn compute_motion(
         return;
     }
 
-    let camera_transform: &Transform = camera_query.single();
-    let (mut linear_vel, mut player_transform, mut motion, stance) = player_query.single_mut();
+    let mut camera_transform = camera_query.single_mut();
+    let (mut linear_vel, player_transform, mut motion, stance) = player_query.single_mut();
 
     if stance.current != StanceType::Standing && stance.current != StanceType::Landing {
         return;
@@ -121,7 +121,6 @@ pub fn compute_motion(
     let movement_scale: f32 = f32::clamp(movement_vector.length(), 0.0, 1.0);
 
     // Update the Current Movement Speed
-
     let mut movement_speed_decay: f32 = 100.0;
 
     if motion.sprinting && motion.moving {
@@ -159,30 +158,30 @@ pub fn compute_motion(
 
     // Update the Curent Lean
 
-    let rotation_amount: f32 = 4.0;
-    let (yaw, mut pitch, mut roll) = player_transform.rotation.to_euler(EulerRot::default());
-    pitch = input_vector.y * rotation_amount.to_radians();
-    roll = input_vector.x * rotation_amount.to_radians();
-    motion.target_lean = Vec3::from_array([yaw, pitch, roll]).normalize_or_zero();
+    let rotation_amount: f32 = 2.0;
+    let (yaw, pitch, _) = camera_transform.rotation.to_euler(EulerRot::default());
+    //let pitch = input_vector.y * rotation_amount.to_radians();
+    let roll = input_vector.x * rotation_amount.to_radians();
+    motion.target_lean = Vec3::from_array([yaw, pitch, roll]);
 
-    let current_lean_decay: f32 = 4.0;
-    //info!("input_vector: {} with rotation amount: {}", input_vector, rotation_amount);
+    let current_lean_decay: f32 = 8.0;
+
     motion.current_lean = exp_vec3_decay(
         motion.current_lean,
         motion.target_lean,
         current_lean_decay,
         time.delta_secs(),
     );
-    motion.current_lean = motion.current_lean.normalize_or_zero();
+
     motion.target_movement_vector = movement_vector.normalize_or_zero();
+
     // Update the player lean
-    player_transform.rotation = Quat::from_euler(
+    camera_transform.rotation = Quat::from_euler(
         EulerRot::default(),
         yaw, // we dont change the yaw.
-        pitch, // ? should we just be applying this to the camera??? idk also im getting 
-        roll,
+        pitch,
+        motion.current_lean.z,
     );
-    info!("player rotation: {} is normalized: {}", player_transform.rotation, player_transform.rotation.is_normalized());
 
     // we don't need to lerp here just setting the real value to as we already lerp the current_movement_vector and current_movement_speed.
     linear_vel.x = motion.current_movement_vector.x * motion.current_movement_speed;
