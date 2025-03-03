@@ -249,7 +249,6 @@ pub fn lock_angular_velocity(
     for (mut angular_velocity, stance) in &mut query {
         match stance.current {
             StanceType::Standing | StanceType::Landing => {
-                // rotation.0 = Quat::IDENTITY;
                 angular_velocity.0 = Vec3::ZERO;
             }
             _ => (),

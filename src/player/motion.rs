@@ -159,11 +159,11 @@ pub fn compute_motion(
 
     // Update the Curent Lean
 
-    let rotation_amount: f32 = 45.0 * PI / 180.0;
-    let mut rotation_euler: (f32, f32, f32) = player_transform.rotation.to_euler(EulerRot::default());
-    rotation_euler.1 = input_vector.x * rotation_amount;
-    rotation_euler.2 = input_vector.z * rotation_amount;
-    motion.target_lean = Vec3::from_array([rotation_euler.0, rotation_euler.1, rotation_euler.2]);
+    let rotation_amount: f32 = 4.0;
+    let (yaw, mut pitch, mut roll) = player_transform.rotation.to_euler(EulerRot::default());
+    pitch = input_vector.y * rotation_amount.to_radians();
+    roll = input_vector.x * rotation_amount.to_radians();
+    motion.target_lean = Vec3::from_array([yaw, pitch, roll]).normalize_or_zero();
 
     let current_lean_decay: f32 = 4.0;
     //info!("input_vector: {} with rotation amount: {}", input_vector, rotation_amount);
@@ -173,18 +173,16 @@ pub fn compute_motion(
         current_lean_decay,
         time.delta_secs(),
     );
-
-    // info!("length of movement vector: {}", movement_scale);
+    motion.current_lean = motion.current_lean.normalize_or_zero();
     motion.target_movement_vector = movement_vector.normalize_or_zero();
-    // we should be leading with this  but we is not
     // Update the player lean
     player_transform.rotation = Quat::from_euler(
         EulerRot::default(),
-        rotation_euler.0,
-        motion.current_lean.y,
-        motion.current_lean.z,
+        yaw, // we dont change the yaw.
+        pitch, // ? should we just be applying this to the camera??? idk also im getting 
+        roll,
     );
-    info!("player rotation: {}", player_transform.rotation);
+    info!("player rotation: {} is normalized: {}", player_transform.rotation, player_transform.rotation.is_normalized());
 
     // we don't need to lerp here just setting the real value to as we already lerp the current_movement_vector and current_movement_speed.
     linear_vel.x = motion.current_movement_vector.x * motion.current_movement_speed;

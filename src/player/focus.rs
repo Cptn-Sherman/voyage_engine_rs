@@ -26,13 +26,14 @@ pub fn camera_look_system(
         for mut player_transform in player_query.iter_mut() {
             for mut cam_transform in camera_query.iter_mut() {
                 let window_scale = window.height().min(window.width());
-                let (mut yaw, _, _) = player_transform.rotation.to_euler(EulerRot::YXZ);
-                let ( _, mut pitch, _) = cam_transform.rotation.to_euler(EulerRot::YXZ);
+                let (mut yaw, pitch, roll) =
+                    player_transform.rotation.to_euler(EulerRot::default());
+                let (_, mut camera_pitch, _) = cam_transform.rotation.to_euler(EulerRot::YXZ);
                 match window.cursor_options.grab_mode {
                     CursorGrabMode::None => (),
                     _ => {
                         let window_scale = window.height().min(window.width());
-                        pitch -= (config.mouse_look_sensitivity
+                        camera_pitch -= (config.mouse_look_sensitivity
                             * accumulated_mouse_motion.delta.y
                             * window_scale)
                             .to_radians();
@@ -55,15 +56,15 @@ pub fn camera_look_system(
                     }
 
                     if right_stick_y.abs() > 0.1 {
-                        pitch += (config.gamepad_look_sensitivity * right_stick_y * window_scale)
+                        camera_pitch += (config.gamepad_look_sensitivity * right_stick_y * window_scale)
                             .to_radians();
                     }
                 }
                 // prevent the camera from looping over itself in pitch only.
-                pitch = pitch.clamp(-1.54, 1.54);
+                camera_pitch = camera_pitch.clamp(-1.54, 1.54);
                 // Order is important to prevent unintended roll
-                cam_transform.rotation = Quat::from_axis_angle(Vec3::X, pitch);
-                player_transform.rotation = Quat::from_axis_angle(Vec3::Y, yaw);
+                cam_transform.rotation = Quat::from_axis_angle(Vec3::X, camera_pitch);
+                player_transform.rotation = Quat::from_euler(EulerRot::default(), yaw, pitch, roll);
             }
         }
     }
