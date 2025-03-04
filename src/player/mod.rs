@@ -17,7 +17,13 @@ use crate::{
 use body::Body;
 use config::PlayerControlConfig;
 use focus::{camera_look_system, Focus};
-use motion::{compute_motion, update_debug_position, update_debug_rotation, Motion, MotionPositionDebug, MotionRotationDebug};
+use motion::{
+    compute_motion, update_debug_linear_velocity, update_debug_movment_vector_current,
+    update_debug_movment_vector_decay, update_debug_movment_vector_target, update_debug_position,
+    update_debug_rotation, Motion, MotionMovementVectorCurrentDebug,
+    MotionMovementVectorDecayRateDebug, MotionMovementVectorTargetDebug, MotionPositionDebug,
+    MotionRotationDebug, MotionVelocityDebug,
+};
 use stance::{lock_angular_velocity, update_player_stance, Stance, StanceType};
 
 pub mod actions;
@@ -56,6 +62,10 @@ impl Plugin for PlayerPlugin {
                 camera_look_system,
                 update_debug_position,
                 update_debug_rotation,
+                update_debug_linear_velocity,
+                update_debug_movment_vector_decay,
+                update_debug_movment_vector_current,
+                update_debug_movment_vector_target,
             )
                 .chain(),
         );
@@ -248,7 +258,7 @@ fn create_player_debug(mut commands: Commands, asset_server: Res<AssetServer>) {
                             ));
                         });
 
-                        parent
+                    parent
                         .spawn((
                             Text::new("focus: "),
                             text_font.clone(),
@@ -260,6 +270,66 @@ fn create_player_debug(mut commands: Commands, asset_server: Res<AssetServer>) {
                                 text_font.clone(),
                                 TextColor(Color::WHITE),
                                 MotionRotationDebug,
+                            ));
+                        });
+
+                    parent
+                        .spawn((
+                            Text::new("vel: "),
+                            text_font.clone(),
+                            TextColor(Color::WHITE),
+                        ))
+                        .with_children(|parent| {
+                            parent.spawn((
+                                TextSpan::new("000"),
+                                text_font.clone(),
+                                TextColor(Color::WHITE),
+                                MotionVelocityDebug,
+                            ));
+                        });
+
+                    parent
+                        .spawn((
+                            Text::new("Movement Vector | decay: "),
+                            text_font.clone(),
+                            TextColor(Color::WHITE),
+                        ))
+                        .with_children(|parent| {
+                            parent.spawn((
+                                TextSpan::new("000"),
+                                text_font.clone(),
+                                TextColor(Color::WHITE),
+                                MotionMovementVectorDecayRateDebug,
+                            ));
+                        });
+
+                    parent
+                        .spawn((
+                            Text::new("current: "),
+                            text_font.clone(),
+                            TextColor(Color::WHITE),
+                        ))
+                        .with_children(|parent| {
+                            parent.spawn((
+                                TextSpan::new("000"),
+                                text_font.clone(),
+                                TextColor(Color::WHITE),
+                                MotionMovementVectorCurrentDebug,
+                            ));
+                        });
+
+                    parent
+                        .spawn((
+                            Text::new("target: "),
+                            text_font.clone(),
+                            TextColor(Color::WHITE),
+                        ))
+                        .with_children(|parent| {
+                            parent.spawn((
+                                TextSpan::new("000"),
+                                text_font.clone(),
+                                TextColor(Color::WHITE),
+                                MotionMovementVectorTargetDebug,
                             ));
                         });
                 });

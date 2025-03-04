@@ -121,7 +121,7 @@ pub fn compute_motion(
     );
 
     // set the motion.moving when the magnituted of the movement_vector is greater than some arbitrary threshold.
-    motion.moving = linear_vel.length() >= 0.01; // todo: this should be based on the current linear velocity not the input.
+    motion.moving = linear_vel.length() >= 0.01;
 
     let movement_scale: f32 = f32::clamp(movement_vector.length(), 0.0, 1.0);
 
@@ -343,4 +343,52 @@ pub fn update_debug_rotation(
     let quat = Quat::from_euler(EulerRot::default(), player_yaw, cmaera_pitch, camera_roll);
     let mut text = query.single_mut();
     text.0 = format_value_quat(quat, Some(4), false, false);
+}
+
+#[derive(Component)]
+pub struct MotionVelocityDebug;
+
+pub fn update_debug_linear_velocity(
+    player_query: Query<&mut LinearVelocity, With<Player>>,
+    mut query: Query<&mut TextSpan, With<MotionVelocityDebug>>,
+) {
+    let mut text = query.single_mut();
+    let player_linear_velocity = player_query.single();
+    text.0 = format_value_vec3(player_linear_velocity.0, Some(4), false);
+}
+
+#[derive(Component)]
+pub struct MotionMovementVectorCurrentDebug;
+
+pub fn update_debug_movment_vector_current(
+    player_query: Query<&Motion, With<Player>>,
+    mut query: Query<&mut TextSpan, With<MotionMovementVectorCurrentDebug>>,
+) {
+    let mut text = query.single_mut();
+    let player_motion = player_query.single();
+    text.0 = format_value_vec3(player_motion.current_movement_vector, Some(4), false);
+}
+
+#[derive(Component)]
+pub struct MotionMovementVectorTargetDebug;
+
+pub fn update_debug_movment_vector_target(
+    player_query: Query<&Motion, With<Player>>,
+    mut query: Query<&mut TextSpan, With<MotionMovementVectorTargetDebug>>,
+) {
+    let mut text = query.single_mut();
+    let player_motion = player_query.single();
+    text.0 = format_value_vec3(player_motion.target_movement_vector, Some(4), false);
+}
+
+#[derive(Component)]
+pub struct MotionMovementVectorDecayRateDebug;
+
+pub fn update_debug_movment_vector_decay(
+    player_query: Query<&Motion, With<Player>>,
+    mut query: Query<&mut TextSpan, With<MotionMovementVectorDecayRateDebug>>,
+) {
+    let mut text = query.single_mut();
+    let player_motion = player_query.single();
+    //text.0 = format_value_vec3(player_motion, Some(4), false);
 }
