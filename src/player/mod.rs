@@ -17,7 +17,7 @@ use crate::{
 use body::Body;
 use config::PlayerControlConfig;
 use focus::{camera_look_system, Focus};
-use motion::{compute_motion, update_debug_position, Motion, MotionPositionDebug};
+use motion::{compute_motion, update_debug_position, update_debug_rotation, Motion, MotionPositionDebug, MotionRotationDebug};
 use stance::{lock_angular_velocity, update_player_stance, Stance, StanceType};
 
 pub mod actions;
@@ -55,6 +55,7 @@ impl Plugin for PlayerPlugin {
                 tick_footstep,
                 camera_look_system,
                 update_debug_position,
+                update_debug_rotation,
             )
                 .chain(),
         );
@@ -244,6 +245,21 @@ fn create_player_debug(mut commands: Commands, asset_server: Res<AssetServer>) {
                                 text_font.clone(),
                                 TextColor(Color::WHITE),
                                 MotionPositionDebug,
+                            ));
+                        });
+
+                        parent
+                        .spawn((
+                            Text::new("focus: "),
+                            text_font.clone(),
+                            TextColor(Color::WHITE),
+                        ))
+                        .with_children(|parent| {
+                            parent.spawn((
+                                TextSpan::new("000"),
+                                text_font.clone(),
+                                TextColor(Color::WHITE),
+                                MotionRotationDebug,
                             ));
                         });
                 });

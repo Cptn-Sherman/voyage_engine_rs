@@ -16,7 +16,7 @@ use avian3d::prelude::*;
 
 use crate::{
     ternary,
-    utils::{exp_decay, exp_vec3_decay, format_value_vec3},
+    utils::{exp_decay, exp_vec3_decay, format_value_quat, format_value_vec3},
     Bindings,
 };
 
@@ -326,4 +326,21 @@ pub fn update_debug_position(
     let mut text = query.single_mut();
     let player_transform = player_query.single();
     text.0 = format_value_vec3(player_transform.translation, Some(4), false);
+}
+
+#[derive(Component)]
+pub struct MotionRotationDebug;
+
+pub fn update_debug_rotation(
+    player_query: Query<&Transform, With<Player>>,
+    camera_query: Query<&Transform, (With<Camera3d>, Without<Player>)>,
+    mut query: Query<&mut TextSpan, With<MotionRotationDebug>>,
+) {
+    let camera_transform = camera_query.single();
+    let player_transform = player_query.single();
+    let (player_yaw, _player_pitch, _player_roll) = player_transform.rotation.to_euler(EulerRot::default());
+    let (_camera_yaw,cmaera_pitch, camera_roll) = camera_transform.rotation.to_euler(EulerRot::default());
+    let quat = Quat::from_euler(EulerRot::default(), player_yaw, cmaera_pitch, camera_roll);
+    let mut text = query.single_mut();
+    text.0 = format_value_quat(quat, Some(4), false, false);
 }

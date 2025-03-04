@@ -82,7 +82,7 @@ use bevy::{
     asset::{Assets, Handle},
     input::ButtonInput,
     log::{info, warn},
-    math::{Vec2, Vec3},
+    math::{EulerRot, Quat, Vec2, Vec3},
     prelude::{Image, KeyCode, Mesh, Query, Res, ResMut, With},
     render::{
         mesh::{Indices, PrimitiveTopology, VertexAttributeValues},
@@ -180,6 +180,31 @@ pub fn format_value_vec3(
         format_value_f32(vec.y, decimal_digits, format_negative_space),
         format_value_f32(vec.z, decimal_digits, format_negative_space)
     );
+}
+
+pub fn format_value_quat(
+    quat: Quat,
+    decimal_digits: Option<usize>,
+    format_negative_space: bool,
+    output_euler: bool,
+) -> String {
+    if output_euler {
+        let (yaw, pitch, roll) = quat.to_euler(EulerRot::default());
+        return format!(
+            "[{}, {}, {}]",
+            format_value_f32(yaw, decimal_digits, format_negative_space),
+            format_value_f32(pitch, decimal_digits, format_negative_space),
+            format_value_f32(roll, decimal_digits, format_negative_space)
+        );
+    } else {
+        return format!(
+            "[{}, {}, {}, {}]",
+            format_value_f32(quat.x, decimal_digits, format_negative_space),
+            format_value_f32(quat.y, decimal_digits, format_negative_space),
+            format_value_f32(quat.z, decimal_digits, format_negative_space),
+            format_value_f32(quat.w, decimal_digits, format_negative_space)
+        );
+    }
 }
 
 pub fn format_percentage_f32(value: Option<f32>) -> Option<String> {
