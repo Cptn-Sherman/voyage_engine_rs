@@ -92,7 +92,7 @@ use bevy::{
     },
     window::{CursorGrabMode, PrimaryWindow, Window},
 };
-use std::{fmt::Write, string};
+use std::fmt::Write;
 
 use crate::Bindings;
 
@@ -186,24 +186,27 @@ pub fn format_value_quat(
     quat: Quat,
     decimal_digits: Option<usize>,
     format_negative_space: bool,
-    output_euler: bool,
+    output_euler: Option<EulerRot>
 ) -> String {
-    if output_euler {
-        let (yaw, pitch, roll) = quat.to_euler(EulerRot::default());
-        return format!(
-            "[{}, {}, {}]",
-            format_value_f32(yaw, decimal_digits, format_negative_space),
-            format_value_f32(pitch, decimal_digits, format_negative_space),
-            format_value_f32(roll, decimal_digits, format_negative_space)
-        );
-    } else {
-        return format!(
-            "[{}, {}, {}, {}]",
-            format_value_f32(quat.x, decimal_digits, format_negative_space),
-            format_value_f32(quat.y, decimal_digits, format_negative_space),
-            format_value_f32(quat.z, decimal_digits, format_negative_space),
-            format_value_f32(quat.w, decimal_digits, format_negative_space)
-        );
+    match output_euler {
+        None => {
+            return format!(
+                "[{}, {}, {}, {}]",
+                format_value_f32(quat.x, decimal_digits, format_negative_space),
+                format_value_f32(quat.y, decimal_digits, format_negative_space),
+                format_value_f32(quat.z, decimal_digits, format_negative_space),
+                format_value_f32(quat.w, decimal_digits, format_negative_space)
+            );
+        },
+        _  => {
+            let (yaw, pitch, roll) = quat.to_euler(output_euler.unwrap());
+            return format!(
+                "[{}, {}, {}]",
+                format_value_f32(yaw, decimal_digits, format_negative_space),
+                format_value_f32(pitch, decimal_digits, format_negative_space),
+                format_value_f32(roll, decimal_digits, format_negative_space),
+            );
+        }
     }
 }
 

@@ -13,7 +13,7 @@ use bevy::{
         ButtonInput,
     },
     log::{info, warn},
-    math::{Quat, Vec3},
+    math::Vec3,
     prelude::{Component, EventWriter, KeyCode, Query, Res, With},
     time::Time,
 };
@@ -209,7 +209,7 @@ fn determine_next_stance(
     let previous_stance: StanceType = stance.current.clone();
     let mut next_stance: StanceType = stance.current.clone();
 
-    let mut jump_pressed = keys.pressed(KeyCode::Space);
+    let mut jump_pressed: bool = keys.pressed(KeyCode::Space);
 
     if let Some(g) = gamepad {
         if jump_pressed == false {
@@ -243,9 +243,7 @@ fn determine_next_stance(
     return next_stance;
 }
 
-pub fn lock_angular_velocity(
-    mut query: Query<(&mut AngularVelocity, &Stance), With<Player>>,
-) {
+pub fn lock_angular_velocity(mut query: Query<(&mut AngularVelocity, &Stance), With<Player>>) {
     for (mut angular_velocity, stance) in &mut query {
         match stance.current {
             StanceType::Standing | StanceType::Landing => {

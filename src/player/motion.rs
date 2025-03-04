@@ -16,7 +16,7 @@ use avian3d::prelude::*;
 
 use crate::{
     ternary,
-    utils::{exp_decay, exp_vec3_decay, format_value_quat, format_value_vec3},
+    utils::{exp_decay, exp_vec3_decay, format_value_f32, format_value_quat, format_value_vec3},
     Bindings,
 };
 
@@ -67,13 +67,9 @@ pub fn compute_motion(
 
     let movement_scale = ternary!(
         stance.current != StanceType::Standing && stance.current != StanceType::Landing,
-        0.5,
+        0.15,
         1.0
     );
-
-    // Perform the movement checks.
-
-    // Update the Current Movement Vector
 
     // this is the raw input vector
     let mut input_vector: Vec3 = Vec3::ZERO.clone();
@@ -121,20 +117,9 @@ pub fn compute_motion(
     );
 
     // set the motion.moving when the magnituted of the movement_vector is greater than some arbitrary threshold.
-    motion.moving = linear_vel.length() >= 0.01;
+    motion.moving = motion.current_movement_vector.length() >= 0.01;
 
     let movement_scale: f32 = f32::clamp(movement_vector.length(), 0.0, 1.0);
-
-    // Update the Current Movement Speed
-    let mut movement_speed_decay: f32 = 100.0;
-
-    if motion.sprinting && motion.moving {
-        movement_speed_decay *= 10.0;
-    } else if !motion.sprinting && !motion.moving {
-        movement_speed_decay *= 3.0;
-    } else if motion.sprinting && !motion.moving {
-        movement_speed_decay *= 10.0;
-    }
 
     if motion.sprinting == true {
         if stance.crouched == true {
@@ -153,6 +138,8 @@ pub fn compute_motion(
             motion.target_movement_speed = player_config.movement_speed * 0.5 * movement_scale;
         }
     }
+
+    let movement_speed_decay: f32 = 4.0;
 
     motion.current_movement_speed = exp_decay(
         motion.current_movement_speed,
@@ -342,7 +329,7 @@ pub fn update_debug_rotation(
     let (_camera_yaw,cmaera_pitch, camera_roll) = camera_transform.rotation.to_euler(EulerRot::default());
     let quat = Quat::from_euler(EulerRot::default(), player_yaw, cmaera_pitch, camera_roll);
     let mut text = query.single_mut();
-    text.0 = format_value_quat(quat, Some(4), false, false);
+    text.0 = format_value_quat(quat, Some(4), false, Some(EulerRot::default()));
 }
 
 #[derive(Component)]
@@ -391,4 +378,40 @@ pub fn update_debug_movment_vector_decay(
     let mut text = query.single_mut();
     let player_motion = player_query.single();
     //text.0 = format_value_vec3(player_motion, Some(4), false);
+}
+
+#[derive(Component)]
+pub struct MotionMovementIsMovingDebug;
+
+pub fn update_debug_is_moving(
+    player_query: Query<&Motion, With<Player>>,
+    mut query: Query<&mut TextSpan, With<MotionMovementIsMovingDebug>>,
+) {
+    let mut text = query.single_mut();
+    let player_motion = player_query.single();
+    text.0 = player_motion.moving.to_string();
+}
+
+#[derive(Component)]
+pub struct MotionMovementSpeedCurrentDebug;
+
+pub fn update_debug_movement_speed_current(
+    player_query: Query<&Motion, With<Player>>,
+    mut query: Query<&mut TextSpan, With<MotionMovementSpeedCurrentDebug>>,
+) {
+    let mut text = query.single_mut();
+    let player_motion = player_query.single();
+    text.0 = format_value_f32(player_motion.current_movement_speed, Some(4), false);
+}
+
+#[derive(Component)]
+pub struct MotionMovementSpeedTargetDebug;
+
+pub fn update_debug_movement_speed_target(
+    player_query: Query<&Motion, With<Player>>,
+    mut query: Query<&mut TextSpan, With<MotionMovementSpeedTargetDebug>>,
+) {
+    let mut text = query.single_mut();
+    let player_motion = player_query.single();
+    text.0 = format_value_f32(player_motion.target_movement_speed, Some(4), false);
 }
