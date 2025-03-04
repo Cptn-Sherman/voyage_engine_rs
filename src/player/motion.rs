@@ -7,6 +7,7 @@ use bevy::{
     log::{info, warn},
     math::{EulerRot, Quat, Vec3},
     prelude::{Camera3d, KeyCode, Query, Res, With, Without},
+    text::TextSpan,
     time::Time,
     transform::components::Transform,
 };
@@ -14,7 +15,8 @@ use bevy::{
 use avian3d::prelude::*;
 
 use crate::{
-    utils::{exp_decay, exp_vec3_decay},
+    ternary,
+    utils::{exp_decay, exp_vec3_decay, format_value_vec3},
     Bindings,
 };
 
@@ -37,6 +39,7 @@ pub struct Motion {
     pub(crate) sprinting: bool,
     pub(crate) moving: bool,
 }
+
 
 pub fn compute_motion(
     mut player_query: Query<
@@ -62,16 +65,18 @@ pub fn compute_motion(
     let mut camera_transform = camera_query.single_mut();
     let (mut linear_vel, player_transform, mut motion, stance) = player_query.single_mut();
 
-    if stance.current != StanceType::Standing && stance.current != StanceType::Landing {
-        return;
-    }
+    let movement_scale = ternary!(
+        stance.current != StanceType::Standing && stance.current != StanceType::Landing,
+        0.5,
+        1.0
+    );
 
     // Perform the movement checks.
 
     // Update the Current Movement Vector
 
     // this is the raw input vector
-    let mut input_vector: Vec3 = Vec3::ZERO.clone(); 
+    let mut input_vector: Vec3 = Vec3::ZERO.clone();
     let mut movement_vector: Vec3 = Vec3::ZERO.clone();
 
     if keys.pressed(key_bindings.move_forward) {
@@ -111,12 +116,12 @@ pub fn compute_motion(
     motion.current_movement_vector = exp_vec3_decay(
         motion.current_movement_vector,
         motion.target_movement_vector,
-        current_movement_vector_decay,
+        current_movement_vector_decay * movement_scale, // TODO: this is not functioning right
         time.delta_secs(),
     );
 
     // set the motion.moving when the magnituted of the movement_vector is greater than some arbitrary threshold.
-    motion.moving = movement_vector.length() >= 0.01;
+    motion.moving = linear_vel.length() >= 0.01; // todo: this should be based on the current linear velocity not the input.
 
     let movement_scale: f32 = f32::clamp(movement_vector.length(), 0.0, 1.0);
 
@@ -308,4 +313,17 @@ fn compute_clamped_jump_force_factor(body: &Body, stance: &Stance, ray_length: f
 
     // Ensure the output is within the range [0.0, 1.0].
     f32::clamp(result, 0.0, 1.0)
+}
+
+
+#[derive(Component)]
+pub struct MotionPositionDebug;
+
+pub fn update_debug_position(
+    player_query: Query<&Transform, With<Player>>,
+    mut query: Query<&mut TextSpan, With<MotionPositionDebug>>,
+) {
+    let mut text = query.single_mut();
+    let player_transform = player_query.single();
+    text.0 = format_value_vec3(player_transform.translation, Some(4), false);
 }

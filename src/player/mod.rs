@@ -1,13 +1,24 @@
-use actions::{crouch::toggle_crouching, sprint::toggle_sprinting, step::{load_footstep_sfx, play_footstep_sfx, tick_footstep, ActionStep, FootstepDirection, FootstepEvent, ACTION_STEP_DELTA_DEFAULT}};
+use actions::{
+    crouch::toggle_crouching,
+    sprint::toggle_sprinting,
+    step::{
+        load_footstep_sfx, play_footstep_sfx, tick_footstep, ActionStep, FootstepDirection,
+        FootstepEvent, ACTION_STEP_DELTA_DEFAULT,
+    },
+};
 use avian3d::prelude::*;
 use bevy::{log::info, prelude::*};
 
-use crate::{camera::GameCamera, utils::grab_cursor};
+use crate::{
+    camera::GameCamera,
+    user_interface::themes::{BORDER_COLOR, DEFAULT_DEBUG_FONT_PATH},
+    utils::grab_cursor,
+};
 use body::Body;
 use config::PlayerControlConfig;
 use focus::{camera_look_system, Focus};
-use motion::{compute_motion, Motion};
-use stance::{ lock_angular_velocity, update_player_stance, Stance, StanceType};
+use motion::{compute_motion, update_debug_position, Motion, MotionPositionDebug};
+use stance::{lock_angular_velocity, update_player_stance, Stance, StanceType};
 
 pub mod actions;
 pub mod body;
@@ -28,6 +39,7 @@ impl Plugin for PlayerPlugin {
                 spawn_player,
                 attached_camera_system,
                 grab_cursor,
+                create_player_debug,
             )
                 .chain(),
         );
@@ -42,6 +54,7 @@ impl Plugin for PlayerPlugin {
                 play_footstep_sfx,
                 tick_footstep,
                 camera_look_system,
+                update_debug_position,
             )
                 .chain(),
         );
@@ -180,4 +193,61 @@ fn attached_camera_system(
             }
         }
     }
+}
+
+fn create_player_debug(mut commands: Commands, asset_server: Res<AssetServer>) {
+    let default_font: Handle<Font> = asset_server.load(DEFAULT_DEBUG_FONT_PATH);
+    let text_font = TextFont {
+        font: default_font,
+        font_size: 11.0,
+        ..Default::default()
+    };
+
+    commands
+        .spawn(Node {
+            width: Val::Percent(100.0),
+            height: Val::Percent(100.0),
+            display: Display::Flex,
+            flex_direction: FlexDirection::Column,
+            justify_content: JustifyContent::FlexStart,
+            align_items: AlignItems::FlexStart,
+            position_type: PositionType::Absolute,
+            ..default()
+        })
+        .with_children(|parent| {
+            parent
+                .spawn((
+                    Node {
+                        display: Display::Flex,
+                        justify_content: JustifyContent::SpaceAround,
+                        align_items: AlignItems::FlexStart,
+                        flex_direction: FlexDirection::Column,
+                        row_gap: Val::Px(2.0),
+                        margin: UiRect::all(Val::Px(5.0)),
+                        padding: UiRect::all(Val::Px(5.0)),
+                        border: UiRect::all(Val::Px(2.0)),
+                        ..Default::default()
+                    },
+                    BackgroundColor(Color::srgba(0.05, 0.05, 0.05, 0.75)),
+                    BorderColor(BORDER_COLOR),
+                ))
+                .with_children(|parent| {
+                    parent
+                        .spawn((
+                            Text::new("pos: "),
+                            text_font.clone(),
+                            TextColor(Color::WHITE),
+                        ))
+                        .with_children(|parent| {
+                            parent.spawn((
+                                TextSpan::new("000"),
+                                text_font.clone(),
+                                TextColor(Color::WHITE),
+                                MotionPositionDebug,
+                            ));
+                        });
+                });
+        });
+
+    info!("Created Player debug");
 }

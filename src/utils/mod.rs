@@ -78,11 +78,21 @@ macro_rules! ternary {
 //         }
 //     };
 // }
-
 use bevy::{
-    asset::{Assets, Handle}, input::ButtonInput, log::{info, warn}, math::{Vec2, Vec3}, prelude::{Image, KeyCode, Mesh, Query, Res, ResMut, With}, render::{mesh::{Indices, PrimitiveTopology, VertexAttributeValues}, render_asset::RenderAssetUsages, render_resource::{Extent3d, TextureDimension, TextureFormat}, renderer::RenderAdapter}, window::{CursorGrabMode, PrimaryWindow, Window}
+    asset::{Assets, Handle},
+    input::ButtonInput,
+    log::{info, warn},
+    math::{Vec2, Vec3},
+    prelude::{Image, KeyCode, Mesh, Query, Res, ResMut, With},
+    render::{
+        mesh::{Indices, PrimitiveTopology, VertexAttributeValues},
+        render_asset::RenderAssetUsages,
+        render_resource::{Extent3d, TextureDimension, TextureFormat},
+        renderer::RenderAdapter,
+    },
+    window::{CursorGrabMode, PrimaryWindow, Window},
 };
-use std::fmt::Write;
+use std::{fmt::Write, string};
 
 use crate::Bindings;
 
@@ -157,6 +167,19 @@ pub fn format_value_f32(
     .expect("Failed to write to buffer while formatting value as string!");
 
     buffer
+}
+
+pub fn format_value_vec3(
+    vec: Vec3,
+    decimal_digits: Option<usize>,
+    format_negative_space: bool,
+) -> String {
+    return format!(
+        "[{}, {}, {}]",
+        format_value_f32(vec.x, decimal_digits, format_negative_space),
+        format_value_f32(vec.y, decimal_digits, format_negative_space),
+        format_value_f32(vec.z, decimal_digits, format_negative_space)
+    );
 }
 
 pub fn format_percentage_f32(value: Option<f32>) -> Option<String> {
@@ -327,7 +350,6 @@ pub enum ExtensionType {
     Video,
 }
 
-
 pub fn get_valid_extension<'a>(extension: &'a str, ext_type: ExtensionType) -> &'a str {
     let valid_extensions = match ext_type {
         ExtensionType::Screenshot => &VALID_SCREENSHOT_EXTENSIONS,
@@ -348,11 +370,11 @@ pub fn get_valid_extension<'a>(extension: &'a str, ext_type: ExtensionType) -> &
 
 // Pulled this from Freya Holmer's Lerp smoothing is broken talk. https://www.youtube.com/watch?v=LSNQuFEDOyQ
 pub fn exp_decay(a: f32, b: f32, decay: f32, delta_time: f32) -> f32 {
-    return b + (a - b) * (-decay * delta_time).exp()
+    return b + (a - b) * (-decay * delta_time).exp();
 }
 
 pub fn exp_vec3_decay(a: Vec3, b: Vec3, decay: f32, delta_time: f32) -> Vec3 {
-    return b + (a - b) * (-decay * delta_time).exp()
+    return b + (a - b) * (-decay * delta_time).exp();
 }
 
 pub fn increase_render_adapter_wgpu_limits(render_adapter: Res<RenderAdapter>) {
