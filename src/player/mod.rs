@@ -18,7 +18,7 @@ use body::Body;
 use config::PlayerControlConfig;
 use focus::{camera_look_system, Focus};
 use motion::{
-    compute_motion, update_debug_is_moving, update_debug_linear_velocity, update_debug_movement_speed_current, update_debug_movement_speed_target, update_debug_movment_vector_current, update_debug_movment_vector_decay, update_debug_movment_vector_target, update_debug_position, update_debug_rotation, Motion, MotionMovementIsMovingDebug, MotionMovementSpeedCurrentDebug, MotionMovementSpeedTargetDebug, MotionMovementVectorCurrentDebug, MotionMovementVectorDecayRateDebug, MotionMovementVectorTargetDebug, MotionPositionDebug, MotionRotationDebug, MotionVelocityDebug
+    compute_motion, update_debug_is_moving, update_debug_is_sprinting, update_debug_linear_velocity, update_debug_movement_speed_current, update_debug_movement_speed_target, update_debug_movment_vector_current, update_debug_movment_vector_decay, update_debug_movment_vector_target, update_debug_position, update_debug_rotation, Motion, MotionMovementIsMovingDebug, MotionMovementIsSprintingDebug, MotionMovementSpeedCurrentDebug, MotionMovementSpeedTargetDebug, MotionMovementVectorCurrentDebug, MotionMovementVectorDecayRateDebug, MotionMovementVectorTargetDebug, MotionPositionDebug, MotionRotationDebug, MotionVelocityDebug
 };
 use stance::{lock_angular_velocity, update_player_stance, Stance, StanceType};
 
@@ -37,10 +37,10 @@ impl Plugin for PlayerPlugin {
         app.add_systems(
             Startup,
             (
-                load_footstep_sfx,
-                spawn_player,
-                attached_camera_system,
                 grab_cursor,
+                spawn_player,
+                load_footstep_sfx,
+                attached_camera_system,
                 create_player_debug,
             )
                 .chain(),
@@ -63,6 +63,7 @@ impl Plugin for PlayerPlugin {
                 update_debug_movment_vector_current,
                 update_debug_movment_vector_target,
                 update_debug_is_moving,
+                update_debug_is_sprinting,
                 update_debug_movement_speed_current,
                 update_debug_movement_speed_target,
             )
@@ -345,6 +346,21 @@ fn create_player_debug(mut commands: Commands, asset_server: Res<AssetServer>) {
                                 TextColor(Color::WHITE),
                                 MotionMovementIsMovingDebug,
                             ));
+                        })                        
+                        .with_children(|parent| {
+                            parent.spawn((
+                                TextSpan::new(" | sprinting: "),
+                                text_font.clone(),
+                                TextColor(Color::WHITE),
+                            ));
+                        })
+                        .with_children(|parent| {
+                            parent.spawn((
+                                TextSpan::new("000"),
+                                text_font.clone(),
+                                TextColor(Color::WHITE),
+                                MotionMovementIsSprintingDebug,
+                            ));
                         });
 
                     parent
@@ -363,7 +379,7 @@ fn create_player_debug(mut commands: Commands, asset_server: Res<AssetServer>) {
                         })
                         .with_children(|parent| {
                             parent.spawn((
-                                TextSpan::new("-> target: "),
+                                TextSpan::new(" -> target: "),
                                 text_font.clone(),
                                 TextColor(Color::WHITE),
                             ));

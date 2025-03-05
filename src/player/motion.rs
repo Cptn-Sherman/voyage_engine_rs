@@ -393,6 +393,18 @@ pub fn update_debug_is_moving(
 }
 
 #[derive(Component)]
+pub struct MotionMovementIsSprintingDebug;
+
+pub fn update_debug_is_sprinting(
+    player_query: Query<&Motion, With<Player>>,
+    mut query: Query<&mut TextSpan, With<MotionMovementIsSprintingDebug>>,
+) {
+    let mut text = query.single_mut();
+    let player_motion = player_query.single();
+    text.0 = player_motion.sprinting.to_string();
+}
+
+#[derive(Component)]
 pub struct MotionMovementSpeedCurrentDebug;
 
 pub fn update_debug_movement_speed_current(
