@@ -136,6 +136,7 @@ pub fn spawn_player(
                     target_movement_speed: player_config.movement_speed,
                     current_lean: Vec3::from_array([0.0, 0.0, 0.0]),
                     target_lean: Vec3::from_array([0.0, 0.0, 0.0]),
+                    lock_lean: 0.0,
                     sprinting: false,
                     moving: false,
                 },

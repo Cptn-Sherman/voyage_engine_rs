@@ -5,7 +5,7 @@ use bevy::{
         ButtonInput,
     },
     log::{info, warn},
-    math::{EulerRot, Quat, Vec3},
+    math::{Dir3, EulerRot, Quat, Vec3},
     prelude::{Camera3d, KeyCode, Query, Res, With, Without},
     text::TextSpan,
     time::Time,
@@ -27,6 +27,8 @@ use super::{
 };
 
 const ANALOGE_STICK_DEADZONE: f32 = 0.1;
+pub const ROTATION_AMOUNT: f32 = 2.0;
+pub const LEAN_LOCKOUT_TIME: f32 = 0.15;
 
 #[derive(Component)]
 pub struct Motion {
@@ -36,10 +38,10 @@ pub struct Motion {
     pub(crate) target_movement_speed: f32,
     pub(crate) current_lean: Vec3,
     pub(crate) target_lean: Vec3,
+    pub lock_lean: f32,
     pub(crate) sprinting: bool,
     pub(crate) moving: bool,
 }
-
 
 pub fn compute_motion(
     mut player_query: Query<
@@ -47,12 +49,18 @@ pub fn compute_motion(
         With<Player>,
     >,
     mut camera_query: Query<&mut Transform, (With<Camera3d>, Without<Player>)>,
+    mut raycast_query: Query<&mut RayCaster, With<Player>>,
     player_config: Res<PlayerControlConfig>,
     gamepads: Query<(Entity, &Gamepad)>,
-    key_bindings: Res<Bindings>,
     keys: Res<ButtonInput<KeyCode>>,
+    key_bindings: Res<Bindings>,
     time: Res<Time>,
 ) {
+
+    let mut raycast = raycast_query.single_mut();
+    //info!("Raycast direction: {}", raycast.direction.to_string());
+    raycast.direction = Dir3::NEG_Y;
+
     if camera_query.is_empty()
         || camera_query.iter().len() > 1
         || player_query.is_empty()
@@ -67,7 +75,7 @@ pub fn compute_motion(
 
     let movement_scale = ternary!(
         stance.current != StanceType::Standing && stance.current != StanceType::Landing,
-        0.15,
+        0.35,
         1.0
     );
 
@@ -107,64 +115,66 @@ pub fn compute_motion(
         }
     }
 
-    let current_movement_vector_decay: f32 = 16.0;
+    const CURRENT_MOVEMENT_VECTOR_DECAY: f32 = 16.0;
 
+    // Lerp the current movement vector towards the target movement vector
+    // updating the decay rate based on movement scale (based on being grounded or airborne)
     motion.current_movement_vector = exp_vec3_decay(
         motion.current_movement_vector,
         motion.target_movement_vector,
-        current_movement_vector_decay * movement_scale, // TODO: this is not functioning right
+        CURRENT_MOVEMENT_VECTOR_DECAY * movement_scale,
         time.delta_secs(),
     );
 
     // set the motion.moving when the magnituted of the movement_vector is greater than some arbitrary threshold.
     motion.moving = motion.current_movement_vector.length() >= 0.01;
 
-    let movement_scale: f32 = f32::clamp(movement_vector.length(), 0.0, 1.0);
-
     if motion.sprinting == true {
         if stance.crouched == true {
             motion.target_movement_speed = player_config.movement_speed
                 * 0.5
-                * player_config.sprint_speed_factor
-                * movement_scale;
+                * player_config.sprint_speed_factor;
         } else {
             motion.target_movement_speed =
-                player_config.movement_speed * player_config.sprint_speed_factor * movement_scale;
+                player_config.movement_speed * player_config.sprint_speed_factor;
         }
     } else {
         if stance.crouched == false {
-            motion.target_movement_speed = player_config.movement_speed * movement_scale;
+            motion.target_movement_speed = player_config.movement_speed;
         } else {
-            motion.target_movement_speed = player_config.movement_speed * 0.5 * movement_scale;
+            motion.target_movement_speed = player_config.movement_speed * 0.5;
         }
     }
 
-    let movement_speed_decay: f32 = 4.0;
-
+    const MOVEMENT_SPEED_DECAY: f32 = 4.0;
     motion.current_movement_speed = exp_decay(
         motion.current_movement_speed,
         motion.target_movement_speed,
-        movement_speed_decay,
+        MOVEMENT_SPEED_DECAY,
         time.delta_secs(),
     );
 
     // Update the Curent Lean
 
-    let rotation_amount: f32 = 2.0;
     let (yaw, pitch, _) = camera_transform.rotation.to_euler(EulerRot::default());
     //let pitch = input_vector.y * rotation_amount.to_radians();
-    let roll = input_vector.x * rotation_amount.to_radians();
-    motion.target_lean = Vec3::from_array([yaw, pitch, roll]);
+    let roll = input_vector.x * ROTATION_AMOUNT.to_radians();
 
-    let current_lean_decay: f32 = 8.0;
-
+    // Set the new target lean and lerp the current value at a constant rate
+    const LEAN_DECAY: f32 = 8.0;
+    if motion.lock_lean > 0.0 {
+        motion.lock_lean -= time.delta_secs();
+    } else {
+        motion.target_lean = Vec3::from_array([yaw, pitch, roll]);
+    }
     motion.current_lean = exp_vec3_decay(
         motion.current_lean,
         motion.target_lean,
-        current_lean_decay,
+        LEAN_DECAY,
         time.delta_secs(),
     );
 
+    // Update the target movement vector to be the normalized movement vector.
     motion.target_movement_vector = movement_vector.normalize_or_zero();
 
     // Update the player lean
