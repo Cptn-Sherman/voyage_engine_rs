@@ -174,7 +174,7 @@ pub fn tick_footstep(
             let camera_transform = camera_query.single_mut();
             let (yaw, pitch, _) = camera_transform.rotation.to_euler(EulerRot::default());
             //let pitch = input_vector.y * rotation_amount.to_radians();
-            let dir: f32 = ternary!(action.dir == FootstepDirection::Left, -1.0, 1.0);
+            let dir: f32 = ternary!(action.dir == FootstepDirection::Left, 1.0, -1.0);
             let sprinting_scale: f32 = ternary!(motion.sprinting, 0.2, 0.15);
             let roll: f32 = dir * ROTATION_AMOUNT.to_radians() * sprinting_scale;
             motion.target_lean = Vec3::from_array([yaw, pitch, roll]);

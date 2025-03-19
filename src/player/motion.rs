@@ -27,7 +27,7 @@ use super::{
 };
 
 const ANALOGE_STICK_DEADZONE: f32 = 0.1;
-pub const ROTATION_AMOUNT: f32 = 2.0;
+pub const ROTATION_AMOUNT: f32 = 1.0;
 pub const LEAN_LOCKOUT_TIME: f32 = 0.15;
 
 #[derive(Component)]
@@ -161,7 +161,7 @@ pub fn compute_motion(
     let roll = input_vector.x * ROTATION_AMOUNT.to_radians();
 
     // Set the new target lean and lerp the current value at a constant rate
-    const LEAN_DECAY: f32 = 8.0;
+    let lean_decay: f32 = ternary!(motion.sprinting, 2.0, 8.0);
     if motion.lock_lean > 0.0 {
         motion.lock_lean -= time.delta_secs();
     } else {
@@ -170,7 +170,7 @@ pub fn compute_motion(
     motion.current_lean = exp_vec3_decay(
         motion.current_lean,
         motion.target_lean,
-        LEAN_DECAY,
+        lean_decay,
         time.delta_secs(),
     );
 
