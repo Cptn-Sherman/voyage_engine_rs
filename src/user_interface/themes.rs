@@ -1,7 +1,7 @@
 use bevy::{asset::Handle, color::Color, prelude::{Bundle, Text}, text::{ Font, FontSmoothing, TextColor, TextFont}};
 
-pub const DEFAULT_FONT_PATH: &str = "fonts\\ashlanderPixel_fixed.ttf";
-pub const DEFAULT_DEBUG_FONT_PATH: &str = "fonts\\mononoki-Bold.ttf";
+pub const DEFAULT_FONT_PATH: &str = "fonts/AshlanderPixel_fixed.ttf";
+pub const DEFAULT_DEBUG_FONT_PATH: &str = "fonts/mononoki-Bold.ttf";
 pub const DEFAULT_FONT_SIZE: f32 = 14.0;
 pub const NO_PERCENTAGE: &str = "---.-%";
 

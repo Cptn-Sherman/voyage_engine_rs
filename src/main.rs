@@ -85,7 +85,7 @@ fn start_background_audio(asset_server: Res<AssetServer>, audio: Res<Audio>) {
     // ! DO NOT DISTRIBUTE - This music file is for internal testing only!
     audio
         .into_inner()
-        .play(asset_server.load("audio\\liminal-spaces-ambient.ogg"))
+        .play(asset_server.load("audio/liminal-spaces-ambient.ogg"))
         .fade_in(AudioTween::new(
             Duration::from_millis(18000),
             AudioEasing::InPowf(0.125),
@@ -166,7 +166,7 @@ fn setup(
 
     let proto_material: Handle<StandardMaterial> = materials.add(StandardMaterial {
         base_color_texture: Some(
-            asset_server.load_with_settings("textures/proto_dark_01.png", settings.clone()),
+            asset_server.load_with_settings("./textures/proto_dark_01.png", settings.clone()),
         ),
         metallic: 0.0,
         alpha_mode: AlphaMode::Opaque,

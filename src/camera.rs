@@ -95,8 +95,8 @@ pub struct ToggleCameraFreeModeAudioHandle(Handle<AudioSource>);
 pub struct ToggleCameraFirstModeAudioHandle(Handle<AudioSource>);
 
 pub fn load_toggle_camera_soundfxs(mut commands: Commands, asset_server: Res<AssetServer>) {
-    let free_handle = asset_server.load("audio\\Blip-003.wav");
-    let first_handle = asset_server.load("audio\\Blip-004.wav");
+    let free_handle = asset_server.load("audio/Blip-003.wav");
+    let first_handle = asset_server.load("audio/Blip-004.wav");
     commands.insert_resource(ToggleCameraFreeModeAudioHandle(free_handle.clone()));
     commands.insert_resource(ToggleCameraFirstModeAudioHandle(first_handle.clone()));
 }

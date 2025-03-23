@@ -84,7 +84,7 @@ impl FootstepDirection {
 pub struct FootstepAudioHandle(Handle<AudioSource>);
 
 pub fn load_footstep_sfx(mut commands: Commands, asset_server: Res<AssetServer>) {
-    let handle = asset_server.load("audio\\Concrete20.wav");
+    let handle = asset_server.load("audio/Concrete20.wav");
     commands.insert_resource(FootstepAudioHandle(handle.clone()));
 }
 
