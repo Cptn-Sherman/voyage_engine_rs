@@ -95,7 +95,7 @@ pub fn update_player_stance(
 
         // Find the first ray hit which is not the player collider.
         for hit in ray_hits.iter_sorted() {
-            if hit.entity != player_collider_query.single() {
+            if hit.entity != player_collider_query.single().expect("Player must exist...") {
                 ray_length = hit.distance;
                 break;
             }
@@ -104,7 +104,7 @@ pub fn update_player_stance(
         // info!("ray_length: {}, ride_height: {}", ray_length, ride_height);
 
         let mut pad: Option<&Gamepad> = None;
-        if let Ok((_entity, gamepad)) = gamepad_query.get_single() {
+        if let Ok((_entity, gamepad)) = gamepad_query.single() {
             pad = Some(gamepad);
         }
         // Compute the next stance for the player.
@@ -117,7 +117,7 @@ pub fn update_player_stance(
                 StanceType::Landing => {
                     // This is the sound effect that plays when the player has jumped or fallen and will land with both feet on the ground.
                     // this effect will play centered and will not pan in any direction.
-                    ev_footstep.send(FootstepEvent {
+                    ev_footstep.write(FootstepEvent {
                         dir: FootstepDirection::None,
                         volume: 1.0,
                     });

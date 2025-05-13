@@ -180,7 +180,7 @@ fn attached_camera_system(
     mut commands: Commands,
     mut player_query: Query<(Entity, &mut Transform), (With<Player>, Without<Camera>)>,
     mut camera_query: Query<
-        (Entity, &mut Transform, Option<&Parent>),
+        (Entity, &mut Transform, Option<&ChildOf>),
         (With<Camera3d>, With<GameCamera>, Without<Player>),
     >,
 ) {

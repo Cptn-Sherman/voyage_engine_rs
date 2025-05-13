@@ -1,8 +1,9 @@
 use bevy::{
     asset::{AssetServer, Handle}, core_pipeline::core_3d::Camera3d, ecs::{
-        component::Component, event::{Event, EventReader, EventWriter}, query::{With, Without}, system::{Commands, Query, Res, ResMut, Resource}
-    }, math::{EulerRot, Quat, Vec3}, time::Time, transform::components::Transform
+        component::Component, event::{Event, EventReader, EventWriter}, query::{With, Without}, system::{Commands, Query, Res, ResMut}
+    }, math::{EulerRot, Vec3}, time::Time, transform::components::Transform
 };
+use bevy::prelude::Resource;
 use bevy_kira_audio::{Audio, AudioControl, AudioSource};
 use bevy_turborand::{DelegatedRng, GlobalRng};
 
@@ -171,7 +172,7 @@ pub fn tick_footstep(
             stance.current_ride_height =
                 config.ride_height + (ride_height_offset * current_ride_height_offset_scaler);
             action.bumped = true;
-            let camera_transform = camera_query.single_mut();
+            let camera_transform = camera_query.single_mut().unwrap();
             let (yaw, pitch, _) = camera_transform.rotation.to_euler(EulerRot::default());
             //let pitch = input_vector.y * rotation_amount.to_radians();
             let dir: f32 = ternary!(action.dir == FootstepDirection::Left, 1.0, -1.0);
@@ -184,7 +185,7 @@ pub fn tick_footstep(
         // if the inter step delta has elapsed increase the delta, flip the dir, reset the bump, and queue the sound event.
         if action.delta <= 0.0 {
             // send the play sound event.
-            ev_footstep.send(FootstepEvent {
+            ev_footstep.write(FootstepEvent {
                 dir: action.dir.clone(),
                 volume: vol,
             });

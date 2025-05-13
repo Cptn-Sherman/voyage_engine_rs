@@ -1,10 +1,7 @@
 {
     "rust-analyzer.linkedProjects": [
-        ".\\Cargo.toml",
-        ".\\Cargo.toml",
-        ".\\Cargo.toml",
-        ".\\Cargo.toml",
-        ".\\Cargo.toml"
+        "Cargo.toml",
+        "/home/captain/Code/Rust/voyage_engine_rs/Cargo.toml"
     ],
-    "rust-analyzer.showUnlinkedFileNotification": false
+    "rust-analyzer.showUnlinkedFileNotification": true
 }

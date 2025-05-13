@@ -16,7 +16,7 @@ pub fn toggle_crouching(
 ) {
     for (mut body, mut stance) in player_query.iter_mut() {
         let mut pressed: bool = false;
-        if let Ok((_entity, gamepad)) = gamepad_query.get_single() {
+        if let Ok((_entity, gamepad)) = gamepad_query.single() {
             if gamepad.just_pressed(bindings.action_toggle_crouched.button)
                 || keys.just_pressed(bindings.action_toggle_crouched.key)
             {
@@ -32,7 +32,7 @@ pub fn toggle_crouching(
             return;
         }
 
-        let mut collider = player_collider_query.single_mut();
+        let mut collider = player_collider_query.single_mut().unwrap();
 
         // Toggle crouching flag
         stance.crouched = !stance.crouched;

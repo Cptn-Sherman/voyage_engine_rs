@@ -4,7 +4,7 @@ use bevy::{
         experimental::taa::TemporalAntiAliasing, motion_blur::MotionBlur, tonemapping::Tonemapping,
     },
     math::Vec3,
-    pbr::{ScreenSpaceAmbientOcclusion, ScreenSpaceReflections, VolumetricFog},
+    pbr::{Atmosphere, ScreenSpaceAmbientOcclusion, ScreenSpaceReflections, VolumetricFog},
     prelude::*,
     utils::default,
 };
@@ -55,6 +55,7 @@ pub fn create_camera(mut commands: Commands, camera_config: Res<CameraConfig>) {
             },
             Transform::from_xyz(0.0, 0.0, 0.0).looking_to(Vec3::ZERO, Vec3::Y),
             Tonemapping::ReinhardLuminance,
+            Atmosphere::EARTH,
             TemporalAntiAliasing { ..default() },
             ScreenSpaceAmbientOcclusion { ..default() },
             ScreenSpaceReflections { ..default() },
@@ -189,7 +190,7 @@ pub fn swap_camera_target(
     mut ev_toggle_cam: EventWriter<ToggleCameraEvent>,
     keys: Res<ButtonInput<KeyCode>>,
     key_bindings: Res<Bindings>,
-    mut camera_query: Query<(Entity, &mut Transform, Option<&Parent>), With<GameCamera>>,
+    mut camera_query: Query<(Entity, &mut Transform, Option<&ChildOf>), With<GameCamera>>,
     player_query: Query<Entity, With<Player>>,
     free_camera_query: Query<Entity, With<FreeCamera>>,
 ) {
@@ -228,18 +229,18 @@ pub fn swap_camera_target(
     // check the camera to see what its parented to.
     // If its parented to the player, then we want to parent it to the fly camera.
     // else it is parented to the fly camera, and we want it parented to the player.
-    if **camera_parent_unwrapped == player {
+    if camera_parent_unwrapped.parent() == player {
         camera_transform.translation = Vec3::from_array([0.0, 0.0, 0.0]);
         commands.entity(free_camera).add_children(&[camera]);
         info!("Attached camera to fly_camera entity.");
-        ev_toggle_cam.send(ToggleCameraEvent {
+        ev_toggle_cam.write(ToggleCameraEvent {
             mode: CameraMode::FreeCam,
         });
     } else {
         camera_transform.translation = Vec3::from_array([0.0, 1.0, 0.0]);
         commands.entity(player).add_children(&[camera]);
         info!("Attached camera to player entity.");
-        ev_toggle_cam.send(ToggleCameraEvent {
+        ev_toggle_cam.write(ToggleCameraEvent {
             mode: CameraMode::FirstPerson,
         });
     }
@@ -275,7 +276,7 @@ fn screenshot_saving(
     windows: Query<Entity, With<Window>>,
     screenshot_saving: Query<Entity, With<Capturing>>,
 ) {
-    let Ok(window) = windows.get_single() else {
+    let Ok(window) = windows.single() else {
         return;
     };
     match screenshot_saving.iter().count() {

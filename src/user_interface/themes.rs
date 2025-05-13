@@ -1,4 +1,4 @@
-use bevy::{asset::Handle, color::Color, prelude::{Bundle, Text}, text::{ Font, FontSmoothing, TextColor, TextFont}};
+use bevy::{asset::Handle, color::Color, prelude::{Bundle, Text}, text::{ Font, FontSmoothing, LineHeight, TextColor, TextFont}};
 
 pub const DEFAULT_FONT_PATH: &str = "fonts/AshlanderPixel_fixed.ttf";
 pub const DEFAULT_DEBUG_FONT_PATH: &str = "fonts/mononoki-Bold.ttf";
@@ -25,6 +25,7 @@ pub fn gen_text_section(
             font,
             font_size: size.unwrap_or(DEFAULT_FONT_SIZE),
             font_smoothing: FontSmoothing::AntiAliased,
+            line_height: LineHeight::default(),
         },
         TextColor(color.unwrap_or(Color::WHITE)),
     )

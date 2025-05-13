@@ -418,7 +418,7 @@ pub fn increase_render_adapter_wgpu_limits(render_adapter: Res<RenderAdapter>) {
 }
 
 pub fn grab_cursor(mut primary_window: Query<&mut Window, With<PrimaryWindow>>) {
-    if let Ok(mut window) = primary_window.get_single_mut() {
+    if let Ok(mut window) = primary_window.single_mut() {
         // Check if the cursor is already grabbed
         if window.cursor_options.grab_mode != CursorGrabMode::Locked {
             toggle_grab_cursor(&mut window);
@@ -433,7 +433,7 @@ pub fn detect_toggle_cursor(
     key_bindings: Res<Bindings>,
     mut primary_window: Query<&mut Window, With<PrimaryWindow>>,
 ) {
-    if let Ok(mut window) = primary_window.get_single_mut() {
+    if let Ok(mut window) = primary_window.single_mut() {
         if keys.just_pressed(key_bindings.action_toggle_cursor_focus) {
             toggle_grab_cursor(&mut window);
         }

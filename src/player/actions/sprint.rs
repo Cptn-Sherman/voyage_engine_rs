@@ -20,7 +20,7 @@ pub fn toggle_sprinting(
             return;
         }
 
-        if let Ok((_entity, gamepad)) = gamepad_query.get_single() {
+        if let Ok((_entity, gamepad)) = gamepad_query.single() {
             motion.sprinting = gamepad.pressed(bindings.action_sprint.button);
         } else {
             motion.sprinting = keys.pressed(bindings.action_sprint.key);

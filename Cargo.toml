@@ -3,22 +3,16 @@ name = "voyage_engine"
 version = "0.2.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
-bevy = { version = "0.15.0", features = ["dynamic_linking", "file_watcher", "embedded_watcher"] }
-avian3d = { version = "0.2.0" }
-bevy_turborand = "0.10.0"
-bevy_kira_audio = { version = "0.21.0", features = ["mp3", "wav"] }
-bevy_vector_shapes = "0.9.3"
-#bevy_blur_regions = "0.5.0"
-#bevy_dev_console = { git = "https://github.com/doonv/bevy_dev_console.git", version = "0.1.0" }
+bevy = { version = "0.16.0", features = ["dynamic_linking", "file_watcher", "embedded_watcher"] }
+avian3d = { version = "0.3" }
+bevy_turborand = "0.11.0"
+bevy_kira_audio = { version = "0.23.0", features = ["mp3", "wav"] }
 noise = "0.9.0"
-transvoxel = "1.1.0"
+transvoxel = "1.2.0"
 num-traits = "0.2.19"
 num-integer = "0.1.46"
-acacia = "0.2.0"
-chrono = "0.4.39"
+chrono = "0.4.41"
 
 [workspace]
 resolver = "2" # Important! wgpu/Bevy needs this!

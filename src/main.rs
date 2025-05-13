@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 pub mod camera;
 pub mod config;
 mod player;
@@ -45,7 +43,6 @@ fn main() {
         })
         .add_plugins((
             DefaultPlugins,
-            //DevConsolePlugin::default().with_log_layer(custom_log_layer),
             RngPlugin::new().with_rng_seed(0),
             PhysicsPlugins::default(),
             PhysicsDebugPlugin::default(),
@@ -102,30 +99,11 @@ fn animate_light_direction(
         transform.rotation = Quat::from_euler(
             EulerRot::ZYX,
             0.0,
-            time.delta_secs() * 0.0005 * PI / 5.0,
+            time.delta_secs() * PI / 5.0,
             -FRAC_PI_4 * 0.5,
         );
-    }
-}
-
-
-
-struct TargetDepth(f32);
-impl Default for TargetDepth {
-    fn default() -> Self {
-        TargetDepth(0.006)
-    }
-}
-struct TargetLayers(f32);
-impl Default for TargetLayers {
-    fn default() -> Self {
-        TargetLayers(8.0)
-    }
-}
-struct CurrentMethod(ParallaxMappingMethod);
-impl Default for CurrentMethod {
-    fn default() -> Self {
-        CurrentMethod(ParallaxMappingMethod::Relief { max_steps: 4 })
+        
+        info!("{}", transform.rotation);
     }
 }
 
@@ -139,14 +117,13 @@ fn setup(
     commands.spawn((
         DirectionalLight {
             color: Color::srgb(1.0, 0.92, 0.80),
-            illuminance: 80000.0,
             shadows_enabled: true,
             shadow_depth_bias: 0.02,
             shadow_normal_bias: 1.0,
             ..default()
         },
         VolumetricLight,
-        Transform::from_rotation(Quat::from_euler(EulerRot::ZYX, 0.0, PI / 3., -PI / 4.)),
+         Transform::from_xyz(0.0, 0.0, 0.0).looking_at(Vec3::new(-0.15, -0.05, 0.25), Vec3::Y),
         Sun,
     ));
 

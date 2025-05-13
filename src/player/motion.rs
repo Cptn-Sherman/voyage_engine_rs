@@ -57,7 +57,7 @@ pub fn compute_motion(
     time: Res<Time>,
 ) {
 
-    let mut raycast = raycast_query.single_mut();
+    let mut raycast = raycast_query.single_mut().unwrap();
     //info!("Raycast direction: {}", raycast.direction.to_string());
     raycast.direction = Dir3::NEG_Y;
 
@@ -70,8 +70,8 @@ pub fn compute_motion(
         return;
     }
 
-    let mut camera_transform = camera_query.single_mut();
-    let (mut linear_vel, player_transform, mut motion, stance) = player_query.single_mut();
+    let mut camera_transform = camera_query.single_mut().unwrap();
+    let (mut linear_vel, player_transform, mut motion, stance) = player_query.single_mut().expect("WE do some errors");
 
     let movement_scale = ternary!(
         stance.current != StanceType::Standing && stance.current != StanceType::Landing,
@@ -100,7 +100,7 @@ pub fn compute_motion(
         movement_vector += player_transform.right().as_vec3();
     }
 
-    if let Ok((_entity, gamepad)) = gamepads.get_single() {
+    if let Ok((_entity, gamepad)) = gamepads.single() {
         let left_stick_x: f32 = gamepad.get(GamepadAxis::LeftStickX).unwrap_or_default();
         let left_stick_y: f32 = gamepad.get(GamepadAxis::LeftStickY).unwrap_or_default();
 
@@ -320,8 +320,8 @@ pub fn update_debug_position(
     player_query: Query<&Transform, With<Player>>,
     mut query: Query<&mut TextSpan, With<MotionPositionDebug>>,
 ) {
-    let mut text = query.single_mut();
-    let player_transform = player_query.single();
+    let mut text = query.single_mut().unwrap();
+    let player_transform = player_query.single().unwrap();
     text.0 = format_value_vec3(player_transform.translation, Some(4), false);
 }
 
@@ -333,12 +333,12 @@ pub fn update_debug_rotation(
     camera_query: Query<&Transform, (With<Camera3d>, Without<Player>)>,
     mut query: Query<&mut TextSpan, With<MotionRotationDebug>>,
 ) {
-    let camera_transform = camera_query.single();
-    let player_transform = player_query.single();
+    let mut text = query.single_mut().unwrap();
+    let camera_transform = camera_query.single().unwrap();
+    let player_transform = player_query.single().unwrap();
     let (player_yaw, _player_pitch, _player_roll) = player_transform.rotation.to_euler(EulerRot::default());
     let (_camera_yaw,cmaera_pitch, camera_roll) = camera_transform.rotation.to_euler(EulerRot::default());
     let quat = Quat::from_euler(EulerRot::default(), player_yaw, cmaera_pitch, camera_roll);
-    let mut text = query.single_mut();
     text.0 = format_value_quat(quat, Some(4), false, Some(EulerRot::default()));
 }
 
@@ -349,8 +349,8 @@ pub fn update_debug_linear_velocity(
     player_query: Query<&mut LinearVelocity, With<Player>>,
     mut query: Query<&mut TextSpan, With<MotionVelocityDebug>>,
 ) {
-    let mut text = query.single_mut();
-    let player_linear_velocity = player_query.single();
+    let mut text = query.single_mut().unwrap();
+    let player_linear_velocity = player_query.single().unwrap();
     text.0 = format_value_vec3(player_linear_velocity.0, Some(4), false);
 }
 
@@ -361,8 +361,8 @@ pub fn update_debug_movment_vector_current(
     player_query: Query<&Motion, With<Player>>,
     mut query: Query<&mut TextSpan, With<MotionMovementVectorCurrentDebug>>,
 ) {
-    let mut text = query.single_mut();
-    let player_motion = player_query.single();
+    let mut text = query.single_mut().unwrap();
+    let player_motion = player_query.single().unwrap();
     text.0 = format_value_vec3(player_motion.current_movement_vector, Some(4), false);
 }
 
@@ -373,8 +373,8 @@ pub fn update_debug_movment_vector_target(
     player_query: Query<&Motion, With<Player>>,
     mut query: Query<&mut TextSpan, With<MotionMovementVectorTargetDebug>>,
 ) {
-    let mut text = query.single_mut();
-    let player_motion = player_query.single();
+    let mut text = query.single_mut().unwrap();
+    let player_motion = player_query.single().unwrap();
     text.0 = format_value_vec3(player_motion.target_movement_vector, Some(4), false);
 }
 
@@ -385,8 +385,8 @@ pub fn update_debug_movment_vector_decay(
     player_query: Query<&Motion, With<Player>>,
     mut query: Query<&mut TextSpan, With<MotionMovementVectorDecayRateDebug>>,
 ) {
-    let mut text = query.single_mut();
-    let player_motion = player_query.single();
+    let mut _text = query.single_mut();
+    let _player_motion = player_query.single();
     //text.0 = format_value_vec3(player_motion, Some(4), false);
 }
 
@@ -397,8 +397,8 @@ pub fn update_debug_is_moving(
     player_query: Query<&Motion, With<Player>>,
     mut query: Query<&mut TextSpan, With<MotionMovementIsMovingDebug>>,
 ) {
-    let mut text = query.single_mut();
-    let player_motion = player_query.single();
+    let mut text = query.single_mut().unwrap();
+    let player_motion = player_query.single().unwrap();
     text.0 = player_motion.moving.to_string();
 }
 
@@ -409,8 +409,8 @@ pub fn update_debug_is_sprinting(
     player_query: Query<&Motion, With<Player>>,
     mut query: Query<&mut TextSpan, With<MotionMovementIsSprintingDebug>>,
 ) {
-    let mut text = query.single_mut();
-    let player_motion = player_query.single();
+    let mut text = query.single_mut().unwrap();
+    let player_motion = player_query.single().unwrap();
     text.0 = player_motion.sprinting.to_string();
 }
 
@@ -421,8 +421,8 @@ pub fn update_debug_movement_speed_current(
     player_query: Query<&Motion, With<Player>>,
     mut query: Query<&mut TextSpan, With<MotionMovementSpeedCurrentDebug>>,
 ) {
-    let mut text = query.single_mut();
-    let player_motion = player_query.single();
+    let mut text = query.single_mut().unwrap();
+    let player_motion = player_query.single().unwrap();
     text.0 = format_value_f32(player_motion.current_movement_speed, Some(4), false);
 }
 
@@ -433,7 +433,7 @@ pub fn update_debug_movement_speed_target(
     player_query: Query<&Motion, With<Player>>,
     mut query: Query<&mut TextSpan, With<MotionMovementSpeedTargetDebug>>,
 ) {
-    let mut text = query.single_mut();
-    let player_motion = player_query.single();
+    let mut text = query.single_mut().unwrap();
+    let player_motion = player_query.single().unwrap();
     text.0 = format_value_f32(player_motion.target_movement_speed, Some(4), false);
 }

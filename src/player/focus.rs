@@ -22,7 +22,7 @@ pub fn camera_look_system(
     primary_window: Query<&Window, With<PrimaryWindow>>,
     config: Res<PlayerControlConfig>,
 ) {
-    if let Ok(window) = primary_window.get_single() {
+    if let Ok(window) = primary_window.single() {
         for mut player_transform in player_query.iter_mut() {
             for mut cam_transform in camera_query.iter_mut() {
                 let window_scale = window.height().min(window.width());
@@ -44,7 +44,7 @@ pub fn camera_look_system(
                     }
                 }
 
-                if let Ok((_entity, gamepad)) = gamepads.get_single() {
+                if let Ok((_entity, gamepad)) = gamepads.single() {
                     let right_stick_x: f32 =
                         gamepad.get(GamepadAxis::RightStickX).unwrap_or_default();
                     let right_stick_y: f32 =
