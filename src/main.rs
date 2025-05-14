@@ -7,7 +7,6 @@ mod utils;
 
 use bevy::color::palettes::tailwind::{SKY_400};
 use bevy::core_pipeline::experimental::taa::TemporalAntiAliasPlugin;
-use bevy::log::LogPlugin;
 use bevy::pbr::{CascadeShadowConfigBuilder, ExtendedMaterial, VolumetricLight};
 
 use bevy::render::mesh::Mesh;
