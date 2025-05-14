@@ -5,9 +5,10 @@ mod terrain;
 mod user_interface;
 mod utils;
 
-use bevy::color::palettes::tailwind::{BLUE_400, RED_900, SKY_400};
+use bevy::color::palettes::tailwind::{SKY_400};
 use bevy::core_pipeline::experimental::taa::TemporalAntiAliasPlugin;
-use bevy::pbr::{CascadeShadowConfigBuilder, ExtendedMaterial};
+use bevy::log::LogPlugin;
+use bevy::pbr::{CascadeShadowConfigBuilder, ExtendedMaterial, VolumetricLight};
 
 use bevy::render::mesh::Mesh;
 
@@ -15,6 +16,7 @@ use bevy::render::render_asset::RenderAssetBytesPerFrame;
 use bevy::{pbr::DirectionalLightShadowMap, prelude::*};
 
 use avian3d::prelude::*;
+use bevy_atmosphere::plugin::AtmospherePlugin;
 use bevy_blockout::{BlockoutMaterialExt, BlockoutPlugin};
 use bevy_kira_audio::{Audio, AudioControl, AudioEasing, AudioPlugin, AudioTween};
 use bevy_turborand::prelude::RngPlugin;
@@ -30,7 +32,7 @@ use player::PlayerPlugin;
 use std::f32::consts::FRAC_PI_4;
 use std::time::Duration;
 
-use utils::{detect_toggle_cursor, generate_plane_mesh, increase_render_adapter_wgpu_limits};
+use utils::{detect_toggle_cursor, generate_plane_mesh};
 
 #[derive(Component)]
 struct Sun;
@@ -44,6 +46,7 @@ fn main() {
         .insert_resource(CameraConfig { hdr: true })
         .add_plugins((
             DefaultPlugins,
+            bevy_panic_handler::PanicHandler::new().build(),
             BlockoutPlugin,
             RngPlugin::new().with_rng_seed(0),
             PhysicsPlugins::default(),
@@ -52,6 +55,7 @@ fn main() {
             TemporalAntiAliasPlugin,
             PlayerPlugin,
             AudioPlugin,
+            AtmospherePlugin,
         ))
         .add_systems(
             PreStartup,
@@ -107,19 +111,6 @@ fn setup(
     >,
 ) {
     // create the 'Sun' with volumetric Lighting enabled.
-    // commands.spawn((
-    //     DirectionalLight {
-    //         color: Color::srgb(1.0, 0.92, 0.80),
-    //         shadows_enabled: true,
-    //         shadow_depth_bias: 0.02,
-    //         shadow_normal_bias: 1.0,
-    //         ..default()
-    //     },
-    //     VolumetricLight,
-    //      Transform::from_xyz(0.0, 0.0, 0.0).looking_at(Vec3::new(-0.15, -0.05, 0.25), Vec3::Y),
-    //     Sun,
-    // ));
-
     commands.spawn((
         DirectionalLight {
             illuminance: 8_000.,
@@ -127,11 +118,11 @@ fn setup(
             ..default()
         },
         CascadeShadowConfigBuilder {
-            num_cascades: 3,
-            maximum_distance: 10.0,
+            num_cascades: 4,
+            maximum_distance: 2048.0,
             ..default()
-        }
-        .build(),
+        }.build(),
+        VolumetricLight,
         Transform::from_rotation(Quat::from_euler(EulerRot::ZYX, 0.0, 0.0, -FRAC_PI_4)),
     ));
 
@@ -161,9 +152,9 @@ fn setup(
     // spawn a ball with physics and a material
     commands.spawn((
         RigidBody::Dynamic,
-        Collider::sphere(0.5),
+        Collider::cuboid(0.5, 0.5, 0.5),
         Mass(5.0),
-        Mesh3d(meshes.add(Sphere::default().mesh().ico(5).unwrap())),
+        Mesh3d(meshes.add(Cuboid::from_length(0.5))),
         MeshMaterial3d(standard_materials.add(StandardMaterial {
             base_color: Color::srgb(0.0, 0.0, 0.9),
             ..default()

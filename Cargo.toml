@@ -12,6 +12,8 @@ transvoxel = "1.2.0"
 chrono = "0.4.41"
 noise = "0.9.0"
 bevy_blockout = "0.1.0"
+bevy_atmosphere = "0.13.0"
+bevy-panic-handler = "5.0.0"
 
 [workspace]
 resolver = "2" # Important! wgpu/Bevy needs this!

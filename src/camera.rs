@@ -8,6 +8,7 @@ use bevy::{
     prelude::*,
     utils::default,
 };
+use bevy_atmosphere::plugin::AtmosphereCamera;
 use bevy_kira_audio::{Audio, AudioControl, AudioSource};
 
 use bevy::{
@@ -53,6 +54,7 @@ pub fn create_camera(mut commands: Commands, camera_config: Res<CameraConfig>) {
             Tonemapping::ReinhardLuminance,
             Atmosphere::EARTH,
             MotionBlur { ..default() },
+            AtmosphereCamera::default(),
             GameCamera,
         ))
         .insert(VolumetricFog {
