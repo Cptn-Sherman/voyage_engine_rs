@@ -1,23 +1,29 @@
 
 
-## Todo: 
-- Bug: player collider capsule does not shrink when crouched.
-- Looking at the ground causes you to walk slower becuase we care about the y component of the camera. Use XZ and normalize
-- You can full height jump while crouched becuase the ray is short when testing the jump height. You hit 200/200 which feels wrong.
-- Crouching should be lower but you bottom out and fall over
-- render colliders for debug
-- Need a mechanism for standing up after falling over
-- Feels like you jump really strong and hover, like gravity is added slowly
-- Implement free camera and detach camera from the player entity
-- Continue implementing the debug interface
-- Define a panel style template which defines how a ui panel looks and reuse it when creating part of the hud. For Example the Blur Region
-- Make the cursor high-contrast currently its not visisble in bright scenarios... look at minecrafts implementation and probably implement a custom shader or something.
-- Question: Why do different fonts render at different scales.
-- Find Better Footstep sounds
-- Store User Interface themes in toml
-- Make player controller configurable with TOML
-- Add [Bevy_Mod_Scripting](https://crates.io/crates/bevy_mod_scripting) for Lua script support.
-- Use [Bevy_Tween](https://github.com/djeedai/bevy_tweening) for some nice animations.
+## Todo:
+- Player Controls: 
+    - Looking at the ground causes you to walk slower becuase we care about the y component of the camera. Use XZ and normalize
+    - Need a mechanism for standing up after falling over, and a way to prevent falling over entirely.
+    - Feels like you jump really strong and hover, like gravity is added slowly. Probably because we disable gravity for a few ms to allow the jumping.
+    - Crouching should be lower but you bottom out and fall over
+    - You can full height jump while crouched becuase the ray is short when testing the jump height. You hit 200/200 which feels wrong.
+- User Control Scheme:
+    - Implement free camera and detach camera from the player entity
+    - Implement free camera control and player control. Allowing you to fly away and move the character seperate.
+- Debug Options:
+    - Render Avian Colliders
+- Interface changes:
+    - Make the cursor high-contrast currently its not visisble in bright scenarios... look at minecrafts implementation and probably implement a custom shader or something.
+- Setup TOML Configurations:
+    - Player Configuration including headbob and camera smoothing
+    - Camera Settings
+    - Graphical Settings
+    - User Interface Themes
+- Packages to Checkout in the Future:
+    - [Bevy_Mod_Scripting](https://crates.io/crates/bevy_mod_scripting) for Lua Script Support.
+    - [Bevy_Tween](https://github.com/djeedai/bevy_tweening) for some Nice Animations.
+    - [Bevy_Infinite_Grid](https://github.com/ForesightMiningSoftwareCorporation/bevy_infinite_grid) Infninte Grid shader
+
 --- 
 
 ## Questions: 

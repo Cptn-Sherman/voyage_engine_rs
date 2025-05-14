@@ -17,6 +17,7 @@ use bevy::{pbr::DirectionalLightShadowMap, prelude::*};
 use avian3d::prelude::*;
 use bevy_atmosphere::plugin::AtmospherePlugin;
 use bevy_blockout::{BlockoutMaterialExt, BlockoutPlugin};
+use bevy_infinite_grid::{InfiniteGridBundle, InfiniteGridPlugin};
 use bevy_kira_audio::{Audio, AudioControl, AudioEasing, AudioPlugin, AudioTween};
 use bevy_turborand::prelude::RngPlugin;
 
@@ -55,6 +56,7 @@ fn main() {
             PlayerPlugin,
             AudioPlugin,
             AtmospherePlugin,
+            InfiniteGridPlugin,
         ))
         .add_systems(
             PreStartup,
@@ -109,6 +111,9 @@ fn setup(
         >,
     >,
 ) {
+    
+    commands.spawn(InfiniteGridBundle::default());
+
     // create the 'Sun' with volumetric Lighting enabled.
     commands.spawn((
         DirectionalLight {

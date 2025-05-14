@@ -14,6 +14,7 @@ noise = "0.9.0"
 bevy_blockout = "0.1.0"
 bevy_atmosphere = "0.13.0"
 bevy-panic-handler = "5.0.0"
+bevy_infinite_grid = "0.15.0"
 
 [workspace]
 resolver = "2" # Important! wgpu/Bevy needs this!

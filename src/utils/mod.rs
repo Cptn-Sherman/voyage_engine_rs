@@ -442,6 +442,7 @@ pub fn detect_toggle_cursor(
     }
 }
 
+// ! BUG: this does not successfully grab the cursor on linux, complains about not having a winit thing...
 /// Grabs/ungrabs mouse cursor
 pub fn toggle_grab_cursor(window: &mut Window) {
     match window.cursor_options.grab_mode {
