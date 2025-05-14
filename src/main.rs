@@ -5,24 +5,29 @@ mod terrain;
 mod user_interface;
 mod utils;
 
+use bevy::color::palettes::tailwind::{BLUE_400, RED_900, SKY_400};
 use bevy::core_pipeline::experimental::taa::TemporalAntiAliasPlugin;
-use bevy::image::{ImageAddressMode, ImageLoaderSettings, ImageSampler, ImageSamplerDescriptor};
-use bevy::pbr::VolumetricLight;
+use bevy::pbr::{CascadeShadowConfigBuilder, ExtendedMaterial};
 
 use bevy::render::mesh::Mesh;
 
-use bevy::{core_pipeline::tonemapping::Tonemapping, pbr::DirectionalLightShadowMap, prelude::*};
+use bevy::render::render_asset::RenderAssetBytesPerFrame;
+use bevy::{pbr::DirectionalLightShadowMap, prelude::*};
 
 use avian3d::prelude::*;
+use bevy_blockout::{BlockoutMaterialExt, BlockoutPlugin};
 use bevy_kira_audio::{Audio, AudioControl, AudioEasing, AudioPlugin, AudioTween};
 use bevy_turborand::prelude::RngPlugin;
 
-use camera::{create_camera, create_free_camera, load_toggle_camera_soundfxs, move_free_camera, play_toggle_camera_soundfx, swap_camera_target, take_screenshot, CameraConfig, ToggleCameraEvent};
-use config::{EngineSettings, Bindings};
+use camera::{
+    create_camera, create_free_camera, load_toggle_camera_soundfxs, move_free_camera,
+    play_toggle_camera_soundfx, swap_camera_target, take_screenshot, CameraConfig,
+    ToggleCameraEvent,
+};
+use config::{Bindings, EngineSettings};
 use player::PlayerPlugin;
-use user_interface::DebugInterfacePlugin;
 
-use std::f32::consts::{FRAC_PI_4, PI};
+use std::f32::consts::FRAC_PI_4;
 use std::time::Duration;
 
 use utils::{detect_toggle_cursor, generate_plane_mesh, increase_render_adapter_wgpu_limits};
@@ -35,18 +40,15 @@ fn main() {
         .init_resource::<Bindings>()
         .insert_resource(EngineSettings { ..default() })
         .insert_resource(DirectionalLightShadowMap { size: 4098 })
-        // .insert_resource(RenderAssetBytesPerFrame::new(2_000_000_000)) ! <- disabling for now because this causes a crash for fog volumes.
-        .insert_resource(CameraConfig {
-            tonemapping: Tonemapping::Reinhard,
-            volumetric_density: 0.0055,
-            hdr: true,
-        })
+        .insert_resource(RenderAssetBytesPerFrame::new(2_000_000_000))
+        .insert_resource(CameraConfig { hdr: true })
         .add_plugins((
             DefaultPlugins,
+            BlockoutPlugin,
             RngPlugin::new().with_rng_seed(0),
             PhysicsPlugins::default(),
-            PhysicsDebugPlugin::default(),
-            DebugInterfacePlugin,
+            //PhysicsDebugPlugin::default(),
+            //DebugInterfacePlugin,
             TemporalAntiAliasPlugin,
             PlayerPlugin,
             AudioPlugin,
@@ -56,7 +58,7 @@ fn main() {
             (
                 create_camera,
                 create_free_camera,
-                increase_render_adapter_wgpu_limits,
+                //increase_render_adapter_wgpu_limits,
             ),
         )
         .add_systems(
@@ -66,7 +68,7 @@ fn main() {
         .add_systems(
             Update,
             (
-                animate_light_direction,
+                //animate_light_direction,
                 detect_toggle_cursor,
                 swap_camera_target,
                 move_free_camera,
@@ -91,71 +93,63 @@ fn start_background_audio(asset_server: Res<AssetServer>, audio: Res<Audio>) {
         .looped();
 }
 
-fn animate_light_direction(
-    time: Res<Time>,
-    mut query: Query<&mut Transform, With<DirectionalLight>>,
-) {
-    for mut transform in &mut query {
-        transform.rotation = Quat::from_euler(
-            EulerRot::ZYX,
-            0.0,
-            time.delta_secs() * PI / 5.0,
-            -FRAC_PI_4 * 0.5,
-        );
-        
-        info!("{}", transform.rotation);
-    }
-}
-
 fn setup(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
-    asset_server: Res<AssetServer>,
+    mut standard_materials: ResMut<Assets<StandardMaterial>>,
+    mut extended_materials: ResMut<
+        Assets<
+            ExtendedMaterial<
+                StandardMaterial,
+                BlockoutMaterialExt,
+            >,
+        >,
+    >,
 ) {
     // create the 'Sun' with volumetric Lighting enabled.
+    // commands.spawn((
+    //     DirectionalLight {
+    //         color: Color::srgb(1.0, 0.92, 0.80),
+    //         shadows_enabled: true,
+    //         shadow_depth_bias: 0.02,
+    //         shadow_normal_bias: 1.0,
+    //         ..default()
+    //     },
+    //     VolumetricLight,
+    //      Transform::from_xyz(0.0, 0.0, 0.0).looking_at(Vec3::new(-0.15, -0.05, 0.25), Vec3::Y),
+    //     Sun,
+    // ));
+
     commands.spawn((
         DirectionalLight {
-            color: Color::srgb(1.0, 0.92, 0.80),
+            illuminance: 8_000.,
             shadows_enabled: true,
-            shadow_depth_bias: 0.02,
-            shadow_normal_bias: 1.0,
             ..default()
         },
-        VolumetricLight,
-         Transform::from_xyz(0.0, 0.0, 0.0).looking_at(Vec3::new(-0.15, -0.05, 0.25), Vec3::Y),
-        Sun,
+        CascadeShadowConfigBuilder {
+            num_cascades: 3,
+            maximum_distance: 10.0,
+            ..default()
+        }
+        .build(),
+        Transform::from_rotation(Quat::from_euler(EulerRot::ZYX, 0.0, 0.0, -FRAC_PI_4)),
     ));
 
     // Plane
     let plane_size: f32 = 128.0;
-    let plane_thickness: f32 = 0.0001;
-
-    let sampler_desc = ImageSamplerDescriptor {
-        address_mode_u: ImageAddressMode::Repeat,
-        address_mode_v: ImageAddressMode::Repeat,
-        ..Default::default()
-    };
-
-    let settings = move |s: &mut ImageLoaderSettings| {
-        s.sampler = ImageSampler::Descriptor(sampler_desc.clone());
-    };
-
-    let proto_material: Handle<StandardMaterial> = materials.add(StandardMaterial {
-        base_color_texture: Some(
-            asset_server.load_with_settings("./textures/proto_dark_01.png", settings.clone()),
-        ),
-        metallic: 0.0,
-        alpha_mode: AlphaMode::Opaque,
-        unlit: false,
-        ..default()
-    });
+    let plane_thickness: f32 = 0.005;
 
     commands.spawn((
         RigidBody::Static,
         Collider::cuboid(plane_size, plane_thickness, plane_size),
         Transform::from_xyz(0.0, 2.0, 0.0),
-        MeshMaterial3d(proto_material.clone()),
+        MeshMaterial3d(extended_materials.add(ExtendedMaterial {
+            base: StandardMaterial {
+                base_color: SKY_400.into(),
+                ..default()
+            },
+            extension: BlockoutMaterialExt::default(),
+        })),
         Mesh3d(generate_plane_mesh(
             &mut meshes,
             plane_size,
@@ -170,7 +164,7 @@ fn setup(
         Collider::sphere(0.5),
         Mass(5.0),
         Mesh3d(meshes.add(Sphere::default().mesh().ico(5).unwrap())),
-        MeshMaterial3d(materials.add(StandardMaterial {
+        MeshMaterial3d(standard_materials.add(StandardMaterial {
             base_color: Color::srgb(0.0, 0.0, 0.9),
             ..default()
         })),

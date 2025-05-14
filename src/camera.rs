@@ -29,16 +29,12 @@ pub struct GameCamera;
 
 #[derive(Resource)]
 pub struct CameraConfig {
-    pub(crate) tonemapping: Tonemapping,
-    pub(crate) volumetric_density: f32,
     pub(crate) hdr: bool,
 }
 
 impl Default for CameraConfig {
     fn default() -> Self {
         Self {
-            tonemapping: Tonemapping::TonyMcMapface,
-            volumetric_density: 0.0025,
             hdr: true,
         }
     }
@@ -49,16 +45,13 @@ pub fn create_camera(mut commands: Commands, camera_config: Res<CameraConfig>) {
         .spawn((
             Camera3d::default(),
             Camera {
-                order: 0,
+                //order: 0,
                 hdr: camera_config.hdr,
                 ..default()
             },
             Transform::from_xyz(0.0, 0.0, 0.0).looking_to(Vec3::ZERO, Vec3::Y),
             Tonemapping::ReinhardLuminance,
             Atmosphere::EARTH,
-            TemporalAntiAliasing { ..default() },
-            ScreenSpaceAmbientOcclusion { ..default() },
-            ScreenSpaceReflections { ..default() },
             MotionBlur { ..default() },
             GameCamera,
         ))
@@ -269,25 +262,4 @@ pub fn take_screenshot(
     commands
         .spawn(Screenshot::primary_window())
         .observe(save_to_disk(path));
-}
-
-fn screenshot_saving(
-    mut commands: Commands,
-    windows: Query<Entity, With<Window>>,
-    screenshot_saving: Query<Entity, With<Capturing>>,
-) {
-    let Ok(window) = windows.single() else {
-        return;
-    };
-    match screenshot_saving.iter().count() {
-        0 => {
-            commands.entity(window).remove::<CursorIcon>();
-        }
-        x if x > 0 => {
-            commands
-                .entity(window)
-                .insert(CursorIcon::from(SystemCursorIcon::Progress));
-        }
-        _ => {}
-    }
 }

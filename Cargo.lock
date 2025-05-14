@@ -495,6 +495,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "bevy_blockout"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "932eab395ae73ce36ce1e25c0120c2a90a31a0c0eac1b9d914bf309b4453f69d"
+dependencies = [
+ "bevy",
+]
+
+[[package]]
 name = "bevy_color"
 version = "0.16.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4460,24 +4469,11 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "815c942ae7ee74737bb00f965fa5b5a2ac2ce7b6c01c0cc169bbeaf7abd5f5a9"
 dependencies = [
  "lazy_static",
- "symphonia-bundle-mp3",
  "symphonia-codec-pcm",
  "symphonia-codec-vorbis",
  "symphonia-core",
  "symphonia-format-ogg",
  "symphonia-format-riff",
- "symphonia-metadata",
-]
-
-[[package]]
-name = "symphonia-bundle-mp3"
-version = "0.5.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c01c2aae70f0f1fb096b6f0ff112a930b1fb3626178fba3ae68b09dce71706d4"
-dependencies = [
- "lazy_static",
- "log",
- "symphonia-core",
  "symphonia-metadata",
 ]
 
@@ -4960,12 +4956,11 @@ version = "0.2.0"
 dependencies = [
  "avian3d",
  "bevy",
+ "bevy_blockout",
  "bevy_kira_audio",
  "bevy_turborand",
  "chrono",
  "noise",
- "num-integer",
- "num-traits",
  "transvoxel",
 ]
 

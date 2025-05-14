@@ -23,7 +23,6 @@ enum CrustType {
 
 // Steps 
 /*
-
     Constants:
     SEA_LEVEL = 0km
     TIME_STEP = 2000000 years
