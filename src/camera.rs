@@ -1,8 +1,6 @@
 use crate::{config::Bindings, player::Player};
 use bevy::{
-    core_pipeline::{
-        motion_blur::MotionBlur, tonemapping::Tonemapping,
-    },
+    core_pipeline::tonemapping::Tonemapping,
     math::Vec3,
     pbr::{Atmosphere, VolumetricFog},
     prelude::*,
@@ -28,7 +26,7 @@ pub struct GameCamera;
 
 #[derive(Resource)]
 pub struct CameraConfig {
-    pub(crate) hdr: bool,
+    pub hdr: bool,
 }
 
 impl Default for CameraConfig {
@@ -44,16 +42,15 @@ pub fn create_camera(mut commands: Commands, camera_config: Res<CameraConfig>) {
         .spawn((
             Camera3d::default(),
             Camera {
-                //order: 0,
                 hdr: camera_config.hdr,
                 ..default()
             },
             Transform::from_xyz(0.0, 0.0, 0.0).looking_to(Vec3::ZERO, Vec3::Y),
             Tonemapping::ReinhardLuminance,
-            Atmosphere::EARTH,
-            MotionBlur { ..default() },
             AtmosphereCamera::default(),
+            Atmosphere::EARTH,
             GameCamera,
+            // MotionBlur { ..default() },
         ))
         .insert(VolumetricFog {
             ambient_intensity: 0.0,

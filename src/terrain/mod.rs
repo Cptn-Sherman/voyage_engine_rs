@@ -5,10 +5,45 @@ use bevy::{
     time::{Time, Timer, TimerMode}, log::{warn, info},
 };
 
-use crate::{camera::GameCamera, utils::{convert_to_chunk_coordinate, format_value_f32}};
+use crate::{camera::GameCamera, utils::{format_value_f32}};
 
 pub mod bevy_mesh;
 pub mod chunk_mesh;
+
+pub const CHUNK_SIZE_F32: f32 = 16.0;
+pub const CHUNK_SIZE_I32: i32 = CHUNK_SIZE_F32 as i32;
+pub const CHUNK_SIZE_F32_MIDPOINT: f32 = CHUNK_SIZE_F32 / 2.0;
+pub const CHUNK_SIZE_I32_MIDPOINT: i32 = CHUNK_SIZE_F32_MIDPOINT as i32;
+
+
+/// Converts a coordinate to a chunk coordinate.
+///
+/// Chunks are square regions in a 2D grid. This function takes a coordinate
+/// and returns the corresponding chunk coordinate. The chunk coordinate
+/// represents the index of the chunk that contains the given coordinate.
+///
+/// # Arguments
+///
+/// * `coord` - The coordinate value to convert.
+///
+/// # Returns
+///
+/// The chunk coordinate that corresponds to the given coordinate.
+///
+/// # Examples
+///
+/// ```rust
+/// let coord = -15;
+/// let chunk_coord = convert_to_chunk_coordinate(coord);
+/// assert_eq!(chunk_coord, -1);
+/// ```
+pub fn convert_to_chunk_coordinate(coord: i32) -> i32 {
+    if coord < 0 {
+        (coord + 1) / (CHUNK_SIZE_F32 as i32) - 1
+    } else {
+        coord / CHUNK_SIZE_F32 as i32
+    }
+}
 
 #[derive(Resource)]
 pub struct TerrainPlugin;

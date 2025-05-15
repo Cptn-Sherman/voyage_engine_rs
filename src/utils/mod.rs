@@ -1,8 +1,3 @@
-pub const CHUNK_SIZE_F32: f32 = 16.0;
-pub const CHUNK_SIZE_I32: i32 = CHUNK_SIZE_F32 as i32;
-pub const CHUNK_SIZE_F32_MIDPOINT: f32 = CHUNK_SIZE_F32 / 2.0;
-pub const CHUNK_SIZE_I32_MIDPOINT: i32 = CHUNK_SIZE_F32_MIDPOINT as i32;
-
 #[macro_export]
 /// Macro for emulating a ternary operator in Rust.
 ///
@@ -83,11 +78,10 @@ use bevy::{
     input::ButtonInput,
     log::{info, warn},
     math::{EulerRot, Quat, Vec2, Vec3},
-    prelude::{Image, KeyCode, Mesh, Query, Res, ResMut, With},
+    prelude::{KeyCode, Mesh, Query, Res, ResMut, With},
     render::{
         mesh::{Indices, PrimitiveTopology, VertexAttributeValues},
         render_asset::RenderAssetUsages,
-        render_resource::{Extent3d, TextureDimension, TextureFormat},
         renderer::RenderAdapter,
     },
     window::{CursorGrabMode, PrimaryWindow, Window},
@@ -224,34 +218,7 @@ pub fn format_percentage_f64(value: Option<f64>) -> Option<String> {
     }
 }
 
-/// Converts a coordinate to a chunk coordinate.
-///
-/// Chunks are square regions in a 2D grid. This function takes a coordinate
-/// and returns the corresponding chunk coordinate. The chunk coordinate
-/// represents the index of the chunk that contains the given coordinate.
-///
-/// # Arguments
-///
-/// * `coord` - The coordinate value to convert.
-///
-/// # Returns
-///
-/// The chunk coordinate that corresponds to the given coordinate.
-///
-/// # Examples
-///
-/// ```rust
-/// let coord = -15;
-/// let chunk_coord = convert_to_chunk_coordinate(coord);
-/// assert_eq!(chunk_coord, -1);
-/// ```
-pub fn convert_to_chunk_coordinate(coord: i32) -> i32 {
-    if coord < 0 {
-        (coord + 1) / (CHUNK_SIZE_F32 as i32) - 1
-    } else {
-        coord / CHUNK_SIZE_F32 as i32
-    }
-}
+
 
 pub fn generate_plane_mesh(
     meshes: &mut ResMut<Assets<Mesh>>,
