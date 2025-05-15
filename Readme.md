@@ -27,7 +27,14 @@
 - Packages to Checkout in the Future:
     - [Bevy_Mod_Scripting](https://crates.io/crates/bevy_mod_scripting) for Lua Script Support.
     - [Bevy_Tween](https://github.com/djeedai/bevy_tweening) for some Nice Animations.
+    - [Bevy_Easing](https://github.com/vleue/bevy_easings) for nice interpolation, need to know more about the difference between Bevy_Tween and Bevy_Easing.
     - [Bevy_Infinite_Grid](https://github.com/ForesightMiningSoftwareCorporation/bevy_infinite_grid) Infninte Grid Shader.
+    - [Bevy_Dev_Console](https://github.com/doonv/bevy_dev_console) a Source-inspired developer console plugin for the Bevy Game Engine.
+    - [Bevy_Panic_Handler](https://github.com/Koranir/bevy-panic-handler) A Plugin for Bevy that creates a popup and logs to error on panic.
+    - [Bevy Vector Shapes](https://github.com/james-j-obrien/bevy_vector_shapes) Bevy Vector Shapes is a library for easily and ergonomically creating instanced vector shapes in Bevy.
+    - [Bevy_Blur_Regions](https://github.com/atbentley/bevy_blur_regions) A Bevy plugin to selectively blur regions of the screen. Seems like development has stalled.
+    - [Bevy_Firework] Bevy firework is a particle system plugin where particles are simulated on the CPU and use GPU batching for rendering. This allows each particle system to be rendered in a single draw call (rather than one per particle).
+    - [Bevy_Transform_Interpolation](https://github.com/Jondolf/bevy_transform_interpolation) A drop-in Transform interpolation solution for fixed timesteps for the Bevy game engine.
 
 --- 
 
