@@ -3,6 +3,18 @@ use bevy::{
     prelude::{KeyCode, Resource},
 };
 
+pub enum Action {
+    Jump,
+    Interact,
+    Crouch,
+}
+
+pub struct ActionBinding {
+    action: Action,
+    key: KeyCode,
+    trigger: GamepadButton,
+}
+
 pub struct Binding {
     pub key: KeyCode,
     pub button: GamepadButton,
@@ -20,7 +32,6 @@ pub struct Bindings {
     pub action_sprint: Binding,
     pub action_interact: Binding,
     pub action_toggle_crouched: Binding,
-
     pub action_screenshot: Binding,
     pub action_toggle_cursor_focus: KeyCode,
     pub action_toggle_camera_mode: KeyCode,

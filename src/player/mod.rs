@@ -12,7 +12,7 @@ use bevy::{log::info, prelude::*};
 use crate::{
     camera::GameCamera,
     user_interface::themes::{BORDER_COLOR, DEFAULT_DEBUG_FONT_PATH},
-    utils::grab_cursor,
+    utils::capture_cursor,
 };
 use body::Body;
 use config::PlayerControlConfig;
@@ -37,11 +37,10 @@ impl Plugin for PlayerPlugin {
         app.add_systems(
             Startup,
             (
-                grab_cursor,
                 spawn_player,
                 load_footstep_sfx,
                 attached_camera_system,
-                //create_player_debug,
+                create_player_debug,
             )
                 .chain(),
         );
@@ -56,16 +55,16 @@ impl Plugin for PlayerPlugin {
                 play_footstep_sfx,
                 tick_footstep,
                 camera_look_system,
-                // update_debug_position,
-                // update_debug_rotation,
-                // update_debug_linear_velocity,
-                // update_debug_movment_vector_decay,
-                // update_debug_movment_vector_current,
-                // update_debug_movment_vector_target,
-                // update_debug_is_moving,
-                // update_debug_is_sprinting,
-                // update_debug_movement_speed_current,
-                // update_debug_movement_speed_target,
+                update_debug_position,
+                update_debug_rotation,
+                update_debug_linear_velocity,
+                update_debug_movment_vector_decay,
+                update_debug_movment_vector_current,
+                update_debug_movment_vector_target,
+                update_debug_is_moving,
+                update_debug_is_sprinting,
+                update_debug_movement_speed_current,
+                update_debug_movement_speed_target,
             )
                 .chain(),
         );
@@ -124,7 +123,7 @@ pub fn spawn_player(
                 downward_ray: RayCaster::new(Vec3::ZERO, Dir3::NEG_Y),
                 ray_hits: RayHits::default(),
                 rigid_body: RigidBody::Dynamic,
-                locked_axes: LockedAxes::new(),
+                locked_axes: LockedAxes::new().lock_rotation_z().lock_rotation_x().lock_rotation_y(),
                 mass: Mass(20.0),
                 body: Body {
                     current_body_height: 1.0,

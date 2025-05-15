@@ -73,7 +73,7 @@ pub fn compute_motion(
     let mut camera_transform = camera_query.single_mut().unwrap();
     let (mut linear_vel, player_transform, mut motion, stance) = player_query.single_mut().expect("WE do some errors");
 
-    let movement_scale = ternary!(
+    let movement_scale: f32 = ternary!(
         stance.current != StanceType::Standing && stance.current != StanceType::Landing,
         0.35,
         1.0
@@ -103,6 +103,7 @@ pub fn compute_motion(
     if let Ok((_entity, gamepad)) = gamepads.single() {
         let left_stick_x: f32 = gamepad.get(GamepadAxis::LeftStickX).unwrap_or_default();
         let left_stick_y: f32 = gamepad.get(GamepadAxis::LeftStickY).unwrap_or_default();
+        //info!("left stick: {}", format_value_vec3(Vec3 { x: left_stick_x, y: left_stick_y, z: 0.0 }, Some(2) , true));
 
         if left_stick_x.abs() > ANALOGE_STICK_DEADZONE {
             movement_vector += player_transform.right().as_vec3() * left_stick_x;
@@ -155,7 +156,6 @@ pub fn compute_motion(
     );
 
     // Update the Curent Lean
-
     let (yaw, pitch, _) = camera_transform.rotation.to_euler(EulerRot::default());
     //let pitch = input_vector.y * rotation_amount.to_radians();
     let roll = input_vector.x * ROTATION_AMOUNT.to_radians();
@@ -167,6 +167,7 @@ pub fn compute_motion(
     } else {
         motion.target_lean = Vec3::from_array([yaw, pitch, roll]);
     }
+
     motion.current_lean = exp_vec3_decay(
         motion.current_lean,
         motion.target_lean,
@@ -175,7 +176,7 @@ pub fn compute_motion(
     );
 
     // Update the target movement vector to be the normalized movement vector.
-    motion.target_movement_vector = movement_vector.normalize_or_zero();
+    motion.target_movement_vector = movement_vector;
 
     // Update the player lean
     camera_transform.rotation = Quat::from_euler(

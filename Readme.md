@@ -2,14 +2,19 @@
 
 ## Todo:
 - Player Controls: 
-    - Looking at the ground causes you to walk slower becuase we care about the y component of the camera. Use XZ and normalize
-    - Need a mechanism for standing up after falling over, and a way to prevent falling over entirely.
+    - Need a Mechanism for standing up after falling over, and a way to prevent falling over entirely.
+        - Detect when the player is not standing upright in Stance
+        - Lock Rotation of the player collider in all but the y axis
+        - Maybe test unlocking axes of rotation when falling for long enough or getting hit hard enough. aka control lost mode
+    - Disable Headbob in Free cam and 3rd-Person
+    - Implement Camera Sway in 3rd-Person
     - Feels like you jump really strong and hover, like gravity is added slowly. Probably because we disable gravity for a few ms to allow the jumping.
     - Crouching should be lower but you bottom out and fall over
     - You can full height jump while crouched becuase the ray is short when testing the jump height. You hit 200/200 which feels wrong.
 - User Control Scheme:
     - Implement free camera and detach camera from the player entity
     - Implement free camera control and player control. Allowing you to fly away and move the character seperate.
+    - Implement a 3rd Person Camera Mode
 - Debug Options:
     - Render Avian Colliders
 - Interface changes:
@@ -22,7 +27,7 @@
 - Packages to Checkout in the Future:
     - [Bevy_Mod_Scripting](https://crates.io/crates/bevy_mod_scripting) for Lua Script Support.
     - [Bevy_Tween](https://github.com/djeedai/bevy_tweening) for some Nice Animations.
-    - [Bevy_Infinite_Grid](https://github.com/ForesightMiningSoftwareCorporation/bevy_infinite_grid) Infninte Grid shader
+    - [Bevy_Infinite_Grid](https://github.com/ForesightMiningSoftwareCorporation/bevy_infinite_grid) Infninte Grid Shader.
 
 --- 
 

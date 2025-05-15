@@ -25,10 +25,13 @@ pub fn camera_look_system(
     if let Ok(window) = primary_window.single() {
         for mut player_transform in player_query.iter_mut() {
             for mut cam_transform in camera_query.iter_mut() {
+
                 let window_scale = window.height().min(window.width());
                 let (mut player_yaw, player_pitch, player_roll) =
                     player_transform.rotation.to_euler(EulerRot::default());
-                let (camera_yaw, mut camera_pitch, camera_roll) = cam_transform.rotation.to_euler(EulerRot::YXZ);
+                let (camera_yaw, mut camera_pitch, camera_roll) = 
+                    cam_transform.rotation.to_euler(EulerRot::YXZ);
+                
                 match window.cursor_options.grab_mode {
                     CursorGrabMode::None => (),
                     _ => {
@@ -60,9 +63,10 @@ pub fn camera_look_system(
                             .to_radians();
                     }
                 }
-                // prevent the camera from looping over itself in pitch only.
+                
+                // Prevent the Camera from wrapping over itself in pitch only.
                 camera_pitch = camera_pitch.clamp(-1.54, 1.54);
-                // Order is important to prevent unintended roll
+                // Order is important to prevent unintended roll.
                 cam_transform.rotation = Quat::from_euler(EulerRot::default(), camera_yaw, camera_pitch, camera_roll);
                 player_transform.rotation = Quat::from_euler(EulerRot::default(), player_yaw, player_pitch, player_roll);
             }

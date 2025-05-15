@@ -253,57 +253,6 @@ pub fn convert_to_chunk_coordinate(coord: i32) -> i32 {
     }
 }
 
-/// Creates a colorful test pattern.
-///
-/// This function generates a debug texture with a colorful test pattern. It creates an image with a specified size
-/// and fills it with a palette of predefined colors. Each row of the image is filled with a rotated version of the
-/// palette, creating a visually appealing pattern.
-///
-/// # Returns
-///
-/// An `Image` object representing the generated debug texture.
-pub fn uv_debug_texture() -> Image {
-    info!("Generating Debug Texture");
-
-    // Define the size of the texture
-    const TEXTURE_SIZE: usize = 8;
-
-    // Define the palette of colors
-    let mut palette: [u8; 32] = [
-        255, 102, 159, 255, 255, 159, 102, 255, 236, 255, 102, 255, 121, 255, 102, 255, 102, 255,
-        198, 255, 102, 198, 255, 255, 121, 102, 255, 255, 236, 102, 255, 255,
-    ];
-
-    // Create the texture data array to store pixel information
-    let mut texture_data = [0; TEXTURE_SIZE * TEXTURE_SIZE * 4];
-
-    // Generate the test pattern by filling the texture with rotated palette colors
-    for y in 0..TEXTURE_SIZE {
-        let offset = TEXTURE_SIZE * y * 4;
-        texture_data[offset..(offset + TEXTURE_SIZE * 4)].copy_from_slice(&palette);
-        palette.rotate_right(4);
-    }
-
-    // Create an `Image` object with the generated texture data
-    let img = Image::new_fill(
-        Extent3d {
-            width: TEXTURE_SIZE as u32,
-            height: TEXTURE_SIZE as u32,
-            depth_or_array_layers: 1,
-        },
-        TextureDimension::D2,
-        &texture_data,
-        TextureFormat::Rgba8UnormSrgb,
-        RenderAssetUsages::MAIN_WORLD,
-    );
-
-    // Set the sampler descriptor for the image
-    //img.texture_descriptor = TextureDescriptor::Descriptor(ImageSamplerDescriptor::default());
-
-    // Return the generated image
-    img
-}
-
 pub fn generate_plane_mesh(
     meshes: &mut ResMut<Assets<Mesh>>,
     width: f32,
@@ -417,11 +366,13 @@ pub fn increase_render_adapter_wgpu_limits(render_adapter: Res<RenderAdapter>) {
     );
 }
 
-pub fn grab_cursor(mut primary_window: Query<&mut Window, With<PrimaryWindow>>) {
+// Start up system used to capture the mouse. 
+// ! There is currently a bug in the x11 implementation which causes this to fail on linux and sets the window to monitor 0.
+pub fn capture_cursor(mut primary_window: Query<&mut Window, With<PrimaryWindow>>) {
     if let Ok(mut window) = primary_window.single_mut() {
         // Check if the cursor is already grabbed
         if window.cursor_options.grab_mode != CursorGrabMode::Locked {
-            toggle_grab_cursor(&mut window);
+            toggle_cursor_grab_mode(&mut window);
         }
     } else {
         warn!("Primary window not found for `initial_grab_cursor`!");
@@ -435,29 +386,34 @@ pub fn detect_toggle_cursor(
 ) {
     if let Ok(mut window) = primary_window.single_mut() {
         if keys.just_pressed(key_bindings.action_toggle_cursor_focus) {
-            toggle_grab_cursor(&mut window);
+            toggle_cursor_grab_mode(&mut window);
         }
     } else {
         warn!("Primary window not found for `cursor_grab`!");
     }
 }
 
-// ! BUG: this does not successfully grab the cursor on linux, complains about not having a winit thing...
-/// Grabs/ungrabs mouse cursor
-pub fn toggle_grab_cursor(window: &mut Window) {
+
+
+fn toggle_cursor_grab_mode(window: &mut Window) {
     match window.cursor_options.grab_mode {
         CursorGrabMode::None => {
-            // Set the cursor position to the center of the window
-            window.cursor_options.grab_mode = CursorGrabMode::Confined;
-            window.cursor_options.visible = false;
+            set_cursor_grab_mode(window, CursorGrabMode::Confined, true);
         }
         _ => {
-            window.cursor_options.grab_mode = CursorGrabMode::None;
-            window.cursor_options.visible = true;
+            set_cursor_grab_mode(window, CursorGrabMode::None, true);
         }
     }
-    // set the cursor to the center of the screen.
-    let window_width = window.width();
-    let window_height = window.height();
-    window.set_cursor_position(Some(Vec2::new(window_width / 2.0, window_height / 2.0)));
+}
+
+fn set_cursor_grab_mode(window: &mut Window, grab_mode: CursorGrabMode, center_cursor: bool) {
+    window.cursor_options.grab_mode = grab_mode;
+    window.cursor_options.visible = ternary!(grab_mode == CursorGrabMode::None, true, false);
+
+    if center_cursor {
+        // set the cursor to the center of the screen.
+        let window_width = (window.width() / 2.0) + window.ime_position.x;
+        let window_height = (window.height() / 2.0) + window.ime_position.y;
+        window.set_cursor_position(Some(Vec2::new(window_width / 2.0, window_height / 2.0)));
+    }
 }

@@ -5,7 +5,7 @@ mod terrain;
 mod user_interface;
 mod utils;
 
-use bevy::color::palettes::tailwind::{SKY_400};
+use bevy::color::palettes::tailwind::{AMBER_400, SKY_400, ZINC_200};
 use bevy::core_pipeline::experimental::taa::TemporalAntiAliasPlugin;
 use bevy::pbr::{CascadeShadowConfigBuilder, ExtendedMaterial, VolumetricLight};
 
@@ -28,6 +28,7 @@ use camera::{
 };
 use config::{Bindings, EngineSettings};
 use player::PlayerPlugin;
+use user_interface::DebugInterfacePlugin;
 
 use std::f32::consts::FRAC_PI_4;
 use std::time::Duration;
@@ -47,16 +48,16 @@ fn main() {
         .add_plugins((
             DefaultPlugins,
             bevy_panic_handler::PanicHandler::new().build(),
-            BlockoutPlugin,
             RngPlugin::new().with_rng_seed(0),
             PhysicsPlugins::default(),
-            //PhysicsDebugPlugin::default(),
-            //DebugInterfacePlugin,
+            PhysicsDebugPlugin::default(),
+            DebugInterfacePlugin,
             TemporalAntiAliasPlugin,
             PlayerPlugin,
             AudioPlugin,
             AtmospherePlugin,
             InfiniteGridPlugin,
+            BlockoutPlugin,
         ))
         .add_systems(
             PreStartup,
@@ -73,7 +74,6 @@ fn main() {
         .add_systems(
             Update,
             (
-                //animate_light_direction,
                 detect_toggle_cursor,
                 swap_camera_target,
                 move_free_camera,
@@ -153,16 +153,86 @@ fn setup(
         )),
     ));
 
-    // spawn a ball with physics and a material
+    // spawn a cube with physics and a material
     commands.spawn((
         RigidBody::Dynamic,
         Collider::cuboid(0.5, 0.5, 0.5),
         Mass(5.0),
         Mesh3d(meshes.add(Cuboid::from_length(0.5))),
         MeshMaterial3d(standard_materials.add(StandardMaterial {
-            base_color: Color::srgb(0.0, 0.0, 0.9),
+            base_color: AMBER_400.into(),
             ..default()
         })),
         Transform::from_xyz(2.0, 25.0, 2.0),
     ));
+
+    // spawn a cube with physics and a material
+    let mini_plateform_cube_size: f32 = 2.0;
+    commands.spawn((
+        RigidBody::Static,
+        Collider::cuboid(mini_plateform_cube_size, mini_plateform_cube_size, mini_plateform_cube_size),
+        Mass(5.0),
+        Mesh3d(meshes.add(Cuboid::from_length(mini_plateform_cube_size))),
+        MeshMaterial3d(extended_materials.add(ExtendedMaterial {
+            base: StandardMaterial {
+                base_color: ZINC_200.into(),
+                ..default()
+            },
+            extension: BlockoutMaterialExt::default(),
+        })),
+        Transform::from_xyz(4.0, (mini_plateform_cube_size / 2.0) + 2.0, 8.0),
+    ));
+
+    // spawn a cube with physics and a material
+    let small_plateform_cube_size: f32 = 4.0;
+    commands.spawn((
+        RigidBody::Static,
+        Collider::cuboid(small_plateform_cube_size, small_plateform_cube_size, small_plateform_cube_size),
+        Mass(5.0),
+        Mesh3d(meshes.add(Cuboid::from_length(small_plateform_cube_size))),
+        MeshMaterial3d(extended_materials.add(ExtendedMaterial {
+            base: StandardMaterial {
+                base_color: ZINC_200.into(),
+                ..default()
+            },
+            extension: BlockoutMaterialExt::default(),
+        })),
+        Transform::from_xyz(8.0, (small_plateform_cube_size / 2.0) + 2.0, 8.0),
+    ));
+
+    // spawn a cube with physics and a material
+    let medium_plateform_cube_size: f32 = 6.0;
+    commands.spawn((
+        RigidBody::Static,
+        Collider::cuboid(medium_plateform_cube_size, medium_plateform_cube_size, medium_plateform_cube_size),
+        Mass(5.0),
+        Mesh3d(meshes.add(Cuboid::from_length(medium_plateform_cube_size))),
+        MeshMaterial3d(extended_materials.add(ExtendedMaterial {
+            base: StandardMaterial {
+                base_color: ZINC_200.into(),
+                ..default()
+            },
+            extension: BlockoutMaterialExt::default(),
+        })),
+        Transform::from_xyz(16.0, (medium_plateform_cube_size / 2.0) + 2.0, 8.0),
+    ));
+
+        // spawn a cube with physics and a material
+    let large_plateform_cube_size: f32 = 8.0;
+    commands.spawn((
+        RigidBody::Static,
+        Collider::cuboid(large_plateform_cube_size, large_plateform_cube_size, large_plateform_cube_size),
+        Mass(5.0),
+        Mesh3d(meshes.add(Cuboid::from_length(large_plateform_cube_size))),
+        MeshMaterial3d(extended_materials.add(ExtendedMaterial {
+            base: StandardMaterial {
+                base_color: ZINC_200.into(),
+                ..default()
+            },
+            extension: BlockoutMaterialExt::default(),
+        })),
+        Transform::from_xyz(24.0, (large_plateform_cube_size / 2.0) + 2.0, 8.0),
+    ));
+
+
 }

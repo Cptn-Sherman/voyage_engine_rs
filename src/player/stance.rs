@@ -27,17 +27,6 @@ pub enum StanceType {
     Jumping,
 }
 
-impl StanceType {
-    pub fn to_string(&self) -> &str {
-        match self {
-            StanceType::Airborne => "Airborne",
-            StanceType::Standing => "Standing",
-            StanceType::Landing => "Landing",
-            StanceType::Jumping => "Jumping",
-        }
-    }
-}
-
 #[derive(Component)]
 pub struct Stance {
     pub(crate) current_ride_height: f32,
@@ -190,7 +179,7 @@ pub fn update_player_stance(
         );
 
         // Update the gravity scale.
-        gravity_scale.0 = next_gravity_scale;
+        gravity_scale.0 = 1.0;
 
         // Update the current stance.
         stance.current = next_stance.clone();

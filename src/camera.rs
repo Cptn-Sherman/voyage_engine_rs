@@ -1,10 +1,10 @@
 use crate::{config::Bindings, player::Player};
 use bevy::{
     core_pipeline::{
-        experimental::taa::TemporalAntiAliasing, motion_blur::MotionBlur, tonemapping::Tonemapping,
+        motion_blur::MotionBlur, tonemapping::Tonemapping,
     },
     math::Vec3,
-    pbr::{Atmosphere, ScreenSpaceAmbientOcclusion, ScreenSpaceReflections, VolumetricFog},
+    pbr::{Atmosphere, VolumetricFog},
     prelude::*,
     utils::default,
 };
@@ -14,9 +14,7 @@ use bevy_kira_audio::{Audio, AudioControl, AudioSource};
 use bevy::{
     input::ButtonInput,
     prelude::{Commands, Entity, KeyCode, Query, Res, With},
-    render::view::screenshot::{save_to_disk, Capturing, Screenshot},
-    window::{SystemCursorIcon, Window},
-    winit::cursor::CursorIcon,
+    render::view::screenshot::{save_to_disk, Screenshot},
 };
 use chrono::Local;
 
@@ -219,7 +217,6 @@ pub fn swap_camera_target(
     let free_camera = free_camera_query.iter().next().unwrap();
     let (camera, mut camera_transform, camera_parent) = camera_query.iter_mut().next().unwrap();
     let camera_parent_unwrapped = camera_parent.unwrap();
-
     
     // check the camera to see what its parented to.
     // If its parented to the player, then we want to parent it to the fly camera.
