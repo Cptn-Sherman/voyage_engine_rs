@@ -19,6 +19,8 @@ use bevy_atmosphere::plugin::AtmospherePlugin;
 use bevy_blockout::{BlockoutMaterialExt, BlockoutPlugin};
 use bevy_infinite_grid::{InfiniteGridBundle, InfiniteGridPlugin};
 use bevy_kira_audio::{Audio, AudioControl, AudioEasing, AudioPlugin, AudioTween};
+use bevy_sun_move::random_stars::{RandomStarsPlugin, StarSpawner};
+use bevy_sun_move::{SkyCenter, SunMovePlugin, TimedSkyConfig};
 use bevy_transform_interpolation::prelude::TransformInterpolationPlugin;
 use bevy_turborand::prelude::RngPlugin;
 
@@ -60,6 +62,8 @@ fn main() {
             AtmospherePlugin,
             InfiniteGridPlugin,
             BlockoutPlugin,
+            SunMovePlugin,
+            RandomStarsPlugin,
         ))
         .add_systems(
             PreStartup,
@@ -116,21 +120,37 @@ fn setup(
     
     commands.spawn(InfiniteGridBundle::default());
 
+        let cascade_shadow_config = CascadeShadowConfigBuilder {
+        first_cascade_far_bound: 0.3,
+        maximum_distance: 3.0,
+        ..default()
+    }
+    .build();
+
     // create the 'Sun' with volumetric Lighting enabled.
-    commands.spawn((
+    let sun_id = commands.spawn((
         DirectionalLight {
-            illuminance: 8_000.,
+            illuminance: light_consts::lux::RAW_SUNLIGHT,
             shadows_enabled: true,
             ..default()
         },
-        CascadeShadowConfigBuilder {
-            num_cascades: 4,
-            maximum_distance: 2048.0,
-            ..default()
-        }.build(),
-        VolumetricLight,
-        Transform::from_rotation(Quat::from_euler(EulerRot::ZYX, 0.0, 0.0, -FRAC_PI_4)),
-    ));
+        Transform::default(),
+    )).id();
+
+     commands.spawn((
+         SkyCenter {
+             sun: sun_id,
+             latitude_degrees: 51.5,    // e.g., London's approximate latitude
+             planet_tilt_degrees: 23.5, // Earth's axial tilt
+             year_fraction: 0.25,       // e.g., Summer Solstice
+             cycle_duration_secs: 120.0, // 60-second day/night cycle
+             current_cycle_time: 40.0,   // Start at midnight
+             ..default()
+         },
+         Visibility::Visible,
+         Transform::default(),
+         StarSpawner { star_count: 1000, spawn_radius: 5000.0 }, // Optional
+     ));
 
     // Plane
     let plane_size: f32 = 128.0;

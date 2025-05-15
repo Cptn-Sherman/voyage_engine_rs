@@ -35,6 +35,7 @@
     - [Bevy_Blur_Regions](https://github.com/atbentley/bevy_blur_regions) A Bevy plugin to selectively blur regions of the screen. Seems like development has stalled.
     - [Bevy_Firework] Bevy firework is a particle system plugin where particles are simulated on the CPU and use GPU batching for rendering. This allows each particle system to be rendered in a single draw call (rather than one per particle).
     - [Bevy_Transform_Interpolation](https://github.com/Jondolf/bevy_transform_interpolation) A drop-in Transform interpolation solution for fixed timesteps for the Bevy game engine.
+    - [Bevy_Sun_Move](https://github.com/rewin123/bevy_sun_move/tree/main) A Bevy plugin for simulating realistic sun movement, integrating well with Bevy's Atmosphere and PBR lighting.
 
 --- 
 

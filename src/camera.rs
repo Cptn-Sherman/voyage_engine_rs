@@ -1,11 +1,7 @@
 use crate::{config::Bindings, player::Player};
 use avian3d::prelude::TransformInterpolation;
 use bevy::{
-    core_pipeline::tonemapping::Tonemapping,
-    math::Vec3,
-    pbr::{Atmosphere, VolumetricFog},
-    prelude::*,
-    utils::default,
+    core_pipeline::{bloom::Bloom, tonemapping::Tonemapping}, math::Vec3, pbr::{Atmosphere, AtmosphereSettings, VolumetricFog}, prelude::*, render::camera::Exposure, utils::default
 };
 use bevy_atmosphere::plugin::AtmosphereCamera;
 use bevy_kira_audio::{Audio, AudioControl, AudioSource};
@@ -32,9 +28,7 @@ pub struct CameraConfig {
 
 impl Default for CameraConfig {
     fn default() -> Self {
-        Self {
-            hdr: true,
-        }
+        Self { hdr: true }
     }
 }
 
@@ -48,8 +42,13 @@ pub fn create_camera(mut commands: Commands, camera_config: Res<CameraConfig>) {
             },
             Transform::from_xyz(0.0, 0.0, 0.0).looking_to(Vec3::ZERO, Vec3::Y),
             Tonemapping::ReinhardLuminance,
-            AtmosphereCamera::default(),
             Atmosphere::EARTH,
+            AtmosphereSettings {
+                aerial_view_lut_max_distance: 3.2e5,
+                scene_units_to_m: 100.0,
+                ..Default::default()
+            },
+            Exposure::SUNLIGHT,
             GameCamera,
             TransformInterpolation,
             // MotionBlur { ..default() },
@@ -216,7 +215,7 @@ pub fn swap_camera_target(
     let free_camera = free_camera_query.iter().next().unwrap();
     let (camera, mut camera_transform, camera_parent) = camera_query.iter_mut().next().unwrap();
     let camera_parent_unwrapped = camera_parent.unwrap();
-    
+
     // check the camera to see what its parented to.
     // If its parented to the player, then we want to parent it to the fly camera.
     // else it is parented to the fly camera, and we want it parented to the player.
@@ -247,7 +246,7 @@ pub fn take_screenshot(
     if !keys.just_pressed(bindings.action_screenshot.key) {
         return;
     }
-  
+
     let path: String = format!(
         "./voyage_screenshot-{}.{}",
         Local::now().format("%Y-%m-%d_%H-%M-%S%.3f").to_string(),
