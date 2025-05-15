@@ -12,13 +12,19 @@ use bevy::{log::info, prelude::*};
 use crate::{
     camera::GameCamera,
     user_interface::themes::{BORDER_COLOR, DEFAULT_DEBUG_FONT_PATH},
-    utils::capture_cursor,
 };
 use body::Body;
 use config::PlayerControlConfig;
 use focus::{camera_look_system, Focus};
 use motion::{
-    compute_motion, update_debug_is_moving, update_debug_is_sprinting, update_debug_linear_velocity, update_debug_movement_speed_current, update_debug_movement_speed_target, update_debug_movment_vector_current, update_debug_movment_vector_decay, update_debug_movment_vector_target, update_debug_position, update_debug_rotation, Motion, MotionMovementIsMovingDebug, MotionMovementIsSprintingDebug, MotionMovementSpeedCurrentDebug, MotionMovementSpeedTargetDebug, MotionMovementVectorCurrentDebug, MotionMovementVectorDecayRateDebug, MotionMovementVectorTargetDebug, MotionPositionDebug, MotionRotationDebug, MotionVelocityDebug
+    compute_motion, update_debug_is_moving, update_debug_is_sprinting,
+    update_debug_linear_velocity, update_debug_movement_speed_current,
+    update_debug_movement_speed_target, update_debug_movement_vector_current,
+    update_debug_movement_vector_decay, update_debug_movement_vector_target, update_debug_position,
+    update_debug_rotation, Motion, MotionMovementIsMovingDebug, MotionMovementIsSprintingDebug,
+    MotionMovementSpeedCurrentDebug, MotionMovementSpeedTargetDebug,
+    MotionMovementVectorCurrentDebug, MotionMovementVectorDecayRateDebug,
+    MotionMovementVectorTargetDebug, MotionPositionDebug, MotionRotationDebug, MotionVelocityDebug,
 };
 use stance::{lock_angular_velocity, update_player_stance, Stance, StanceType};
 
@@ -45,26 +51,32 @@ impl Plugin for PlayerPlugin {
                 .chain(),
         );
         app.add_systems(
-            Update,
+            FixedUpdate,
             (
                 update_player_stance,
+                camera_look_system,
+                compute_motion,
                 toggle_crouching,
                 toggle_sprinting,
-                compute_motion,
                 lock_angular_velocity,
                 play_footstep_sfx,
                 tick_footstep,
-                camera_look_system,
-                update_debug_position,
-                update_debug_rotation,
-                update_debug_linear_velocity,
-                update_debug_movment_vector_decay,
-                update_debug_movment_vector_current,
-                update_debug_movment_vector_target,
-                update_debug_is_moving,
-                update_debug_is_sprinting,
+            )
+                .chain(),
+        );
+        app.add_systems(
+            Update,
+            (
+                update_debug_movement_vector_decay,
+                update_debug_movement_vector_current,
+                update_debug_movement_vector_target,
                 update_debug_movement_speed_current,
                 update_debug_movement_speed_target,
+                update_debug_linear_velocity,
+                update_debug_is_sprinting,
+                update_debug_is_moving,
+                update_debug_rotation,
+                update_debug_position,
             )
                 .chain(),
         );
@@ -123,7 +135,10 @@ pub fn spawn_player(
                 downward_ray: RayCaster::new(Vec3::ZERO, Dir3::NEG_Y),
                 ray_hits: RayHits::default(),
                 rigid_body: RigidBody::Dynamic,
-                locked_axes: LockedAxes::new().lock_rotation_z().lock_rotation_x().lock_rotation_y(),
+                locked_axes: LockedAxes::new()
+                    .lock_rotation_z()
+                    .lock_rotation_x()
+                    .lock_rotation_y(),
                 mass: Mass(20.0),
                 body: Body {
                     current_body_height: 1.0,
@@ -188,7 +203,7 @@ fn attached_camera_system(
         || player_query.is_empty()
         || player_query.iter().len() > 1
     {
-        warn!("The camera attach system did not recieve 1 player and 1 camera. Found {} cameras, and {} players", camera_query.iter().len(), player_query.iter().len());
+        warn!("The Camera attach system did not recieve 1 player and 1 camera. Found {} cameras, and {} players", camera_query.iter().len(), player_query.iter().len());
     }
 
     for (player_entity, _player_transform) in &mut player_query {
@@ -346,7 +361,7 @@ fn create_player_debug(mut commands: Commands, asset_server: Res<AssetServer>) {
                                 TextColor(Color::WHITE),
                                 MotionMovementIsMovingDebug,
                             ));
-                        })                        
+                        })
                         .with_children(|parent| {
                             parent.spawn((
                                 TextSpan::new(" | sprinting: "),

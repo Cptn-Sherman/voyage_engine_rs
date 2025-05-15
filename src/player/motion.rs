@@ -32,15 +32,15 @@ pub const LEAN_LOCKOUT_TIME: f32 = 0.15;
 
 #[derive(Component)]
 pub struct Motion {
-    pub(crate) current_movement_vector: Vec3,
-    pub(crate) target_movement_vector: Vec3,
-    pub(crate) current_movement_speed: f32,
-    pub(crate) target_movement_speed: f32,
-    pub(crate) current_lean: Vec3,
-    pub(crate) target_lean: Vec3,
+    pub current_movement_vector: Vec3,
+    pub target_movement_vector: Vec3,
+    pub current_movement_speed: f32,
+    pub target_movement_speed: f32,
+    pub current_lean: Vec3,
+    pub target_lean: Vec3,
     pub lock_lean: f32,
-    pub(crate) sprinting: bool,
-    pub(crate) moving: bool,
+    pub sprinting: bool,
+    pub moving: bool,
 }
 
 pub fn compute_motion(
@@ -358,7 +358,7 @@ pub fn update_debug_linear_velocity(
 #[derive(Component)]
 pub struct MotionMovementVectorCurrentDebug;
 
-pub fn update_debug_movment_vector_current(
+pub fn update_debug_movement_vector_current(
     player_query: Query<&Motion, With<Player>>,
     mut query: Query<&mut TextSpan, With<MotionMovementVectorCurrentDebug>>,
 ) {
@@ -370,7 +370,7 @@ pub fn update_debug_movment_vector_current(
 #[derive(Component)]
 pub struct MotionMovementVectorTargetDebug;
 
-pub fn update_debug_movment_vector_target(
+pub fn update_debug_movement_vector_target(
     player_query: Query<&Motion, With<Player>>,
     mut query: Query<&mut TextSpan, With<MotionMovementVectorTargetDebug>>,
 ) {
@@ -382,7 +382,7 @@ pub fn update_debug_movment_vector_target(
 #[derive(Component)]
 pub struct MotionMovementVectorDecayRateDebug;
 
-pub fn update_debug_movment_vector_decay(
+pub fn update_debug_movement_vector_decay(
     player_query: Query<&Motion, With<Player>>,
     mut query: Query<&mut TextSpan, With<MotionMovementVectorDecayRateDebug>>,
 ) {

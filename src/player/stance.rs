@@ -179,7 +179,7 @@ pub fn update_player_stance(
         );
 
         // Update the gravity scale.
-        gravity_scale.0 = 1.0;
+        gravity_scale.0 = next_gravity_scale;
 
         // Update the current stance.
         stance.current = next_stance.clone();

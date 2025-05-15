@@ -33,14 +33,10 @@ impl Default for PlayerControlConfig {
             movement_speed: 10.0,
             sprint_speed_factor: 2.0,
             movement_decay: 0.90,
-            mouse_look_sensitivity: 0.00012, // This value was taken from bevy_flycam.
+            mouse_look_sensitivity: 0.25, // This value was taken from bevy_flycam.
             gamepad_look_sensitivity: 0.0012, // This value was made up by me!
             enable_view_bobbing: true,
             crouched_height_factor: 0.80,
         }
     }
-}
-
-pub trait GetDownwardRayLengthMax {
-    fn get_downard_ray_length_max(&self) -> f32;
 }

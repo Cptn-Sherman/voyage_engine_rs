@@ -35,14 +35,11 @@ pub fn camera_look_system(
                 match window.cursor_options.grab_mode {
                     CursorGrabMode::None => (),
                     _ => {
-                        let window_scale = window.height().min(window.width());
                         camera_pitch -= (config.mouse_look_sensitivity
-                            * accumulated_mouse_motion.delta.y
-                            * window_scale)
+                            * accumulated_mouse_motion.delta.y)
                             .to_radians();
                         player_yaw -= (config.mouse_look_sensitivity
-                            * accumulated_mouse_motion.delta.x
-                            * window_scale)
+                            * accumulated_mouse_motion.delta.x)
                             .to_radians();
                     }
                 }
@@ -63,7 +60,7 @@ pub fn camera_look_system(
                             .to_radians();
                     }
                 }
-                
+
                 // Prevent the Camera from wrapping over itself in pitch only.
                 camera_pitch = camera_pitch.clamp(-1.54, 1.54);
                 // Order is important to prevent unintended roll.
