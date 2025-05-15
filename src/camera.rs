@@ -1,4 +1,5 @@
 use crate::{config::Bindings, player::Player};
+use avian3d::prelude::TransformInterpolation;
 use bevy::{
     core_pipeline::tonemapping::Tonemapping,
     math::Vec3,
@@ -50,6 +51,7 @@ pub fn create_camera(mut commands: Commands, camera_config: Res<CameraConfig>) {
             AtmosphereCamera::default(),
             Atmosphere::EARTH,
             GameCamera,
+            TransformInterpolation,
             // MotionBlur { ..default() },
         ))
         .insert(VolumetricFog {

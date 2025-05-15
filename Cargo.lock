@@ -1256,6 +1256,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "bevy_sun_move"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4f1e3775713acfbf1b81933bc351ba0aadf333ca33d81d61365a87c8c0ce9690"
+dependencies = [
+ "bevy",
+ "rand 0.9.1",
+]
+
+[[package]]
 name = "bevy_tasks"
 version = "0.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5340,6 +5350,8 @@ dependencies = [
  "bevy_blockout",
  "bevy_infinite_grid",
  "bevy_kira_audio",
+ "bevy_sun_move",
+ "bevy_transform_interpolation",
  "bevy_turborand",
  "chrono",
  "noise",

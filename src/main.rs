@@ -19,6 +19,7 @@ use bevy_atmosphere::plugin::AtmospherePlugin;
 use bevy_blockout::{BlockoutMaterialExt, BlockoutPlugin};
 use bevy_infinite_grid::{InfiniteGridBundle, InfiniteGridPlugin};
 use bevy_kira_audio::{Audio, AudioControl, AudioEasing, AudioPlugin, AudioTween};
+use bevy_transform_interpolation::prelude::TransformInterpolationPlugin;
 use bevy_turborand::prelude::RngPlugin;
 
 use camera::{
@@ -49,6 +50,7 @@ fn main() {
             DefaultPlugins,
             bevy_panic_handler::PanicHandler::new().build(),
             RngPlugin::new().with_rng_seed(0),
+            //TransformInterpolationPlugin::default(),
             PhysicsPlugins::default(),
             PhysicsDebugPlugin::default(),
             DebugInterfacePlugin,

@@ -177,6 +177,7 @@ pub fn spawn_player(
                 base_color: Color::srgb(1.0, 200.0 / 256.0, 0.0),
                 ..default()
             })),
+            TransformInterpolation,
             Player,
         ))
         .with_children(|parent| {
