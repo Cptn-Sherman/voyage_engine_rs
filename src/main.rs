@@ -7,7 +7,7 @@ mod utils;
 
 use bevy::color::palettes::tailwind::{AMBER_400, SKY_400, ZINC_200};
 use bevy::core_pipeline::experimental::taa::TemporalAntiAliasPlugin;
-use bevy::pbr::{CascadeShadowConfigBuilder, ExtendedMaterial, VolumetricLight};
+use bevy::pbr::{CascadeShadowConfigBuilder, ExtendedMaterial};
 
 use bevy::render::mesh::Mesh;
 
@@ -20,8 +20,7 @@ use bevy_blockout::{BlockoutMaterialExt, BlockoutPlugin};
 use bevy_infinite_grid::{InfiniteGridBundle, InfiniteGridPlugin};
 use bevy_kira_audio::{Audio, AudioControl, AudioEasing, AudioPlugin, AudioTween};
 use bevy_sun_move::random_stars::{RandomStarsPlugin, StarSpawner};
-use bevy_sun_move::{SkyCenter, SunMovePlugin, TimedSkyConfig};
-use bevy_transform_interpolation::prelude::TransformInterpolationPlugin;
+use bevy_sun_move::{SkyCenter, SunMovePlugin};
 use bevy_turborand::prelude::RngPlugin;
 
 use camera::{
@@ -33,7 +32,6 @@ use config::{Bindings, EngineSettings};
 use player::PlayerPlugin;
 use user_interface::DebugInterfacePlugin;
 
-use std::f32::consts::FRAC_PI_4;
 use std::time::Duration;
 
 use utils::{detect_toggle_cursor, generate_plane_mesh};
@@ -120,7 +118,7 @@ fn setup(
     
     commands.spawn(InfiniteGridBundle::default());
 
-        let cascade_shadow_config = CascadeShadowConfigBuilder {
+    let _cascade_shadow_config = CascadeShadowConfigBuilder {
         first_cascade_far_bound: 0.3,
         maximum_distance: 3.0,
         ..default()
