@@ -146,25 +146,26 @@ pub fn spawn_player(
                 motion: Motion {
                     current_movement_vector: Vec3::from_array([0.0, 0.0, 0.0]),
                     target_movement_vector: Vec3::from_array([0.0, 0.0, 0.0]),
-                    current_movement_speed: player_config.movement_speed,
-                    target_movement_speed: player_config.movement_speed,
+                    current_movement_speed: player_config.default_movement_speed,
+                    target_movement_speed: player_config.default_movement_speed,
                     current_lean: Vec3::from_array([0.0, 0.0, 0.0]),
                     target_lean: Vec3::from_array([0.0, 0.0, 0.0]),
                     lock_lean: 0.0,
                     sprinting: false,
                     moving: false,
                 },
-                focus: Focus {
-                    point_of_focus: Vec3::from_array([0.0, 0.0, 0.0]),
-                    face_direction: Vec3::from_array([0.0, 0.0, 0.0]),
-                    free_look: false,
-                },
                 stance: Stance {
                     current_ride_height: player_config.ride_height,
                     target_ride_height: player_config.ride_height,
                     current: StanceType::Standing,
+                    grounded: false,
                     crouched: false,
                     lockout: 0.0,
+                },
+                focus: Focus {
+                    point_of_focus: Vec3::from_array([0.0, 0.0, 0.0]),
+                    face_direction: Vec3::from_array([0.0, 0.0, 0.0]),
+                    free_look: false,
                 },
                 action_step: ActionStep {
                     dir: FootstepDirection::Right,

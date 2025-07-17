@@ -86,7 +86,7 @@ use bevy::{
     },
     window::{CursorGrabMode, PrimaryWindow, Window},
 };
-use std::fmt::Write;
+use std::{fmt::Write, ops::Sub};
 
 use crate::Bindings;
 
@@ -180,7 +180,7 @@ pub fn format_value_quat(
     quat: Quat,
     decimal_digits: Option<usize>,
     format_negative_space: bool,
-    output_euler: Option<EulerRot>
+    output_euler: Option<EulerRot>,
 ) -> String {
     match output_euler {
         None => {
@@ -191,8 +191,8 @@ pub fn format_value_quat(
                 format_value_f32(quat.z, decimal_digits, format_negative_space),
                 format_value_f32(quat.w, decimal_digits, format_negative_space)
             );
-        },
-        _  => {
+        }
+        _ => {
             let (yaw, pitch, roll) = quat.to_euler(output_euler.unwrap());
             return format!(
                 "[{}, {}, {}]",
@@ -217,8 +217,6 @@ pub fn format_percentage_f64(value: Option<f64>) -> Option<String> {
         _ => None,
     }
 }
-
-
 
 pub fn generate_plane_mesh(
     meshes: &mut ResMut<Assets<Mesh>>,
@@ -313,12 +311,22 @@ pub fn get_valid_extension<'a>(extension: &'a str, ext_type: ExtensionType) -> &
 }
 
 // Pulled this from Freya Holmer's Lerp smoothing is broken talk. https://www.youtube.com/watch?v=LSNQuFEDOyQ
-pub fn exp_decay(a: f32, b: f32, decay: f32, delta_time: f32) -> f32 {
-    return b + (a - b) * (-decay * delta_time).exp();
+use std::ops::{Add, Mul};
+
+pub fn exp_decay<T>(a: T, b: T, decay: f32, delta_time: f32) -> T
+where
+    T: Copy + Sub<Output = T> + Mul<f32, Output = T> + Add<Output = T>,
+{
+    b + (a - b) * (-decay * delta_time).exp()
 }
 
-pub fn exp_vec3_decay(a: Vec3, b: Vec3, decay: f32, delta_time: f32) -> Vec3 {
-    return b + (a - b) * (-decay * delta_time).exp();
+pub struct InterpolatedValue<T>
+where
+    T: Copy + Sub<Output = T> + Mul<f32, Output = T> + Add<Output = T>,
+{
+    current: T,
+    target: T,
+    decay: f32,
 }
 
 pub fn increase_render_adapter_wgpu_limits(render_adapter: Res<RenderAdapter>) {
@@ -333,7 +341,7 @@ pub fn increase_render_adapter_wgpu_limits(render_adapter: Res<RenderAdapter>) {
     );
 }
 
-// Start up system used to capture the mouse. 
+// Start up system used to capture the mouse.
 // ! There is currently a bug in the x11 implementation which causes this to fail on linux and sets the window to monitor 0.
 pub fn capture_cursor(mut primary_window: Query<&mut Window, With<PrimaryWindow>>) {
     if let Ok(mut window) = primary_window.single_mut() {
@@ -359,8 +367,6 @@ pub fn detect_toggle_cursor(
         warn!("Primary window not found for `cursor_grab`!");
     }
 }
-
-
 
 fn toggle_cursor_grab_mode(window: &mut Window) {
     match window.cursor_options.grab_mode {

@@ -4,7 +4,8 @@ use super::{
     motion::{apply_jump_force, apply_spring_force},
 };
 use super::{body::Body, PlayerColliderFlag};
-use crate::{player::config::PlayerControlConfig, utils::exp_decay};
+use crate::utils::exp_decay;
+use crate::{player::config::PlayerControlConfig};
 use avian3d::prelude::*;
 use bevy::{
     ecs::entity::Entity,
@@ -32,6 +33,7 @@ pub struct Stance {
     pub(crate) current_ride_height: f32,
     pub(crate) target_ride_height: f32,
     pub current: StanceType,
+    pub grounded: bool,
     pub crouched: bool,
     pub lockout: f32,
 }
@@ -171,7 +173,7 @@ pub fn update_player_stance(
         }
 
         // Lerp current_ride_height to target_ride_height, this target_ride_height changes depending on the stance. Standing, Crouching, and Prone.
-        stance.current_ride_height = exp_decay(
+        stance.current_ride_height = exp_decay::<f32>(
             stance.current_ride_height,
             stance.target_ride_height,
             6.0,

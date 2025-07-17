@@ -10,7 +10,7 @@ pub struct PlayerControlConfig {
     pub (crate) ride_spring_damper: f32,
     pub (crate) stance_lockout: f32,
     pub (crate) jump_strength: f32,
-    pub (crate) movement_speed: f32,
+    pub (crate) default_movement_speed: f32,
     pub (crate) sprint_speed_factor: f32,
     pub (crate) movement_decay: f32,
     pub (crate) mouse_look_sensitivity: f32,
@@ -30,7 +30,7 @@ impl Default for PlayerControlConfig {
             ride_spring_damper: 300.0,
             stance_lockout: 0.25,
             jump_strength: 200.0,
-            movement_speed: 10.0,
+            default_movement_speed: 10.0,
             sprint_speed_factor: 2.0,
             movement_decay: 0.90,
             mouse_look_sensitivity: 0.25, // This value was taken from bevy_flycam.
