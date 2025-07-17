@@ -16,7 +16,7 @@ use avian3d::prelude::*;
 
 use crate::{
     ternary,
-    utils::{exp_decay, format_value_f32, format_value_quat, format_value_vec3},
+    utils::{exp_decay, format_value_f32, format_value_quat, format_value_vec3, InterpolatedValue},
     Bindings,
 };
 
@@ -32,10 +32,8 @@ pub const LEAN_LOCKOUT_TIME: f32 = 0.15;
 
 #[derive(Component)]
 pub struct Motion {
-    pub current_movement_vector: Vec3,
-    pub target_movement_vector: Vec3,
-    pub current_movement_speed: f32,
-    pub target_movement_speed: f32,
+    pub movement_vector: InterpolatedValue::<Vec3>,
+    pub movement_speed: InterpolatedValue::<f32>,
     pub current_lean: Vec3,
     pub target_lean: Vec3,
     pub lock_lean: f32,
@@ -115,27 +113,26 @@ pub fn compute_motion(
     
     if motion.sprinting == true {
         if stance.crouched == true {
-            motion.target_movement_speed = player_config.default_movement_speed
+            motion.movement_speed.target = player_config.default_movement_speed
                 * 0.5
                 * player_config.sprint_speed_factor;
         } else {
-            motion.target_movement_speed =
+            motion.movement_speed.target =
                 player_config.default_movement_speed * player_config.sprint_speed_factor;
         }
     } else {
         if stance.crouched == false {
-            motion.target_movement_speed = player_config.default_movement_speed;
+            motion.movement_speed.target = player_config.default_movement_speed;
         } else {
-            motion.target_movement_speed = player_config.default_movement_speed * 0.5;
+            motion.movement_speed.target = player_config.default_movement_speed * 0.5;
         }
     }
 
     // Apply lineaer interpolation to move the speed transition.
-    const MOVEMENT_SPEED_DECAY: f32 = 4.0;
-    motion.current_movement_speed = exp_decay(
-        motion.current_movement_speed,
-        motion.target_movement_speed,
-        MOVEMENT_SPEED_DECAY,
+    motion.movement_speed.current = exp_decay(
+        motion.movement_speed.current,
+        motion.movement_speed.target,
+        motion.movement_speed.decay,
         time.delta_secs(),
     );
 
@@ -153,16 +150,14 @@ pub fn compute_motion(
     movement_vector += player_transform.forward().as_vec3() * input_vector.z;
 
     // Update the target movement vector to be the normalized movement vector.
-    motion.target_movement_vector = movement_vector.normalize_or_zero();
-
-    const CURRENT_MOVEMENT_VECTOR_DECAY: f32 = 16.0;
+    motion.movement_vector.target = movement_vector.normalize_or_zero();
     
     // Lerp the current movement vector towards the target movement vector
     // updating the decay rate based on movement scale (based on being grounded or airborne)
-    motion.current_movement_vector = exp_decay::<Vec3>(
-        motion.current_movement_vector,
-        motion.target_movement_vector,
-        CURRENT_MOVEMENT_VECTOR_DECAY * movement_scale,
+    motion.movement_vector.current = exp_decay::<Vec3>(
+        motion.movement_vector.current,
+        motion.movement_vector.target,
+        motion.movement_vector.decay * movement_scale,
         time.delta_secs(),
     );
 
@@ -175,13 +170,13 @@ pub fn compute_motion(
 
     // * Detected and apply MOVING flag.
     // set the motion.moving when the magnituted of the movement_vector is greater than some arbitrary threshold.
-    motion.moving = motion.current_movement_vector.length() >= 0.01;
+    motion.moving = motion.movement_vector.current.length() >= 0.01;
 
     // * APPLY MOVEMENT_VECTOR TO PLAYER TRANSFORM LINEAR VELOCITY
 
     // we don't need to lerp here just setting the real value to as we already lerp the current_movement_vector and current_movement_speed.
-    linear_vel.x = motion.current_movement_vector.x * motion.current_movement_speed;
-    linear_vel.z = motion.current_movement_vector.z * motion.current_movement_speed;
+    linear_vel.x = motion.movement_vector.current.x * motion.movement_speed.current;
+    linear_vel.z = motion.movement_vector.current.z * motion.movement_speed.current;
 
     // info!(
     //     "Linear Velocity: [{}, {}, {}]",
@@ -377,7 +372,7 @@ pub fn update_debug_movement_vector_current(
 ) {
     let mut text = query.single_mut().unwrap();
     let player_motion = player_query.single().unwrap();
-    text.0 = format_value_vec3(player_motion.current_movement_vector, Some(4), true);
+    text.0 = format_value_vec3(player_motion.movement_vector.current, Some(4), true);
 }
 
 #[derive(Component)]
@@ -389,7 +384,7 @@ pub fn update_debug_movement_vector_target(
 ) {
     let mut text = query.single_mut().unwrap();
     let player_motion = player_query.single().unwrap();
-    text.0 = format_value_vec3(player_motion.target_movement_vector, Some(4), true);
+    text.0 = format_value_vec3(player_motion.movement_vector.target, Some(4), true);
 }
 
 #[derive(Component)]
@@ -437,7 +432,7 @@ pub fn update_debug_movement_speed_current(
 ) {
     let mut text = query.single_mut().unwrap();
     let player_motion = player_query.single().unwrap();
-    text.0 = format_value_f32(player_motion.current_movement_speed, Some(4), true);
+    text.0 = format_value_f32(player_motion.movement_speed.current, Some(4), true);
 }
 
 #[derive(Component)]
@@ -449,5 +444,5 @@ pub fn update_debug_movement_speed_target(
 ) {
     let mut text = query.single_mut().unwrap();
     let player_motion = player_query.single().unwrap();
-    text.0 = format_value_f32(player_motion.target_movement_speed, Some(4), true);
+    text.0 = format_value_f32(player_motion.movement_speed.target, Some(4), true);
 }

@@ -33,7 +33,7 @@ impl Default for PlayerControlConfig {
             default_movement_speed: 10.0,
             sprint_speed_factor: 2.0,
             movement_decay: 0.90,
-            mouse_look_sensitivity: 0.25, // This value was taken from bevy_flycam.
+            mouse_look_sensitivity: 0.0825,
             gamepad_look_sensitivity: 0.0012, // This value was made up by me!
             enable_view_bobbing: true,
             crouched_height_factor: 0.80,

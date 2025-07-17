@@ -11,7 +11,8 @@ use bevy::{log::info, prelude::*};
 
 use crate::{
     camera::GameCamera,
-    user_interface::themes::{BORDER_COLOR, DEFAULT_DEBUG_FONT_PATH}, utils::InterpolatedValue,
+    user_interface::themes::{BORDER_COLOR, DEFAULT_DEBUG_FONT_PATH},
+    utils::InterpolatedValue,
 };
 use body::Body;
 use config::PlayerControlConfig;
@@ -144,10 +145,8 @@ pub fn spawn_player(
                     current_body_height: 1.0,
                 },
                 motion: Motion {
-                    current_movement_vector: Vec3::from_array([0.0, 0.0, 0.0]),
-                    target_movement_vector: Vec3::from_array([0.0, 0.0, 0.0]),
-                    current_movement_speed: player_config.default_movement_speed,
-                    target_movement_speed: player_config.default_movement_speed,
+                    movement_vector: InterpolatedValue::new(Vec3::from_array([0.0, 0.0, 0.0]), 16.0),
+                    movement_speed: InterpolatedValue::new(player_config.default_movement_speed, 4.0),
                     current_lean: Vec3::from_array([0.0, 0.0, 0.0]),
                     target_lean: Vec3::from_array([0.0, 0.0, 0.0]),
                     lock_lean: 0.0,

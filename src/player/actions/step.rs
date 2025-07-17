@@ -142,7 +142,7 @@ pub fn tick_footstep(
         // scale the speed based on if you are sprinting or if you are not moving and are resting your foot.
         // when this value is higher you finish your step sooner.
 
-        let step_speed_scale: f32 = motion.current_movement_speed / player_config.default_movement_speed;
+        let step_speed_scale: f32 = motion.movement_speed.current / player_config.default_movement_speed;
 
         // info!("Step Speed Scale: {}", step_speed_scale);
 
