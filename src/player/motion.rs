@@ -30,14 +30,6 @@ const ANALOGE_STICK_DEADZONE: f32 = 0.1;
 pub const ROTATION_AMOUNT: f32 = 1.0;
 pub const LEAN_LOCKOUT_TIME: f32 = 0.15;
 
-#[derive(Component)]
-pub struct Motion {
-    pub movement_vector: InterpolatedValue<Vec3>,
-    pub movement_speed: InterpolatedValue<f32>,
-    pub sprinting: bool,
-    pub moving: bool,
-}
-
 #[derive(Resource)]
 pub struct Input {
     pub movement: Vec3,
@@ -49,7 +41,6 @@ pub fn update_input_resource(
     keys: Res<ButtonInput<KeyCode>>,
     key_bindings: Res<Bindings>,
 ) {
-    // * DETECT INPUT *
     // this is the raw input vector
     input.movement = Vec3::ZERO.clone();
 
@@ -111,6 +102,7 @@ pub fn smooth_camera(
         smoothed_camera.lean.target = Vec3::from_array([yaw, pitch, roll]);
     }
 
+    // Interpolate the smoothed camera lean.
     smoothed_camera.lean.current = exp_decay::<Vec3>(
         smoothed_camera.lean.current,
         smoothed_camera.lean.target,
@@ -127,20 +119,24 @@ pub fn smooth_camera(
     );
 }
 
+#[derive(Component)]
+pub struct Motion {
+    pub linear_velocity_interp: InterpolatedValue<Vec3>,
+    pub movement_vector: InterpolatedValue<Vec3>,
+    pub movement_speed: InterpolatedValue<f32>,
+    pub sprinting: bool,
+    pub moving: bool,
+}
+
 pub fn compute_motion(
     mut player_query: Query<
         (&mut LinearVelocity, &mut Transform, &mut Motion, &Stance),
         With<Player>,
     >,
-    mut raycast_query: Query<&mut RayCaster, With<Player>>,
     player_config: Res<PlayerControlConfig>,
     input: Res<Input>,
     time: Res<Time>,
 ) {
-    let mut raycast = raycast_query.single_mut().unwrap();
-    //info!("Raycast direction: {}", raycast.direction.to_string());
-    raycast.direction = Dir3::NEG_Y;
-
     if player_query.is_empty() || player_query.iter().len() > 1 {
         warn!(
             "Player Motion System expected 1 player(s), recieved {}. Expect Instablity!",
@@ -150,9 +146,7 @@ pub fn compute_motion(
     }
 
     let (mut linear_vel, player_transform, mut motion, stance) =
-        player_query.single_mut().expect("WE do some errors");
-
-    // todo: seperate into own system and resource
+        player_query.single_mut().expect("We do some errors");
 
     // * COMPUTE CURRENT MOVEMENT SPEED AND LERP
 
@@ -222,12 +216,26 @@ pub fn compute_motion(
     // set the motion.moving when the magnituted of the movement_vector is greater than some arbitrary small threshold.
     motion.moving = motion.movement_vector.current.length() >= 0.01;
 
-    // todo: seperate into own system
     // * APPLY MOVEMENT_VECTOR TO PLAYER TRANSFORM LINEAR VELOCITY
 
-    // we don't need to lerp here just setting the real value to as we already lerp the current_movement_vector and current_movement_speed.
-    linear_vel.x = motion.movement_vector.current.x * motion.movement_speed.current;
-    linear_vel.z = motion.movement_vector.current.z * motion.movement_speed.current;
+    // We don't need to lerp here just setting the real value to as we already lerp the current_movement_vector and current_movement_speed.
+
+    if stance.current == StanceType::Standing {
+        motion.linear_velocity_interp.target.x =
+            motion.movement_vector.current.x * motion.movement_speed.current;
+        motion.linear_velocity_interp.target.z =
+            motion.movement_vector.current.z * motion.movement_speed.current;
+    }
+
+    motion.linear_velocity_interp.current = exp_decay::<Vec3>(
+        motion.linear_velocity_interp.current,
+        motion.linear_velocity_interp.target,
+        motion.linear_velocity_interp.decay,
+        time.delta_secs(),
+    );
+
+    linear_vel.x = motion.linear_velocity_interp.current.x;
+    linear_vel.z = motion.linear_velocity_interp.current.z;
 
     // info!(
     //     "Linear Velocity: [{}, {}, {}]",
@@ -247,8 +255,8 @@ pub fn apply_spring_force(
     // Find the diference between how close the capsule is to the surface beneath it.
     // Compute this value by subtracting the ray length from the set ride height
     // to find the diference in position.
-    let spring_offset = f32::abs(ray_length) - ride_height;
-    let spring_force =
+    let spring_offset: f32 = f32::abs(ray_length) - ride_height;
+    let spring_force: f32 =
         (spring_offset * config.ride_spring_strength) - (-linear_vel.y * config.ride_spring_damper);
 
     /* Now we apply our spring force vector in the direction to return the bodies distance from the ground towards RIDE_HEIGHT. */
@@ -280,15 +288,17 @@ pub fn apply_jump_force(
     // remove any previous impulse on the object.
     external_impulse.clear();
     // find the movement vector in the x and z direction.
-    let scaled_movement_vector: Vec3 =
-        Vec3::from((linear_vel.x, 0.0, linear_vel.z)).normalize_or_zero();
+    let normalized_midpoint_movement_vector: Vec3 = linear_vel
+        .normalize_or_zero()
+        .mul_add(Vec3::ONE, Vec3::Y)
+        .normalize_or_zero();
 
     // apply the jump force.
     external_impulse.apply_impulse(
         Vec3::from((
-            scaled_movement_vector.x,
-            dynamic_jump_strength,
-            scaled_movement_vector.z,
+            normalized_midpoint_movement_vector.x * dynamic_jump_strength,
+            normalized_midpoint_movement_vector.y * dynamic_jump_strength,
+            normalized_midpoint_movement_vector.z * dynamic_jump_strength,
         ))
         .into(),
     );
