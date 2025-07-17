@@ -211,10 +211,6 @@ pub fn compute_motion(
     //     format_value_f32(motion.current_movement_vector.z, Some(4), true)
     // );
 
-    // todo: seperate into own system
-    // * Detected and apply MOVING flag.
-    // set the motion.moving when the magnituted of the movement_vector is greater than some arbitrary small threshold.
-    motion.moving = motion.movement_vector.current.length() >= 0.01;
 
     // * APPLY MOVEMENT_VECTOR TO PLAYER TRANSFORM LINEAR VELOCITY
 
@@ -243,6 +239,10 @@ pub fn compute_motion(
     //     format_value_f32(linear_vel.y, Some(4), true),
     //     format_value_f32(linear_vel.z, Some(4), true)
     // );
+
+    // * Detected and apply MOVING flag.
+    // set the motion.moving when the magnituted of the movement_vector is greater than some arbitrary small threshold.
+    motion.moving = motion.movement_vector.current.length() >= 0.01;
 }
 
 pub fn apply_spring_force(
