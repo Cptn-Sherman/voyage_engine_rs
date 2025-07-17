@@ -42,13 +42,13 @@ pub fn toggle_crouching(
             let crouched_height: f32 =
                 player_config.capsule_height * player_config.crouched_height_factor;
             collider.set_scale(Vec3::from([1.0, crouched_height, 1.0]), 10);
-            stance.target_ride_height =
+            stance.ride_height.target =
                 player_config.ride_height * player_config.crouched_height_factor;
             body.current_body_height = crouched_height;
         } else {
             // Reset the collider scale to One
             collider.set_scale(Vec3::from([1.0, 1.0, 1.0]), 10);
-            stance.target_ride_height = player_config.ride_height;
+            stance.ride_height.target = player_config.ride_height;
             body.current_body_height = player_config.capsule_height;
         }
 

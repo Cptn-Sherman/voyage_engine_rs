@@ -301,9 +301,9 @@ pub fn apply_jump_force(
 /// ```
 fn compute_clamped_jump_force_factor(body: &Body, stance: &Stance, ray_length: f32) -> f32 {
     // Constants defined elsewhere in the code
-    let full_standing_ray_length: f32 = stance.current_ride_height;
+    let full_standing_ray_length: f32 = stance.ride_height.current;
     let half_standing_ray_length: f32 =
-        stance.current_ride_height - (body.current_body_height / 4.0);
+        stance.ride_height.current - (body.current_body_height / 4.0);
     // This value represents the range of acceptable ray lengths for the player.
     let standing_ray_length_range: f32 = full_standing_ray_length - half_standing_ray_length;
 
@@ -311,7 +311,7 @@ fn compute_clamped_jump_force_factor(body: &Body, stance: &Stance, ray_length: f
     let clamped_ray_length = f32::clamp(
         ray_length,
         half_standing_ray_length,
-        stance.current_ride_height,
+        stance.ride_height.current,
     );
 
     // Apply the linear transformation

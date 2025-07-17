@@ -11,7 +11,7 @@ use bevy::{log::info, prelude::*};
 
 use crate::{
     camera::GameCamera,
-    user_interface::themes::{BORDER_COLOR, DEFAULT_DEBUG_FONT_PATH},
+    user_interface::themes::{BORDER_COLOR, DEFAULT_DEBUG_FONT_PATH}, utils::InterpolatedValue,
 };
 use body::Body;
 use config::PlayerControlConfig;
@@ -155,8 +155,7 @@ pub fn spawn_player(
                     moving: false,
                 },
                 stance: Stance {
-                    current_ride_height: player_config.ride_height,
-                    target_ride_height: player_config.ride_height,
+                    ride_height: InterpolatedValue::new(player_config.ride_height, 6.0),
                     current: StanceType::Standing,
                     grounded: false,
                     crouched: false,

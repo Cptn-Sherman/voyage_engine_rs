@@ -4,7 +4,7 @@ use super::{
     motion::{apply_jump_force, apply_spring_force},
 };
 use super::{body::Body, PlayerColliderFlag};
-use crate::utils::exp_decay;
+use crate::utils::{exp_decay, InterpolatedValue};
 use crate::{player::config::PlayerControlConfig};
 use avian3d::prelude::*;
 use bevy::{
@@ -30,8 +30,7 @@ pub enum StanceType {
 
 #[derive(Component)]
 pub struct Stance {
-    pub(crate) current_ride_height: f32,
-    pub(crate) target_ride_height: f32,
+    pub ride_height: InterpolatedValue<f32>,
     pub current: StanceType,
     pub grounded: bool,
     pub crouched: bool,
@@ -81,7 +80,7 @@ pub fn update_player_stance(
         stance.lockout = f32::clamp(stance.lockout, 0.0, 1.0);
 
         // Compute the ray_length to a hit, if we don't hit anything we assume the ground is infinitly far away.
-        let mut ride_height: f32 = stance.current_ride_height;
+        let mut ride_height: f32 = stance.ride_height.current;
         let mut ray_length: f32 = f32::INFINITY;
 
         // Find the first ray hit which is not the player collider.
@@ -173,10 +172,10 @@ pub fn update_player_stance(
         }
 
         // Lerp current_ride_height to target_ride_height, this target_ride_height changes depending on the stance. Standing, Crouching, and Prone.
-        stance.current_ride_height = exp_decay::<f32>(
-            stance.current_ride_height,
-            stance.target_ride_height,
-            6.0,
+        stance.ride_height.current = exp_decay::<f32>(
+            stance.ride_height.current,
+            stance.ride_height.target,
+            stance.ride_height.decay,
             time.delta_secs(),
         );
 

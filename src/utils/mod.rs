@@ -324,9 +324,22 @@ pub struct InterpolatedValue<T>
 where
     T: Copy + Sub<Output = T> + Mul<f32, Output = T> + Add<Output = T>,
 {
-    current: T,
-    target: T,
-    decay: f32,
+    pub current: T,
+    pub target: T,
+    pub decay: f32,
+}
+
+impl<T> InterpolatedValue<T>
+where
+    T: Copy + Sub<Output = T> + Mul<f32, Output = T> + Add<Output = T>,
+{
+    pub fn new(initial: T, decay: f32) -> Self {
+        Self {
+            current: initial,
+            target: initial,
+            decay,
+        }
+    }
 }
 
 pub fn increase_render_adapter_wgpu_limits(render_adapter: Res<RenderAdapter>) {
