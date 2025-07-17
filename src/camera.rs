@@ -1,7 +1,19 @@
-use crate::{config::Bindings, player::Player};
+use crate::{
+    config::Bindings,
+    player::{
+        motion::{SmoothedCamera},
+        Player,
+    },
+    utils::InterpolatedValue,
+};
 use avian3d::prelude::TransformInterpolation;
 use bevy::{
-    core_pipeline::{bloom::Bloom, tonemapping::Tonemapping}, math::Vec3, pbr::{Atmosphere, AtmosphereSettings, VolumetricFog}, prelude::*, render::camera::Exposure, utils::default
+    core_pipeline::{tonemapping::Tonemapping},
+    math::Vec3,
+    pbr::{Atmosphere, AtmosphereSettings, VolumetricFog},
+    prelude::*,
+    render::camera::Exposure,
+    utils::default,
 };
 use bevy_atmosphere::plugin::AtmosphereCamera;
 use bevy_kira_audio::{Audio, AudioControl, AudioSource};
@@ -51,6 +63,10 @@ pub fn create_camera(mut commands: Commands, camera_config: Res<CameraConfig>) {
             Exposure::SUNLIGHT,
             GameCamera,
             TransformInterpolation,
+            SmoothedCamera {
+                lean: InterpolatedValue::<Vec3>::new(Vec3::from_array([0.0, 0.0, 0.0]), 2.0),
+                lock_lean: 0.0,
+            },
             // MotionBlur { ..default() },
         ))
         .insert(VolumetricFog {

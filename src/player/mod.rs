@@ -10,9 +10,7 @@ use avian3d::prelude::*;
 use bevy::{log::info, prelude::*};
 
 use crate::{
-    camera::GameCamera,
-    user_interface::themes::{BORDER_COLOR, DEFAULT_DEBUG_FONT_PATH},
-    utils::InterpolatedValue,
+    camera::GameCamera, player::motion::{smooth_camera, update_input_resource, Input}, user_interface::themes::{BORDER_COLOR, DEFAULT_DEBUG_FONT_PATH}, utils::InterpolatedValue
 };
 use body::Body;
 use config::PlayerControlConfig;
@@ -41,6 +39,7 @@ pub struct PlayerPlugin;
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(PlayerControlConfig::default()); // later we will load from some toml file
+        app.insert_resource(Input { movement: Vec3::from_array([0.0, 0.0, 0.0])});
         app.add_systems(
             Startup,
             (
@@ -54,9 +53,11 @@ impl Plugin for PlayerPlugin {
         app.add_systems(
             FixedUpdate,
             (
+                update_input_resource,
                 update_player_stance,
                 camera_look_system,
                 compute_motion,
+                smooth_camera,
                 toggle_crouching,
                 toggle_sprinting,
                 lock_angular_velocity,
@@ -147,9 +148,6 @@ pub fn spawn_player(
                 motion: Motion {
                     movement_vector: InterpolatedValue::new(Vec3::from_array([0.0, 0.0, 0.0]), 16.0),
                     movement_speed: InterpolatedValue::new(player_config.default_movement_speed, 4.0),
-                    current_lean: Vec3::from_array([0.0, 0.0, 0.0]),
-                    target_lean: Vec3::from_array([0.0, 0.0, 0.0]),
-                    lock_lean: 0.0,
                     sprinting: false,
                     moving: false,
                 },

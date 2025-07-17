@@ -10,7 +10,7 @@ use bevy_turborand::{DelegatedRng, GlobalRng};
 use crate::{
     player::{
         config::PlayerControlConfig,
-        motion::{Motion, LEAN_LOCKOUT_TIME, ROTATION_AMOUNT},
+        motion::{Motion, SmoothedCamera, LEAN_LOCKOUT_TIME, ROTATION_AMOUNT},
         stance::{Stance, StanceType}, Player,
     },
     ternary,
@@ -123,7 +123,7 @@ pub fn play_footstep_sfx(
 pub fn tick_footstep(
     mut ev_footstep: EventWriter<FootstepEvent>,
     mut query: Query<(&mut ActionStep, &mut Stance, &mut Motion), With<Player>>,
-    mut camera_query: Query<&mut Transform, (With<Camera3d>, Without<Player>)>,
+    mut camera_query: Query<(&mut Transform, &mut SmoothedCamera), (With<Camera3d>, Without<Player>)>,
     player_config: Res<PlayerControlConfig>,
     config: Res<PlayerControlConfig>,
     time: Res<Time>,
@@ -172,14 +172,14 @@ pub fn tick_footstep(
             stance.ride_height.current =
                 config.ride_height + (ride_height_offset * current_ride_height_offset_scaler);
             action.bumped = true;
-            let camera_transform = camera_query.single_mut().unwrap();
+            let (camera_transform, mut smoothed_camera) = camera_query.single_mut().unwrap();
             let (yaw, pitch, _) = camera_transform.rotation.to_euler(EulerRot::default());
             //let pitch = input_vector.y * rotation_amount.to_radians();
             let dir: f32 = ternary!(action.dir == FootstepDirection::Left, 1.0, -1.0);
             let sprinting_scale: f32 = ternary!(motion.sprinting, 0.2, 0.15);
             let roll: f32 = dir * ROTATION_AMOUNT.to_radians() * sprinting_scale;
-            motion.target_lean = Vec3::from_array([yaw, pitch, roll]);
-            motion.lock_lean = LEAN_LOCKOUT_TIME;
+            smoothed_camera.lean.target = Vec3::from_array([yaw, pitch, roll]);
+            smoothed_camera.lock_lean = LEAN_LOCKOUT_TIME;
         }
 
         // if the inter step delta has elapsed increase the delta, flip the dir, reset the bump, and queue the sound event.

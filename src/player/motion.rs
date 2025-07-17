@@ -1,5 +1,5 @@
 use bevy::{
-    ecs::{component::Component, entity::Entity},
+    ecs::{component::Component, entity::Entity, resource::Resource, system::ResMut},
     input::{
         gamepad::{Gamepad, GamepadAxis},
         ButtonInput,
@@ -32,67 +32,38 @@ pub const LEAN_LOCKOUT_TIME: f32 = 0.15;
 
 #[derive(Component)]
 pub struct Motion {
-    pub movement_vector: InterpolatedValue::<Vec3>,
-    pub movement_speed: InterpolatedValue::<f32>,
-    pub current_lean: Vec3,
-    pub target_lean: Vec3,
-    pub lock_lean: f32,
+    pub movement_vector: InterpolatedValue<Vec3>,
+    pub movement_speed: InterpolatedValue<f32>,
     pub sprinting: bool,
     pub moving: bool,
 }
 
-pub fn compute_motion(
-    mut player_query: Query<
-        (&mut LinearVelocity, &mut Transform, &mut Motion, &Stance),
-        With<Player>,
-    >,
-    mut camera_query: Query<&mut Transform, (With<Camera3d>, Without<Player>)>,
-    mut raycast_query: Query<&mut RayCaster, With<Player>>,
-    player_config: Res<PlayerControlConfig>,
+#[derive(Resource)]
+pub struct Input {
+    pub movement: Vec3,
+}
+
+pub fn update_input_resource(
+    mut input: ResMut<Input>,
     gamepads: Query<(Entity, &Gamepad)>,
     keys: Res<ButtonInput<KeyCode>>,
     key_bindings: Res<Bindings>,
-    time: Res<Time>,
 ) {
-
-    let mut raycast = raycast_query.single_mut().unwrap();
-    //info!("Raycast direction: {}", raycast.direction.to_string());
-    raycast.direction = Dir3::NEG_Y;
-
-    if camera_query.is_empty()
-        || camera_query.iter().len() > 1
-        || player_query.is_empty()
-        || player_query.iter().len() > 1
-    {
-        warn!("Player Motion System did not expected 1 camera(s) recieved {}, and 1 player(s) recieved {}. Expect Instablity!", camera_query.iter().len(), player_query.iter().len());
-        return;
-    }
-
-    let mut camera_transform = camera_query.single_mut().unwrap();
-    let (mut linear_vel, player_transform, mut motion, stance) = player_query.single_mut().expect("WE do some errors");
-
-    let movement_scale: f32 = ternary!(
-        stance.current != StanceType::Standing && stance.current != StanceType::Landing,
-        0.35,
-        1.0
-    );
-
     // * DETECT INPUT *
     // this is the raw input vector
-    let mut input_vector: Vec3 = Vec3::ZERO.clone();
-    
+    input.movement = Vec3::ZERO.clone();
 
     if keys.pressed(key_bindings.move_forward) {
-        input_vector.z = 1.0;
+        input.movement.z = 1.0;
     }
     if keys.pressed(key_bindings.move_backward) {
-        input_vector.z = -1.0;
+        input.movement.z = -1.0;
     }
     if keys.pressed(key_bindings.move_left) {
-        input_vector.x = -1.0;
+        input.movement.x = -1.0;
     }
     if keys.pressed(key_bindings.move_right) {
-        input_vector.x = 1.0;
+        input.movement.x = 1.0;
     }
 
     if let Ok((_entity, gamepad)) = gamepads.single() {
@@ -101,21 +72,94 @@ pub fn compute_motion(
         //info!("left stick: {}", format_value_vec3(Vec3 { x: left_stick_x, y: left_stick_y, z: 0.0 }, Some(2) , true));
 
         if left_stick_x.abs() > ANALOGE_STICK_DEADZONE {
-            input_vector.x = left_stick_x;
+            input.movement.x = left_stick_x;
         }
-        
+
         if left_stick_y.abs() > ANALOGE_STICK_DEADZONE {
-            input_vector.y = left_stick_y;
+            input.movement.y = left_stick_y;
         }
     }
+}
+
+#[derive(Component)]
+pub struct SmoothedCamera {
+    pub lean: InterpolatedValue<Vec3>,
+    pub lock_lean: f32,
+}
+
+pub fn smooth_camera(
+    mut camera_query: Query<
+        (&mut Transform, &mut SmoothedCamera),
+        (With<Camera3d>, Without<Player>),
+    >,
+    input: Res<Input>,
+    time: Res<Time>,
+) {
+    let (mut camera_transform, mut smoothed_camera) = camera_query.single_mut().unwrap();
+
+    // Update the Curent Lean
+    let (yaw, pitch, _) = camera_transform.rotation.to_euler(EulerRot::default());
+    //let pitch = input_vector.y * rotation_amount.to_radians();
+    let roll: f32 = input.movement.x * ROTATION_AMOUNT.to_radians();
+
+    // Set the new target lean and lerp the current value at a constant rate
+    // ! for now we will use the constant value 2.0 for lerping. We can probably replace this by just seeing how fast the camera is moving? check the velocity
+    let lean_decay: f32 = 2.0; // ternary!(motion.sprinting, 2.0, 8.0);
+    if smoothed_camera.lock_lean > 0.0 {
+        smoothed_camera.lock_lean -= time.delta_secs();
+    } else {
+        smoothed_camera.lean.target = Vec3::from_array([yaw, pitch, roll]);
+    }
+
+    smoothed_camera.lean.current = exp_decay::<Vec3>(
+        smoothed_camera.lean.current,
+        smoothed_camera.lean.target,
+        lean_decay,
+        time.delta_secs(),
+    );
+
+    // Apply the lean to the camera rotation.
+    camera_transform.rotation = Quat::from_euler(
+        EulerRot::default(),
+        yaw, // we dont change the yaw.
+        pitch,
+        smoothed_camera.lean.current.z,
+    );
+}
+
+pub fn compute_motion(
+    mut player_query: Query<
+        (&mut LinearVelocity, &mut Transform, &mut Motion, &Stance),
+        With<Player>,
+    >,
+    mut raycast_query: Query<&mut RayCaster, With<Player>>,
+    player_config: Res<PlayerControlConfig>,
+    input: Res<Input>,
+    time: Res<Time>,
+) {
+    let mut raycast = raycast_query.single_mut().unwrap();
+    //info!("Raycast direction: {}", raycast.direction.to_string());
+    raycast.direction = Dir3::NEG_Y;
+
+    if player_query.is_empty() || player_query.iter().len() > 1 {
+        warn!(
+            "Player Motion System expected 1 player(s), recieved {}. Expect Instablity!",
+            player_query.iter().len()
+        );
+        return;
+    }
+
+    let (mut linear_vel, player_transform, mut motion, stance) =
+        player_query.single_mut().expect("WE do some errors");
+
+    // todo: seperate into own system and resource
 
     // * COMPUTE CURRENT MOVEMENT SPEED AND LERP
-    
+
     if motion.sprinting == true {
         if stance.crouched == true {
-            motion.movement_speed.target = player_config.default_movement_speed
-                * 0.5
-                * player_config.sprint_speed_factor;
+            motion.movement_speed.target =
+                player_config.default_movement_speed * 0.5 * player_config.sprint_speed_factor;
         } else {
             motion.movement_speed.target =
                 player_config.default_movement_speed * player_config.sprint_speed_factor;
@@ -141,17 +185,22 @@ pub fn compute_motion(
     //     format_value_f32(motion.current_movement_speed, Some(4), true), format_value_f32(motion.target_movement_speed, Some(4), true)
     // );
 
-
     // * UPDATE MOVEMENT_VECTOR AND LERP
+
+    let movement_scale: f32 = ternary!(
+        stance.current != StanceType::Standing && stance.current != StanceType::Landing,
+        0.35,
+        1.0
+    );
 
     let mut movement_vector: Vec3 = Vec3::ZERO.clone();
     // Apply the input_vector to the player to update the movement_vector.
-    movement_vector += player_transform.right().as_vec3() * input_vector.x;
-    movement_vector += player_transform.forward().as_vec3() * input_vector.z;
+    movement_vector += player_transform.right().as_vec3() * input.movement.x;
+    movement_vector += player_transform.forward().as_vec3() * input.movement.z;
 
     // Update the target movement vector to be the normalized movement vector.
     motion.movement_vector.target = movement_vector.normalize_or_zero();
-    
+
     // Lerp the current movement vector towards the target movement vector
     // updating the decay rate based on movement scale (based on being grounded or airborne)
     motion.movement_vector.current = exp_decay::<Vec3>(
@@ -168,10 +217,12 @@ pub fn compute_motion(
     //     format_value_f32(motion.current_movement_vector.z, Some(4), true)
     // );
 
+    // todo: seperate into own system
     // * Detected and apply MOVING flag.
-    // set the motion.moving when the magnituted of the movement_vector is greater than some arbitrary threshold.
+    // set the motion.moving when the magnituted of the movement_vector is greater than some arbitrary small threshold.
     motion.moving = motion.movement_vector.current.length() >= 0.01;
 
+    // todo: seperate into own system
     // * APPLY MOVEMENT_VECTOR TO PLAYER TRANSFORM LINEAR VELOCITY
 
     // we don't need to lerp here just setting the real value to as we already lerp the current_movement_vector and current_movement_speed.
@@ -184,35 +235,6 @@ pub fn compute_motion(
     //     format_value_f32(linear_vel.y, Some(4), true),
     //     format_value_f32(linear_vel.z, Some(4), true)
     // );
-
-    // * LEANING
-    // Update the Curent Lean
-    let (yaw, pitch, _) = camera_transform.rotation.to_euler(EulerRot::default());
-    //let pitch = input_vector.y * rotation_amount.to_radians();
-    let roll: f32 = input_vector.x * ROTATION_AMOUNT.to_radians();
-
-    // Set the new target lean and lerp the current value at a constant rate
-    let lean_decay: f32 = ternary!(motion.sprinting, 2.0, 8.0);
-    if motion.lock_lean > 0.0 {
-        motion.lock_lean -= time.delta_secs();
-    } else {
-        motion.target_lean = Vec3::from_array([yaw, pitch, roll]);
-    }
-
-    motion.current_lean = exp_decay::<Vec3>(
-        motion.current_lean,
-        motion.target_lean,
-        lean_decay,
-        time.delta_secs(),
-    );
-
-    // Update the player lean
-    camera_transform.rotation = Quat::from_euler(
-        EulerRot::default(),
-        yaw, // we dont change the yaw.
-        pitch,
-        motion.current_lean.z,
-    );
 }
 
 pub fn apply_spring_force(
@@ -228,7 +250,7 @@ pub fn apply_spring_force(
     let spring_offset = f32::abs(ray_length) - ride_height;
     let spring_force =
         (spring_offset * config.ride_spring_strength) - (-linear_vel.y * config.ride_spring_damper);
-    
+
     /* Now we apply our spring force vector in the direction to return the bodies distance from the ground towards RIDE_HEIGHT. */
     external_force.clear();
     external_force.apply_force(Vec3::from((0.0, -spring_force, 0.0)));
@@ -321,7 +343,6 @@ fn compute_clamped_jump_force_factor(body: &Body, stance: &Stance, ray_length: f
     f32::clamp(result, 0.0, 1.0)
 }
 
-
 #[derive(Component)]
 pub struct MotionPositionDebug;
 
@@ -345,8 +366,10 @@ pub fn update_debug_rotation(
     let mut text = query.single_mut().unwrap();
     let camera_transform = camera_query.single().unwrap();
     let player_transform = player_query.single().unwrap();
-    let (player_yaw, _player_pitch, _player_roll) = player_transform.rotation.to_euler(EulerRot::default());
-    let (_camera_yaw,cmaera_pitch, camera_roll) = camera_transform.rotation.to_euler(EulerRot::default());
+    let (player_yaw, _player_pitch, _player_roll) =
+        player_transform.rotation.to_euler(EulerRot::default());
+    let (_camera_yaw, cmaera_pitch, camera_roll) =
+        camera_transform.rotation.to_euler(EulerRot::default());
     let quat = Quat::from_euler(EulerRot::default(), player_yaw, cmaera_pitch, camera_roll);
     text.0 = format_value_quat(quat, Some(4), true, Some(EulerRot::default()));
 }
