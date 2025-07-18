@@ -10,7 +10,7 @@ use avian3d::prelude::*;
 use bevy::{log::info, prelude::*};
 
 use crate::{
-    camera::GameCamera, player::motion::{smooth_camera, update_input_resource, Input}, user_interface::themes::{BORDER_COLOR, DEFAULT_DEBUG_FONT_PATH}, utils::InterpolatedValue
+    camera::{smooth_camera, GameCamera}, player::motion::{update_input_resource, Input}, user_interface::themes::{BORDER_COLOR, DEFAULT_DEBUG_FONT_PATH}, utils::InterpolatedValue
 };
 use body::Body;
 use config::PlayerControlConfig;

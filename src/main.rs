@@ -141,8 +141,8 @@ fn setup(
              latitude_degrees: 51.5,    // e.g., London's approximate latitude
              planet_tilt_degrees: 23.5, // Earth's axial tilt
              year_fraction: 0.25,       // e.g., Summer Solstice
-             cycle_duration_secs: 120.0, // 60-second day/night cycle
-             current_cycle_time: 40.0,   // Start at midnight
+             cycle_duration_secs: 12000.0, // 60-second day/night cycle
+             current_cycle_time: 6000.0,   // Start at midnight
              ..default()
          },
          Visibility::Visible,

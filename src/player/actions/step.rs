@@ -1,19 +1,31 @@
-use bevy::{
-    asset::{AssetServer, Handle}, core_pipeline::core_3d::Camera3d, ecs::{
-        component::Component, event::{Event, EventReader, EventWriter}, query::{With, Without}, system::{Commands, Query, Res, ResMut}
-    }, math::{EulerRot, Vec3}, time::Time, transform::components::Transform
-};
 use bevy::prelude::Resource;
+use bevy::{
+    asset::{AssetServer, Handle},
+    core_pipeline::core_3d::Camera3d,
+    ecs::{
+        component::Component,
+        event::{Event, EventReader, EventWriter},
+        query::{With, Without},
+        system::{Commands, Query, Res, ResMut},
+    },
+    log::info,
+    math::{EulerRot, Vec3},
+    time::Time,
+    transform::components::Transform,
+};
 use bevy_kira_audio::{Audio, AudioControl, AudioSource};
 use bevy_turborand::{DelegatedRng, GlobalRng};
 
 use crate::{
+    camera::{SmoothedCamera, LEAN_LOCKOUT_TIME, ROTATION_AMOUNT},
     player::{
         config::PlayerControlConfig,
-        motion::{Motion, SmoothedCamera, LEAN_LOCKOUT_TIME, ROTATION_AMOUNT},
-        stance::{Stance, StanceType}, Player,
+        motion::Motion,
+        stance::{Stance, StanceType},
+        Player,
     },
     ternary,
+    utils::format_value_vec3,
 };
 
 const PLAYBACK_RANGE: f64 = 0.4;
@@ -123,13 +135,15 @@ pub fn play_footstep_sfx(
 pub fn tick_footstep(
     mut ev_footstep: EventWriter<FootstepEvent>,
     mut query: Query<(&mut ActionStep, &mut Stance, &mut Motion), With<Player>>,
-    mut camera_query: Query<(&mut Transform, &mut SmoothedCamera), (With<Camera3d>, Without<Player>)>,
+    mut camera_query: Query<
+        (&mut Transform, &mut SmoothedCamera),
+        (With<Camera3d>, Without<Player>),
+    >,
     player_config: Res<PlayerControlConfig>,
     config: Res<PlayerControlConfig>,
     time: Res<Time>,
 ) {
     for (mut action, mut stance, mut motion) in query.iter_mut() {
-       
         // you must be on the ground for this sound to play.
         if stance.current != StanceType::Standing && stance.current != StanceType::Landing {
             continue;
@@ -142,7 +156,8 @@ pub fn tick_footstep(
         // scale the speed based on if you are sprinting or if you are not moving and are resting your foot.
         // when this value is higher you finish your step sooner.
 
-        let step_speed_scale: f32 = motion.movement_speed.current / player_config.default_movement_speed;
+        let step_speed_scale: f32 =
+            motion.movement_speed.current / player_config.default_movement_speed;
 
         // info!("Step Speed Scale: {}", step_speed_scale);
 
@@ -174,12 +189,16 @@ pub fn tick_footstep(
             action.bumped = true;
             let (camera_transform, mut smoothed_camera) = camera_query.single_mut().unwrap();
             let (yaw, pitch, _) = camera_transform.rotation.to_euler(EulerRot::default());
-            //let pitch = input_vector.y * rotation_amount.to_radians();
             let dir: f32 = ternary!(action.dir == FootstepDirection::Left, 1.0, -1.0);
             let sprinting_scale: f32 = ternary!(motion.sprinting, 0.2, 0.15);
             let roll: f32 = dir * ROTATION_AMOUNT.to_radians() * sprinting_scale;
-            smoothed_camera.lean.target = Vec3::from_array([yaw, pitch, roll]);
-            smoothed_camera.lock_lean = LEAN_LOCKOUT_TIME;
+            // smoothed_camera.lean.target = Vec3::from_array([yaw, pitch, roll]);
+            // smoothed_camera.lock_lean = LEAN_LOCKOUT_TIME;
+            info!(
+                "Leaning: {}, with roll: {}",
+                format_value_vec3(smoothed_camera.lean.current, Some(2), true),
+                roll
+            );
         }
 
         // if the inter step delta has elapsed increase the delta, flip the dir, reset the bump, and queue the sound event.
