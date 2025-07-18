@@ -10,7 +10,13 @@ use avian3d::prelude::*;
 use bevy::{log::info, prelude::*};
 
 use crate::{
-    camera::{smooth_camera, GameCamera}, player::motion::{update_input_resource, Input}, user_interface::themes::{BORDER_COLOR, DEFAULT_DEBUG_FONT_PATH}, utils::InterpolatedValue
+    camera::{smooth_camera, GameCamera},
+    player::{
+        focus::player_rotation_system,
+        motion::{update_input_resource, Input},
+    },
+    user_interface::themes::{BORDER_COLOR, DEFAULT_DEBUG_FONT_PATH},
+    utils::InterpolatedValue,
 };
 use body::Body;
 use config::PlayerControlConfig;
@@ -39,7 +45,10 @@ pub struct PlayerPlugin;
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(PlayerControlConfig::default()); // later we will load from some toml file
-        app.insert_resource(Input { movement: Vec3::from_array([0.0, 0.0, 0.0])});
+        app.insert_resource(Input {
+            movement: Vec3::from_array([0.0, 0.0, 0.0]),
+            direction: Vec3::from_array([0.0, 0.0, 0.0]),
+        });
         app.add_systems(
             Startup,
             (
@@ -56,6 +65,7 @@ impl Plugin for PlayerPlugin {
                 update_input_resource,
                 update_player_stance,
                 camera_look_system,
+                player_rotation_system,
                 compute_motion,
                 smooth_camera,
                 toggle_crouching,
@@ -146,9 +156,18 @@ pub fn spawn_player(
                     current_body_height: 1.0,
                 },
                 motion: Motion {
-                    linear_velocity_interp: InterpolatedValue::new(Vec3::from_array([0.0, 0.0, 0.0]), 16.0),
-                    movement_vector: InterpolatedValue::new(Vec3::from_array([0.0, 0.0, 0.0]), 16.0),
-                    movement_speed: InterpolatedValue::new(player_config.default_movement_speed, 4.0),
+                    linear_velocity_interp: InterpolatedValue::new(
+                        Vec3::from_array([0.0, 0.0, 0.0]),
+                        16.0,
+                    ),
+                    movement_vector: InterpolatedValue::new(
+                        Vec3::from_array([0.0, 0.0, 0.0]),
+                        16.0,
+                    ),
+                    movement_speed: InterpolatedValue::new(
+                        player_config.default_movement_speed,
+                        4.0,
+                    ),
                     sprinting: false,
                     moving: false,
                 },
