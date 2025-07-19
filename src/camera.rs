@@ -1,10 +1,5 @@
 use crate::{
-    config::Bindings,
-    player::{
-        motion::{Input},
-        Player,
-    },
-    utils::{exp_decay, InterpolatedValue},
+    config::Bindings, input::Input, player::Player, utils::{exp_decay, InterpolatedValue}
 };
 use avian3d::prelude::TransformInterpolation;
 use bevy::{
@@ -93,54 +88,6 @@ pub struct ToggleCameraEvent {
 pub enum CameraMode {
     FirstPerson,
     FreeCam,
-}
-
-#[derive(Resource)]
-pub struct ToggleCameraFreeModeAudioHandle(Handle<AudioSource>);
-
-#[derive(Resource)]
-pub struct ToggleCameraFirstModeAudioHandle(Handle<AudioSource>);
-
-pub fn load_toggle_camera_soundfxs(mut commands: Commands, asset_server: Res<AssetServer>) {
-    let free_handle = asset_server.load("audio/Blip-003.wav");
-    let first_handle = asset_server.load("audio/Blip-004.wav");
-    commands.insert_resource(ToggleCameraFreeModeAudioHandle(free_handle.clone()));
-    commands.insert_resource(ToggleCameraFirstModeAudioHandle(first_handle.clone()));
-}
-
-pub fn play_toggle_camera_soundfx(
-    first_handle: Res<ToggleCameraFirstModeAudioHandle>,
-    free_handle: Res<ToggleCameraFreeModeAudioHandle>,
-    mut _ev_footstep: EventReader<ToggleCameraEvent>,
-    audio: Res<Audio>,
-) {
-    let mut mode: CameraMode = CameraMode::FreeCam;
-    let mut should_play: bool = false;
-    let volume: f64 = 0.15;
-
-    for _ev in _ev_footstep.read() {
-        should_play = true;
-        mode = _ev.mode.clone();
-    }
-
-    if !should_play {
-        return;
-    }
-
-    match mode {
-        CameraMode::FirstPerson => {
-            audio
-                .into_inner()
-                .play(first_handle.0.clone())
-                .with_volume(volume);
-        }
-        CameraMode::FreeCam => {
-            audio
-                .into_inner()
-                .play(free_handle.0.clone())
-                .with_volume(volume);
-        }
-    }
 }
 
 pub fn move_free_camera(
@@ -251,31 +198,6 @@ pub fn swap_camera_target(
     }
 }
 
-/** This system was taken from the screenshot example: https://bevyengine.org/examples/Window/screenshot/ */
-pub fn take_screenshot(
-    mut commands: Commands,
-    settings: Res<EngineSettings>,
-    bindings: Res<Bindings>,
-    keys: Res<ButtonInput<KeyCode>>,
-) {
-    if !keys.just_pressed(bindings.action_screenshot.key) {
-        return;
-    }
-
-    let path: String = format!(
-        "./voyage_screenshot-{}.{}",
-        Local::now().format("%Y-%m-%d_%H-%M-%S%.3f").to_string(),
-        get_valid_extension(
-            &settings.screenshot_format,
-            utils::ExtensionType::Screenshot
-        )
-    );
-
-    commands
-        .spawn(Screenshot::primary_window())
-        .observe(save_to_disk(path));
-}
-
 #[derive(Component)]
 pub struct SmoothedCamera {
     pub lean: InterpolatedValue<Vec3>,
@@ -323,4 +245,77 @@ pub fn smooth_camera(
         pitch,
         smoothed_camera.lean.current.z,
     );
+}
+
+#[derive(Resource)]
+pub struct ToggleCameraFreeModeAudioHandle(Handle<AudioSource>);
+
+#[derive(Resource)]
+pub struct ToggleCameraFirstModeAudioHandle(Handle<AudioSource>);
+
+pub fn load_toggle_camera_soundfxs(mut commands: Commands, asset_server: Res<AssetServer>) {
+    let free_handle = asset_server.load("audio/Blip-003.wav");
+    let first_handle = asset_server.load("audio/Blip-004.wav");
+    commands.insert_resource(ToggleCameraFreeModeAudioHandle(free_handle.clone()));
+    commands.insert_resource(ToggleCameraFirstModeAudioHandle(first_handle.clone()));
+}
+
+pub fn play_toggle_camera_soundfx(
+    first_handle: Res<ToggleCameraFirstModeAudioHandle>,
+    free_handle: Res<ToggleCameraFreeModeAudioHandle>,
+    mut _ev_footstep: EventReader<ToggleCameraEvent>,
+    audio: Res<Audio>,
+) {
+    let mut mode: CameraMode = CameraMode::FreeCam;
+    let mut should_play: bool = false;
+    let volume: f64 = 0.15;
+
+    for _ev in _ev_footstep.read() {
+        should_play = true;
+        mode = _ev.mode.clone();
+    }
+
+    if !should_play {
+        return;
+    }
+
+    match mode {
+        CameraMode::FirstPerson => {
+            audio
+                .into_inner()
+                .play(first_handle.0.clone())
+                .with_volume(volume);
+        }
+        CameraMode::FreeCam => {
+            audio
+                .into_inner()
+                .play(free_handle.0.clone())
+                .with_volume(volume);
+        }
+    }
+}
+
+/** This system was taken from the screenshot example: https://bevyengine.org/examples/Window/screenshot/ */
+pub fn take_screenshot(
+    mut commands: Commands,
+    settings: Res<EngineSettings>,
+    bindings: Res<Bindings>,
+    keys: Res<ButtonInput<KeyCode>>,
+) {
+    if !keys.just_pressed(bindings.action_screenshot.key) {
+        return;
+    }
+
+    let path: String = format!(
+        "./voyage_screenshot-{}.{}",
+        Local::now().format("%Y-%m-%d_%H-%M-%S%.3f").to_string(),
+        get_valid_extension(
+            &settings.screenshot_format,
+            utils::ExtensionType::Screenshot
+        )
+    );
+
+    commands
+        .spawn(Screenshot::primary_window())
+        .observe(save_to_disk(path));
 }
