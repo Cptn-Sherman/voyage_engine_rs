@@ -9,12 +9,6 @@ pub enum Action {
     Crouch,
 }
 
-pub struct ActionBinding {
-    action: Action,
-    key: KeyCode,
-    trigger: GamepadButton,
-}
-
 pub struct Binding {
     pub key: KeyCode,
     pub button: GamepadButton,

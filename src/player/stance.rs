@@ -32,7 +32,7 @@ pub enum StanceType {
 pub struct Stance {
     pub ride_height: InterpolatedValue<f32>,
     pub current: StanceType,
-    pub grounded: bool,
+    pub _grounded: bool,
     pub crouched: bool,
     pub lockout: f32,
 }

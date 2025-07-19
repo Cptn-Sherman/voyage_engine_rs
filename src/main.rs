@@ -1,5 +1,6 @@
 pub mod camera;
 pub mod config;
+pub mod input;
 mod player;
 mod terrain;
 mod user_interface;
@@ -35,6 +36,9 @@ use user_interface::DebugInterfacePlugin;
 use std::time::Duration;
 
 use utils::{detect_toggle_cursor, generate_plane_mesh};
+
+use crate::input::update_input_resource;
+use crate::utils::{initial_grab_cursor, format_percentage};
 
 #[derive(Component)]
 struct Sun;
@@ -73,11 +77,12 @@ fn main() {
         )
         .add_systems(
             Startup,
-            (setup, start_background_audio, load_toggle_camera_soundfxs).chain(),
+            (setup, start_background_audio, load_toggle_camera_soundfxs, initial_grab_cursor).chain(),
         )
         .add_systems(
             Update,
             (
+                update_input_resource,
                 detect_toggle_cursor,
                 swap_camera_target,
                 move_free_camera,
@@ -106,16 +111,12 @@ fn setup(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut standard_materials: ResMut<Assets<StandardMaterial>>,
-    mut extended_materials: ResMut<
-        Assets<
-            ExtendedMaterial<
-                StandardMaterial,
-                BlockoutMaterialExt,
-            >,
-        >,
-    >,
+    mut extended_materials: ResMut<Assets<ExtendedMaterial<StandardMaterial, BlockoutMaterialExt>>>,
 ) {
-    
+
+    info!("Percentage Test: {}", format_percentage::<f32>(120.0f32));
+
+
     commands.spawn(InfiniteGridBundle::default());
 
     let _cascade_shadow_config = CascadeShadowConfigBuilder {
@@ -126,29 +127,34 @@ fn setup(
     .build();
 
     // create the 'Sun' with volumetric Lighting enabled.
-    let sun_id = commands.spawn((
-        DirectionalLight {
-            illuminance: light_consts::lux::RAW_SUNLIGHT,
-            shadows_enabled: true,
+    let sun_id = commands
+        .spawn((
+            DirectionalLight {
+                illuminance: light_consts::lux::RAW_SUNLIGHT,
+                shadows_enabled: true,
+                ..default()
+            },
+            Transform::default(),
+        ))
+        .id();
+
+    commands.spawn((
+        SkyCenter {
+            sun: sun_id,
+            latitude_degrees: 51.5,    // e.g., London's approximate latitude
+            planet_tilt_degrees: 23.5, // Earth's axial tilt
+            year_fraction: 0.25,       // e.g., Summer Solstice
+            cycle_duration_secs: 12000.0, // 60-second day/night cycle
+            current_cycle_time: 6000.0, // Start at midnight
             ..default()
         },
+        Visibility::Visible,
         Transform::default(),
-    )).id();
-
-     commands.spawn((
-         SkyCenter {
-             sun: sun_id,
-             latitude_degrees: 51.5,    // e.g., London's approximate latitude
-             planet_tilt_degrees: 23.5, // Earth's axial tilt
-             year_fraction: 0.25,       // e.g., Summer Solstice
-             cycle_duration_secs: 12000.0, // 60-second day/night cycle
-             current_cycle_time: 6000.0,   // Start at midnight
-             ..default()
-         },
-         Visibility::Visible,
-         Transform::default(),
-         StarSpawner { star_count: 1000, spawn_radius: 5000.0 }, // Optional
-     ));
+        StarSpawner {
+            star_count: 1000,
+            spawn_radius: 5000.0,
+        }, // Optional
+    ));
 
     // Plane
     let plane_size: f32 = 128.0;
@@ -190,7 +196,11 @@ fn setup(
     let mini_plateform_cube_size: f32 = 2.0;
     commands.spawn((
         RigidBody::Static,
-        Collider::cuboid(mini_plateform_cube_size, mini_plateform_cube_size, mini_plateform_cube_size),
+        Collider::cuboid(
+            mini_plateform_cube_size,
+            mini_plateform_cube_size,
+            mini_plateform_cube_size,
+        ),
         Mass(5.0),
         Mesh3d(meshes.add(Cuboid::from_length(mini_plateform_cube_size))),
         MeshMaterial3d(extended_materials.add(ExtendedMaterial {
@@ -207,7 +217,11 @@ fn setup(
     let small_plateform_cube_size: f32 = 4.0;
     commands.spawn((
         RigidBody::Static,
-        Collider::cuboid(small_plateform_cube_size, small_plateform_cube_size, small_plateform_cube_size),
+        Collider::cuboid(
+            small_plateform_cube_size,
+            small_plateform_cube_size,
+            small_plateform_cube_size,
+        ),
         Mass(5.0),
         Mesh3d(meshes.add(Cuboid::from_length(small_plateform_cube_size))),
         MeshMaterial3d(extended_materials.add(ExtendedMaterial {
@@ -224,7 +238,11 @@ fn setup(
     let medium_plateform_cube_size: f32 = 6.0;
     commands.spawn((
         RigidBody::Static,
-        Collider::cuboid(medium_plateform_cube_size, medium_plateform_cube_size, medium_plateform_cube_size),
+        Collider::cuboid(
+            medium_plateform_cube_size,
+            medium_plateform_cube_size,
+            medium_plateform_cube_size,
+        ),
         Mass(5.0),
         Mesh3d(meshes.add(Cuboid::from_length(medium_plateform_cube_size))),
         MeshMaterial3d(extended_materials.add(ExtendedMaterial {
@@ -237,11 +255,15 @@ fn setup(
         Transform::from_xyz(16.0, (medium_plateform_cube_size / 2.0) + 2.0, 8.0),
     ));
 
-        // spawn a cube with physics and a material
+    // spawn a cube with physics and a material
     let large_plateform_cube_size: f32 = 8.0;
     commands.spawn((
         RigidBody::Static,
-        Collider::cuboid(large_plateform_cube_size, large_plateform_cube_size, large_plateform_cube_size),
+        Collider::cuboid(
+            large_plateform_cube_size,
+            large_plateform_cube_size,
+            large_plateform_cube_size,
+        ),
         Mass(5.0),
         Mesh3d(meshes.add(Cuboid::from_length(large_plateform_cube_size))),
         MeshMaterial3d(extended_materials.add(ExtendedMaterial {
@@ -253,6 +275,4 @@ fn setup(
         })),
         Transform::from_xyz(24.0, (large_plateform_cube_size / 2.0) + 2.0, 8.0),
     ));
-
-
 }

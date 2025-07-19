@@ -187,8 +187,8 @@ pub fn tick_footstep(
             stance.ride_height.current =
                 config.ride_height + (ride_height_offset * current_ride_height_offset_scaler);
             action.bumped = true;
-            let (camera_transform, mut smoothed_camera) = camera_query.single_mut().unwrap();
-            let (yaw, pitch, _) = camera_transform.rotation.to_euler(EulerRot::default());
+            let (camera_transform, mut _smoothed_camera) = camera_query.single_mut().unwrap();
+            let (_yaw, _pitch, _) = camera_transform.rotation.to_euler(EulerRot::default());
             let dir: f32 = ternary!(action.dir == FootstepDirection::Left, 1.0, -1.0);
             let sprinting_scale: f32 = ternary!(motion.sprinting, 0.2, 0.15);
             let roll: f32 = dir * ROTATION_AMOUNT.to_radians() * sprinting_scale;
@@ -196,7 +196,7 @@ pub fn tick_footstep(
             // smoothed_camera.lock_lean = LEAN_LOCKOUT_TIME;
             info!(
                 "Leaning: {}, with roll: {}",
-                format_value_vec3(smoothed_camera.lean.current, Some(2), true),
+                format_value_vec3(_smoothed_camera.lean.current, Some(2), true),
                 roll
             );
         }

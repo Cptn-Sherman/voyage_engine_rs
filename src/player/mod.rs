@@ -10,11 +10,9 @@ use avian3d::prelude::*;
 use bevy::{log::info, prelude::*};
 
 use crate::{
-    camera::{smooth_camera, GameCamera},
-    player::{
-        debug::{create_player_debug, update_debug_is_moving, update_debug_is_sprinting, update_debug_linear_velocity, update_debug_movement_speed_current, update_debug_movement_speed_target, update_debug_movement_vector_current, update_debug_movement_vector_decay, update_debug_movement_vector_target, update_debug_position, update_debug_rotation}, focus::player_rotation_system, motion::{update_input_resource, Input}
-    },
-    utils::InterpolatedValue,
+    camera::{smooth_camera, GameCamera}, input::{Input}, player::{
+        debug::{create_player_debug, update_debug_is_moving, update_debug_is_sprinting, update_debug_linear_velocity, update_debug_movement_speed_current, update_debug_movement_speed_target, update_debug_movement_vector_current, update_debug_movement_vector_decay, update_debug_movement_vector_target, update_debug_position, update_debug_rotation}, focus::player_rotation_system
+    }, utils::InterpolatedValue
 };
 use body::Body;
 use config::PlayerControlConfig;
@@ -54,7 +52,6 @@ impl Plugin for PlayerPlugin {
         app.add_systems(
             FixedUpdate,
             (
-                update_input_resource,
                 update_player_stance,
                 camera_look_system,
                 player_rotation_system,
@@ -166,14 +163,14 @@ pub fn spawn_player(
                 stance: Stance {
                     ride_height: InterpolatedValue::new(player_config.ride_height, 6.0),
                     current: StanceType::Standing,
-                    grounded: false,
+                    _grounded: false,
                     crouched: false,
                     lockout: 0.0,
                 },
                 focus: Focus {
-                    point_of_focus: Vec3::from_array([0.0, 0.0, 0.0]),
-                    face_direction: Vec3::from_array([0.0, 0.0, 0.0]),
-                    free_look: false,
+                    _point_of_focus: Vec3::from_array([0.0, 0.0, 0.0]),
+                    _face_direction: Vec3::from_array([0.0, 0.0, 0.0]),
+                    _free_look: false,
                 },
                 action_step: ActionStep {
                     dir: FootstepDirection::Right,

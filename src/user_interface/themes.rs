@@ -38,7 +38,3 @@ pub fn gen_text_section(
 //         color: Color::WHITE,
 //     }
 // }
-
-enum TextType {
-    Default,
-}

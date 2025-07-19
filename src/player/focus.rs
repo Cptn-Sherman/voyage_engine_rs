@@ -1,16 +1,15 @@
 use bevy::{
     prelude::*,
 };
-
-use crate::player::motion::Input;
+use crate::input::Input;
 
 use super::{Player};
 
 #[derive(Component)]
 pub struct Focus {
-    pub point_of_focus: Vec3,
-    pub face_direction: Vec3,
-    pub free_look: bool,
+    pub _point_of_focus: Vec3,
+    pub _face_direction: Vec3,
+    pub _free_look: bool,
 }
 
 // This function and many of its helpers are ripped from, bevy_fly_cam.

@@ -1,22 +1,18 @@
 use bevy::{
-    ecs::{component::Component, entity::Entity, resource::Resource, system::ResMut},
-    input::{
-        gamepad::{Gamepad, GamepadAxis}, mouse::AccumulatedMouseMotion, ButtonInput
-    },
+    ecs::component::Component,
     log::{info, warn},
-    math::{Dir3, EulerRot, Quat, Vec3},
-    prelude::{Camera3d, KeyCode, Query, Res, With, Without},
-    text::TextSpan,
+    math::Vec3,
+    prelude::{Query, Res, With},
     time::Time,
-    transform::components::Transform, window::{PrimaryWindow, Window},
+    transform::components::Transform,
 };
 
 use avian3d::prelude::*;
 
 use crate::{
+    input::Input,
     ternary,
-    utils::{exp_decay, format_value_f32, format_value_quat, format_value_vec3, InterpolatedValue},
-    Bindings,
+    utils::{exp_decay, InterpolatedValue},
 };
 
 use super::{
@@ -24,77 +20,6 @@ use super::{
     stance::{Stance, StanceType},
     Player, PlayerControlConfig,
 };
-
-const ANALOGE_STICK_DEADZONE: f32 = 0.1;
-
-
-#[derive(Resource)]
-pub struct Input {
-    pub movement: Vec3,
-    pub direction: Vec3,
-}
-
-pub fn update_input_resource(
-    mut input: ResMut<Input>,
-    accumulated_mouse_motion: ResMut<AccumulatedMouseMotion>,
-    primary_window: Query<&Window, With<PrimaryWindow>>,
-    gamepads: Query<(Entity, &Gamepad)>,
-    keys: Res<ButtonInput<KeyCode>>,
-    config: Res<PlayerControlConfig>,
-    key_bindings: Res<Bindings>,
-) {
-    // this is the raw input vector
-    input.movement = Vec3::ZERO.clone();
-    input.direction = Vec3::ZERO.clone();
-
-    if keys.pressed(key_bindings.move_forward) {
-        input.movement.z = 1.0;
-    }
-    if keys.pressed(key_bindings.move_backward) {
-        input.movement.z = -1.0;
-    }
-    if keys.pressed(key_bindings.move_left) {
-        input.movement.x = -1.0;
-    }
-    if keys.pressed(key_bindings.move_right) {
-        input.movement.x = 1.0;
-    }
-
-    input.direction.x = config.mouse_look_sensitivity * accumulated_mouse_motion.delta.x;
-    input.direction.y = config.mouse_look_sensitivity * accumulated_mouse_motion.delta.y;
-
-    if let Ok((_entity, gamepad)) = gamepads.single() {
-        let left_stick_x: f32 = gamepad.get(GamepadAxis::LeftStickX).unwrap_or_default();
-        let left_stick_y: f32 = gamepad.get(GamepadAxis::LeftStickY).unwrap_or_default();
-        let right_stick_x: f32 = gamepad.get(GamepadAxis::RightStickX).unwrap_or_default();
-        let right_stick_y: f32 = gamepad.get(GamepadAxis::RightStickY).unwrap_or_default();
-
-        if left_stick_x.abs() > ANALOGE_STICK_DEADZONE {
-            input.movement.x = left_stick_x;
-        }
-
-        if left_stick_y.abs() > ANALOGE_STICK_DEADZONE {
-            input.movement.y = left_stick_y;
-        }
-
-        if let Ok(window) = primary_window.single() { 
-            let window_scale: f32 = window.height().min(window.width());
-
-            if right_stick_x.abs() > ANALOGE_STICK_DEADZONE {
-                input.direction.x = config.gamepad_look_sensitivity * right_stick_x * window_scale
-            }
-    
-            if right_stick_y.abs() > ANALOGE_STICK_DEADZONE {
-                input.direction.y = config.gamepad_look_sensitivity * right_stick_y * window_scale
-            }
-        }
-    }
-
-    info!("Movement: {}, Direction: {}", format_value_vec3(input.movement, Some(2) , true), format_value_vec3(input.direction, Some(2) , true));
-
-}
-
-
 
 #[derive(Component)]
 pub struct Motion {
@@ -187,7 +112,6 @@ pub fn compute_motion(
     //     format_value_f32(motion.current_movement_vector.y, Some(4), true),
     //     format_value_f32(motion.current_movement_vector.z, Some(4), true)
     // );
-
 
     // * APPLY MOVEMENT_VECTOR TO PLAYER TRANSFORM LINEAR VELOCITY
 

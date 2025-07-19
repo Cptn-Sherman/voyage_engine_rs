@@ -12,7 +12,7 @@ pub struct PlayerControlConfig {
     pub (crate) jump_strength: f32,
     pub (crate) default_movement_speed: f32,
     pub (crate) sprint_speed_factor: f32,
-    pub (crate) movement_decay: f32,
+    pub (crate) _movement_decay: f32,
     pub (crate) mouse_look_sensitivity: f32,
     pub (crate) gamepad_look_sensitivity: f32,
     pub (crate) enable_view_bobbing: bool,
@@ -32,7 +32,7 @@ impl Default for PlayerControlConfig {
             jump_strength: 200.0,
             default_movement_speed: 10.0,
             sprint_speed_factor: 2.0,
-            movement_decay: 0.90,
+            _movement_decay: 0.90,
             mouse_look_sensitivity: 0.0825,
             gamepad_look_sensitivity: 0.0012, // This value was made up by me!
             enable_view_bobbing: true,
