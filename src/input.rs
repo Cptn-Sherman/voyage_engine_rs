@@ -1,6 +1,24 @@
-use bevy::{ecs::{entity::Entity, query::With, resource::Resource, system::{Query, Res, ResMut}}, input::{gamepad::{Gamepad, GamepadAxis}, keyboard::KeyCode, mouse::AccumulatedMouseMotion, ButtonInput}, log::info, math::Vec3, window::{PrimaryWindow, Window}};
+use bevy::{
+    ecs::{
+        entity::Entity,
+        query::With,
+        resource::Resource,
+        system::{Query, Res, ResMut},
+    },
+    input::{
+        gamepad::{Gamepad, GamepadAxis},
+        keyboard::KeyCode,
+        mouse::AccumulatedMouseMotion,
+        ButtonInput,
+    },
+    math::{Vec2, Vec3},
+    window::{PrimaryWindow, Window},
+};
 
-use crate::{config::Bindings, player::config::PlayerControlConfig, utils::format_value_vec3};
+use crate::{
+    config::Bindings,
+    player::config::PlayerControlConfig,
+};
 
 // todo: make this adjustable in the config.
 const ANALOGE_STICK_DEADZONE: f32 = 0.1;
@@ -8,7 +26,7 @@ const ANALOGE_STICK_DEADZONE: f32 = 0.1;
 #[derive(Resource)]
 pub struct Input {
     pub movement: Vec3,
-    pub direction: Vec3,
+    pub direction: Vec2,
 }
 
 pub fn update_input_resource(
@@ -22,7 +40,7 @@ pub fn update_input_resource(
 ) {
     // this is the raw input vector
     input.movement = Vec3::ZERO.clone();
-    input.direction = Vec3::ZERO.clone();
+    input.direction = Vec2::ZERO.clone();
 
     if keys.pressed(key_bindings.move_forward) {
         input.movement.z = 1.0;
@@ -54,18 +72,22 @@ pub fn update_input_resource(
             input.movement.y = left_stick_y;
         }
 
-        if let Ok(window) = primary_window.single() { 
+        if let Ok(window) = primary_window.single() {
             let window_scale: f32 = window.height().min(window.width());
 
             if right_stick_x.abs() > ANALOGE_STICK_DEADZONE {
                 input.direction.x = config.gamepad_look_sensitivity * right_stick_x * window_scale
             }
-    
+
             if right_stick_y.abs() > ANALOGE_STICK_DEADZONE {
                 input.direction.y = config.gamepad_look_sensitivity * right_stick_y * window_scale
             }
         }
     }
 
-    info!("Movement: {}, Direction: {}", format_value_vec3(input.movement, Some(2) , true), format_value_vec3(input.direction, Some(2) , true));
+    // info!(
+    //     "Movement: {}, Direction: {}",
+    //     format_value_vec3(input.movement, Some(2), true),
+    //     format_value_vec2(input.direction, Some(2), true)
+    // );
 }

@@ -1,7 +1,7 @@
 use bevy::{
     asset::{Assets, Handle},
     input::ButtonInput,
-    log::warn,
+    log::{info, warn},
     math::{f32, EulerRot, Quat, Vec2, Vec3},
     prelude::{KeyCode, Mesh, Query, Res, ResMut, With},
     render::{
@@ -127,6 +127,19 @@ pub fn format_value_vec3(
     );
 }
 
+#[allow(dead_code)]
+pub fn format_value_vec2(
+    vec: Vec2,
+    decimal_digits: Option<usize>,
+    format_negative_space: bool,
+) -> String {
+    return format!(
+        "[{}, {}]",
+        format_value_f32(vec.x, decimal_digits, format_negative_space),
+        format_value_f32(vec.y, decimal_digits, format_negative_space)
+    );
+}
+
 pub fn format_value_quat(
     quat: Quat,
     decimal_digits: Option<usize>,
@@ -161,8 +174,10 @@ pub fn format_value_quat(
 pub fn initial_grab_cursor(mut primary_window: Query<&mut Window, With<PrimaryWindow>>) {
     if let Ok(mut window) = primary_window.single_mut() {
         // Check if the cursor is already grabbed
-        if window.cursor_options.grab_mode != CursorGrabMode::Locked {
+        if window.cursor_options.grab_mode != CursorGrabMode::Confined {
             toggle_cursor_grab_mode(&mut window);
+        } else {
+            warn!("Expected window grab mode to not be locked, cursor not grabbed.");
         }
     } else {
         warn!("Primary window not found for `initial_grab_cursor`!");
@@ -200,9 +215,19 @@ fn set_cursor_grab_mode(window: &mut Window, grab_mode: CursorGrabMode, center_c
 
     if center_cursor {
         // set the cursor to the center of the screen.
-        let window_width = (window.width() / 2.0) + window.ime_position.x;
-        let window_height = (window.height() / 2.0) + window.ime_position.y;
+        let window_width: f32 = (window.width() / 2.0) + window.ime_position.x;
+        let window_height: f32 = (window.height() / 2.0) + window.ime_position.y;
         window.set_cursor_position(Some(Vec2::new(window_width / 2.0, window_height / 2.0)));
+    }
+
+    info!("Setting window grab mode: {}", grab_mode_stringified(&grab_mode));
+}
+
+fn grab_mode_stringified(grab_mode: &CursorGrabMode) -> String {
+    match grab_mode {
+        CursorGrabMode::Confined =>  "Confined".to_string(),
+        CursorGrabMode::Locked => "Locked".to_string(),
+        CursorGrabMode::None => "None".to_string(),
     }
 }
 
