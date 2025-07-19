@@ -1,12 +1,10 @@
 use bevy::{
-    input::mouse::AccumulatedMouseMotion,
     prelude::*,
-    window::{CursorGrabMode, PrimaryWindow},
 };
 
 use crate::player::motion::Input;
 
-use super::{config::PlayerControlConfig, Player};
+use super::{Player};
 
 #[derive(Component)]
 pub struct Focus {
@@ -25,7 +23,6 @@ pub fn camera_look_system(
             cam_transform.rotation.to_euler(EulerRot::YXZ);
 
         camera_pitch -= (input.direction.y).to_radians();
-
         // Prevent the Camera from wrapping over itself in pitch only.
         camera_pitch = camera_pitch.clamp(-1.54, 1.54);
         // Order is important to prevent unintended roll.

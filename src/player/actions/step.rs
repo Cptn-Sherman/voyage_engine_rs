@@ -9,7 +9,7 @@ use bevy::{
         system::{Commands, Query, Res, ResMut},
     },
     log::info,
-    math::{EulerRot, Vec3},
+    math::{EulerRot},
     time::Time,
     transform::components::Transform,
 };
@@ -17,7 +17,7 @@ use bevy_kira_audio::{Audio, AudioControl, AudioSource};
 use bevy_turborand::{DelegatedRng, GlobalRng};
 
 use crate::{
-    camera::{SmoothedCamera, LEAN_LOCKOUT_TIME, ROTATION_AMOUNT},
+    camera::{SmoothedCamera, ROTATION_AMOUNT},
     player::{
         config::PlayerControlConfig,
         motion::Motion,
@@ -134,7 +134,7 @@ pub fn play_footstep_sfx(
 
 pub fn tick_footstep(
     mut ev_footstep: EventWriter<FootstepEvent>,
-    mut query: Query<(&mut ActionStep, &mut Stance, &mut Motion), With<Player>>,
+    mut query: Query<(&mut ActionStep, &mut Stance, &Motion), With<Player>>,
     mut camera_query: Query<
         (&mut Transform, &mut SmoothedCamera),
         (With<Camera3d>, Without<Player>),
@@ -143,7 +143,7 @@ pub fn tick_footstep(
     config: Res<PlayerControlConfig>,
     time: Res<Time>,
 ) {
-    for (mut action, mut stance, mut motion) in query.iter_mut() {
+    for (mut action, mut stance, motion) in query.iter_mut() {
         // you must be on the ground for this sound to play.
         if stance.current != StanceType::Standing && stance.current != StanceType::Landing {
             continue;

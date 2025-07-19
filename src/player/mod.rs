@@ -12,24 +12,15 @@ use bevy::{log::info, prelude::*};
 use crate::{
     camera::{smooth_camera, GameCamera},
     player::{
-        focus::player_rotation_system,
-        motion::{update_input_resource, Input},
+        debug::{create_player_debug, update_debug_is_moving, update_debug_is_sprinting, update_debug_linear_velocity, update_debug_movement_speed_current, update_debug_movement_speed_target, update_debug_movement_vector_current, update_debug_movement_vector_decay, update_debug_movement_vector_target, update_debug_position, update_debug_rotation}, focus::player_rotation_system, motion::{update_input_resource, Input}
     },
-    user_interface::themes::{BORDER_COLOR, DEFAULT_DEBUG_FONT_PATH},
     utils::InterpolatedValue,
 };
 use body::Body;
 use config::PlayerControlConfig;
 use focus::{camera_look_system, Focus};
 use motion::{
-    compute_motion, update_debug_is_moving, update_debug_is_sprinting,
-    update_debug_linear_velocity, update_debug_movement_speed_current,
-    update_debug_movement_speed_target, update_debug_movement_vector_current,
-    update_debug_movement_vector_decay, update_debug_movement_vector_target, update_debug_position,
-    update_debug_rotation, Motion, MotionMovementIsMovingDebug, MotionMovementIsSprintingDebug,
-    MotionMovementSpeedCurrentDebug, MotionMovementSpeedTargetDebug,
-    MotionMovementVectorCurrentDebug, MotionMovementVectorDecayRateDebug,
-    MotionMovementVectorTargetDebug, MotionPositionDebug, MotionRotationDebug, MotionVelocityDebug,
+    compute_motion, Motion
 };
 use stance::{lock_angular_velocity, update_player_stance, Stance, StanceType};
 
@@ -39,6 +30,7 @@ pub mod config;
 pub mod focus;
 pub mod motion;
 pub mod stance;
+pub mod debug;
 
 pub struct PlayerPlugin;
 
@@ -237,196 +229,4 @@ fn attached_camera_system(
             }
         }
     }
-}
-
-fn create_player_debug(mut commands: Commands, asset_server: Res<AssetServer>) {
-    let default_font: Handle<Font> = asset_server.load(DEFAULT_DEBUG_FONT_PATH);
-    let text_font = TextFont {
-        font: default_font,
-        font_size: 11.0,
-        ..Default::default()
-    };
-
-    commands
-        .spawn(Node {
-            width: Val::Percent(100.0),
-            height: Val::Percent(100.0),
-            display: Display::Flex,
-            flex_direction: FlexDirection::Column,
-            justify_content: JustifyContent::FlexStart,
-            align_items: AlignItems::FlexStart,
-            position_type: PositionType::Absolute,
-            ..default()
-        })
-        .with_children(|parent| {
-            parent
-                .spawn((
-                    Node {
-                        display: Display::Flex,
-                        justify_content: JustifyContent::SpaceAround,
-                        align_items: AlignItems::FlexStart,
-                        flex_direction: FlexDirection::Column,
-                        row_gap: Val::Px(2.0),
-                        margin: UiRect::all(Val::Px(5.0)),
-                        padding: UiRect::all(Val::Px(5.0)),
-                        border: UiRect::all(Val::Px(2.0)),
-                        ..Default::default()
-                    },
-                    BackgroundColor(Color::srgba(0.05, 0.05, 0.05, 0.75)),
-                    BorderColor(BORDER_COLOR),
-                ))
-                .with_children(|parent| {
-                    parent
-                        .spawn((
-                            Text::new("pos: "),
-                            text_font.clone(),
-                            TextColor(Color::WHITE),
-                        ))
-                        .with_children(|parent| {
-                            parent.spawn((
-                                TextSpan::new("000"),
-                                text_font.clone(),
-                                TextColor(Color::WHITE),
-                                MotionPositionDebug,
-                            ));
-                        });
-
-                    parent
-                        .spawn((
-                            Text::new("focus: "),
-                            text_font.clone(),
-                            TextColor(Color::WHITE),
-                        ))
-                        .with_children(|parent| {
-                            parent.spawn((
-                                TextSpan::new("000"),
-                                text_font.clone(),
-                                TextColor(Color::WHITE),
-                                MotionRotationDebug,
-                            ));
-                        });
-
-                    parent
-                        .spawn((
-                            Text::new("vel: "),
-                            text_font.clone(),
-                            TextColor(Color::WHITE),
-                        ))
-                        .with_children(|parent| {
-                            parent.spawn((
-                                TextSpan::new("000"),
-                                text_font.clone(),
-                                TextColor(Color::WHITE),
-                                MotionVelocityDebug,
-                            ));
-                        });
-
-                    parent
-                        .spawn((
-                            Text::new("Movement Vector | decay: "),
-                            text_font.clone(),
-                            TextColor(Color::WHITE),
-                        ))
-                        .with_children(|parent| {
-                            parent.spawn((
-                                TextSpan::new("000"),
-                                text_font.clone(),
-                                TextColor(Color::WHITE),
-                                MotionMovementVectorDecayRateDebug,
-                            ));
-                        });
-
-                    parent
-                        .spawn((
-                            Text::new("current: "),
-                            text_font.clone(),
-                            TextColor(Color::WHITE),
-                        ))
-                        .with_children(|parent| {
-                            parent.spawn((
-                                TextSpan::new("000"),
-                                text_font.clone(),
-                                TextColor(Color::WHITE),
-                                MotionMovementVectorCurrentDebug,
-                            ));
-                        });
-
-                    parent
-                        .spawn((
-                            Text::new("target: "),
-                            text_font.clone(),
-                            TextColor(Color::WHITE),
-                        ))
-                        .with_children(|parent| {
-                            parent.spawn((
-                                TextSpan::new("000"),
-                                text_font.clone(),
-                                TextColor(Color::WHITE),
-                                MotionMovementVectorTargetDebug,
-                            ));
-                        });
-
-                    parent
-                        .spawn((
-                            Text::new("moving: "),
-                            text_font.clone(),
-                            TextColor(Color::WHITE),
-                        ))
-                        .with_children(|parent| {
-                            parent.spawn((
-                                TextSpan::new("000"),
-                                text_font.clone(),
-                                TextColor(Color::WHITE),
-                                MotionMovementIsMovingDebug,
-                            ));
-                        })
-                        .with_children(|parent| {
-                            parent.spawn((
-                                TextSpan::new(" | sprinting: "),
-                                text_font.clone(),
-                                TextColor(Color::WHITE),
-                            ));
-                        })
-                        .with_children(|parent| {
-                            parent.spawn((
-                                TextSpan::new("000"),
-                                text_font.clone(),
-                                TextColor(Color::WHITE),
-                                MotionMovementIsSprintingDebug,
-                            ));
-                        });
-
-                    parent
-                        .spawn((
-                            Text::new("current speed: "),
-                            text_font.clone(),
-                            TextColor(Color::WHITE),
-                        ))
-                        .with_children(|parent| {
-                            parent.spawn((
-                                TextSpan::new("000"),
-                                text_font.clone(),
-                                TextColor(Color::WHITE),
-                                MotionMovementSpeedCurrentDebug,
-                            ));
-                        })
-                        .with_children(|parent| {
-                            parent.spawn((
-                                TextSpan::new(" -> target: "),
-                                text_font.clone(),
-                                TextColor(Color::WHITE),
-                            ));
-                        })
-                        .with_children(|parent| {
-                            parent.spawn((
-                                TextSpan::new("000"),
-                                text_font.clone(),
-                                TextColor(Color::WHITE),
-                                MotionMovementSpeedTargetDebug,
-                            ));
-                        });
-                });
-        });
-
-    info!("Created Player debug");
 }

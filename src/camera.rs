@@ -316,7 +316,7 @@ pub fn smooth_camera(
         time.delta_secs(),
     );
 
-    // Apply the lean to the camera rotation.
+    // Apply the lean to the camera transformation.
     camera_transform.rotation = Quat::from_euler(
         EulerRot::default(),
         yaw, // we dont change the yaw.
