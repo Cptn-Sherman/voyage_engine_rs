@@ -131,8 +131,19 @@ pub fn compute_motion(
         time.delta_secs(),
     );
 
-    linear_vel.x = motion.linear_velocity_interp.current.x;
-    linear_vel.z = motion.linear_velocity_interp.current.z;
+    if stance.current == StanceType::Standing {
+        linear_vel.x = motion.linear_velocity_interp.current.x;
+        linear_vel.z = motion.linear_velocity_interp.current.z;
+    } else {
+        linear_vel.x += input.movement.x
+            * motion.linear_velocity_interp.current.x
+            * movement_scale
+            * time.delta().as_secs_f32();
+        linear_vel.z += input.movement.z
+            * motion.linear_velocity_interp.current.z
+            * movement_scale
+            * time.delta().as_secs_f32();
+    }
 
     // info!(
     //     "Linear Velocity: [{}, {}, {}]",
