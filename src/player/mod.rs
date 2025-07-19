@@ -35,10 +35,7 @@ pub struct PlayerPlugin;
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(PlayerControlConfig::default()); // later we will load from some toml file
-        app.insert_resource(Input {
-            movement: Vec3::from_array([0.0, 0.0, 0.0]),
-            direction: Vec2::from_array([0.0, 0.0]),
-        });
+        app.insert_resource(Input::default());
         app.add_systems(
             Startup,
             (

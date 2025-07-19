@@ -29,6 +29,12 @@ pub struct Input {
     pub direction: Vec2,
 }
 
+impl Default for Input {
+    fn default() -> Self {
+        Self { movement: Default::default(), direction: Default::default() }
+    }
+}
+
 pub fn update_input_resource(
     mut input: ResMut<Input>,
     accumulated_mouse_motion: ResMut<AccumulatedMouseMotion>,
