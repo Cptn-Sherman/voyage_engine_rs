@@ -85,7 +85,7 @@ pub fn compute_motion(
 
     let movement_scale: f32 = ternary!(
         stance.current != StanceType::Standing && stance.current != StanceType::Landing,
-        0.35,
+        0.5,
         1.0
     );
 
