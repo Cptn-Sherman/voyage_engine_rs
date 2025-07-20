@@ -4,19 +4,16 @@ use super::{
     motion::{apply_jump_force, apply_spring_force},
 };
 use super::{body::Body, PlayerColliderFlag};
-use crate::input::Input;
 use crate::player::motion::Motion;
 use crate::utils::{exp_decay, InterpolatedValue};
 use crate::{player::config::PlayerControlConfig};
 use avian3d::prelude::*;
-use bevy::transform;
 use bevy::{
     ecs::entity::Entity,
     input::{
         gamepad::{Gamepad, GamepadButton},
         ButtonInput,
     },
-    transform::components::Transform,
     log::{info, warn},
     math::Vec3,
     prelude::{Component, EventWriter, KeyCode, Query, Res, With},
@@ -62,7 +59,6 @@ pub fn update_player_stance(
     >,
     player_collider_query: Query<Entity, With<PlayerColliderFlag>>,
     mut ev_footstep: EventWriter<FootstepEvent>,
-    input: Res<Input>,
 ) {
     if query.is_empty() || query.iter().len() > 1 {
         warn!(

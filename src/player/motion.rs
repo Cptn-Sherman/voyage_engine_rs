@@ -119,7 +119,7 @@ pub fn compute_motion(
             motion.movement_vector.current.x * motion.movement_speed.current;
         motion.linear_velocity_interp.target.z =
             motion.movement_vector.current.z * motion.movement_speed.current;
-    } else { // ! BUG: How do we add air time movement without moving too much.
+    } else { // ! BUG: How do we add air time movement without moving too much. 
         let clamped_movement_speed: f32  = motion.movement_speed.current.clamp(0.0, 5.0);
         motion.linear_velocity_interp.target.x +=
             motion.movement_vector.current.x * clamped_movement_speed * movement_scale * time.delta_secs();
