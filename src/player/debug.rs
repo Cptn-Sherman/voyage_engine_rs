@@ -222,9 +222,9 @@ pub fn update_debug_rotation(
     let player_transform = player_query.single().unwrap();
     let (player_yaw, _player_pitch, _player_roll) =
         player_transform.rotation.to_euler(EulerRot::default());
-    let (_camera_yaw, cmaera_pitch, camera_roll) =
+    let (_camera_yaw, camera_pitch, camera_roll) =
         camera_transform.rotation.to_euler(EulerRot::default());
-    let quat = Quat::from_euler(EulerRot::default(), player_yaw, cmaera_pitch, camera_roll);
+    let quat: Quat = Quat::from_euler(EulerRot::default(), player_yaw, camera_pitch, camera_roll);
     text.0 = format_value_quat(quat, Some(4), true, Some(EulerRot::default()));
 }
 

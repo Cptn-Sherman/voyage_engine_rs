@@ -1,9 +1,10 @@
 pub mod camera;
 pub mod config;
 pub mod input;
-mod player;
-mod terrain;
+
 mod user_interface;
+mod terrain;
+mod player;
 mod utils;
 
 use bevy::color::palettes::tailwind::{AMBER_400, SKY_400, ZINC_200};
@@ -37,8 +38,8 @@ use std::time::Duration;
 
 use utils::{detect_toggle_cursor, generate_plane_mesh};
 
-use crate::input::update_input_resource;
-use crate::utils::{initial_grab_cursor, format_percentage};
+use crate::input::{update_input_resource, Input};
+use crate::utils::{format_percentage, initial_grab_cursor};
 
 #[derive(Component)]
 struct Sun;
@@ -46,17 +47,17 @@ struct Sun;
 fn main() {
     App::new()
         .init_resource::<Bindings>()
+        .insert_resource(RenderAssetBytesPerFrame::new(2_000_000_000))
         .insert_resource(EngineSettings { ..default() })
         .insert_resource(DirectionalLightShadowMap { size: 4098 })
-        .insert_resource(RenderAssetBytesPerFrame::new(2_000_000_000))
         .insert_resource(CameraConfig { hdr: true })
+        .insert_resource(Input::default())
         .add_plugins((
             DefaultPlugins,
             bevy_panic_handler::PanicHandler::new().build(),
             RngPlugin::new().with_rng_seed(0),
-            //TransformInterpolationPlugin::default(),
-            PhysicsPlugins::default(),
             PhysicsDebugPlugin::default(),
+            PhysicsPlugins::default(),
             DebugInterfacePlugin,
             TemporalAntiAliasPlugin,
             PlayerPlugin,
@@ -67,17 +68,16 @@ fn main() {
             SunMovePlugin,
             RandomStarsPlugin,
         ))
-        .add_systems(
-            PreStartup,
-            (
-                create_camera,
-                create_free_camera,
-                //increase_render_adapter_wgpu_limits,
-            ),
-        )
+        .add_systems(PreStartup, (create_camera, create_free_camera))
         .add_systems(
             Startup,
-            (setup, start_background_audio, load_toggle_camera_soundfxs, initial_grab_cursor).chain(),
+            (
+                setup,
+                start_background_audio,
+                load_toggle_camera_soundfxs,
+                initial_grab_cursor,
+            )
+                .chain(),
         )
         .add_systems(
             Update,
@@ -113,9 +113,7 @@ fn setup(
     mut standard_materials: ResMut<Assets<StandardMaterial>>,
     mut extended_materials: ResMut<Assets<ExtendedMaterial<StandardMaterial, BlockoutMaterialExt>>>,
 ) {
-
     info!("Percentage Test: {}", format_percentage::<f32>(120.0f32));
-
 
     commands.spawn(InfiniteGridBundle::default());
 

@@ -12,7 +12,7 @@ use avian3d::prelude::*;
 use crate::{
     input::Input,
     ternary,
-    utils::{exp_decay, InterpolatedValue},
+    utils::{exp_decay, format_value_vec3, InterpolatedValue},
 };
 
 use super::{
@@ -91,8 +91,8 @@ pub fn compute_motion(
 
     let mut movement_vector: Vec3 = Vec3::ZERO.clone();
     // Apply the input_vector to the player to update the movement_vector.
-    movement_vector += player_transform.right().as_vec3() * input.movement.x;
-    movement_vector += player_transform.forward().as_vec3() * input.movement.z;
+    movement_vector += player_transform.forward().as_vec3() * input.movement_raw.z;
+    movement_vector += player_transform.right().as_vec3() * input.movement_raw.x;
 
     // Update the target movement vector to be the normalized movement vector.
     motion.movement_vector.target = movement_vector.normalize_or_zero();
@@ -106,22 +106,25 @@ pub fn compute_motion(
         time.delta_secs(),
     );
 
-    // info!(
-    //     "Current Movement Vector: [{}, {}, {}]",
-    //     format_value_f32(motion.current_movement_vector.x, Some(4), true),
-    //     format_value_f32(motion.current_movement_vector.y, Some(4), true),
-    //     format_value_f32(motion.current_movement_vector.z, Some(4), true)
-    // );
+    info!(
+        "Current Movement Vector: {}",
+        format_value_vec3(motion.movement_vector.current, Some(4), true),
+    );
 
     // * APPLY MOVEMENT_VECTOR TO PLAYER TRANSFORM LINEAR VELOCITY
 
     // We don't need to lerp here just setting the real value to as we already lerp the current_movement_vector and current_movement_speed.
-
     if stance.current == StanceType::Standing {
         motion.linear_velocity_interp.target.x =
             motion.movement_vector.current.x * motion.movement_speed.current;
         motion.linear_velocity_interp.target.z =
             motion.movement_vector.current.z * motion.movement_speed.current;
+    } else { // ! BUG: How do we add air time movement without moving too much.
+        let clamped_movement_speed: f32  = motion.movement_speed.current.clamp(0.0, 5.0);
+        motion.linear_velocity_interp.target.x +=
+            motion.movement_vector.current.x * clamped_movement_speed * movement_scale * time.delta_secs();
+        motion.linear_velocity_interp.target.z +=
+            motion.movement_vector.current.z * clamped_movement_speed * movement_scale * time.delta_secs();
     }
 
     motion.linear_velocity_interp.current = exp_decay::<Vec3>(
@@ -131,26 +134,25 @@ pub fn compute_motion(
         time.delta_secs(),
     );
 
+    linear_vel.x = motion.linear_velocity_interp.current.x;
+    linear_vel.z = motion.linear_velocity_interp.current.z;
+
     if stance.current == StanceType::Standing {
-        linear_vel.x = motion.linear_velocity_interp.current.x;
-        linear_vel.z = motion.linear_velocity_interp.current.z;
     } else {
-        linear_vel.x += input.movement.x
-            * motion.linear_velocity_interp.current.x
-            * movement_scale
-            * time.delta().as_secs_f32();
-        linear_vel.z += input.movement.z
-            * motion.linear_velocity_interp.current.z
-            * movement_scale
-            * time.delta().as_secs_f32();
+        // linear_vel.x += input.movement_raw.x
+        //     * motion.linear_velocity_interp.current.x
+        //     * movement_scale
+        //     * time.delta().as_secs_f32();
+        // linear_vel.z += input.movement_raw.z
+        //     * motion.linear_velocity_interp.current.z
+        //     * movement_scale
+        //     * time.delta().as_secs_f32();
     }
 
-    // info!(
-    //     "Linear Velocity: [{}, {}, {}]",
-    //     format_value_f32(linear_vel.x, Some(4), true),
-    //     format_value_f32(linear_vel.y, Some(4), true),
-    //     format_value_f32(linear_vel.z, Some(4), true)
-    // );
+    info!(
+        "Linear Velocity: {}",
+        format_value_vec3(linear_vel.0, Some(4), true),
+    );
 
     // * Detected and apply MOVING flag.
     // set the motion.moving when the magnituted of the movement_vector is greater than some arbitrary small threshold.
@@ -178,10 +180,10 @@ pub fn apply_spring_force(
 
 pub fn apply_jump_force(
     player_config: &Res<PlayerControlConfig>,
-    stance: &mut Stance,
     external_impulse: &mut ExternalImpulse,
-    linear_vel: &mut LinearVelocity,
     ray_length: f32,
+    stance: &mut Stance,
+    motion: &Motion,
     body: &Body,
 ) {
     // Apply the stance cooldown now that we are jumping.
@@ -199,11 +201,18 @@ pub fn apply_jump_force(
 
     // remove any previous impulse on the object.
     external_impulse.clear();
+
     // find the movement vector in the x and z direction.
-    let normalized_midpoint_movement_vector: Vec3 = linear_vel
-        .normalize_or_zero()
-        .mul_add(Vec3::ONE, Vec3::Y)
-        .normalize_or_zero();
+    let normalized_midpoint_movement_vector: Vec3 = Vec3 {
+        x: motion.movement_vector.current.x,
+        y: 1.0,
+        z: motion.movement_vector.current.z,
+    };
+
+    info!(
+        "normalized_midpoint_movement_vector: {}",
+        format_value_vec3(normalized_midpoint_movement_vector, Some(3), true)
+    );
 
     // apply the jump force.
     external_impulse.apply_impulse(

@@ -21,7 +21,7 @@ pub fn camera_look_system(
         let (camera_yaw, mut camera_pitch, camera_roll) =
             cam_transform.rotation.to_euler(EulerRot::YXZ);
 
-        camera_pitch -= (input.direction.y).to_radians();
+        camera_pitch -= (input.focus_delta.y).to_radians();
         // Prevent the Camera from wrapping over itself in pitch only.
         camera_pitch = camera_pitch.clamp(-1.54, 1.54);
         // Order is important to prevent unintended roll.
@@ -39,8 +39,7 @@ pub fn player_rotation_system(
         let (mut player_yaw, player_pitch, player_roll) =
             player_transform.rotation.to_euler(EulerRot::default());
 
-        player_yaw -= (input.direction.x).to_radians();
-        //info!("YAW: {}", player_yaw);
+        player_yaw -= (input.focus_delta.x).to_radians();
         player_transform.rotation =
             Quat::from_euler(EulerRot::default(), player_yaw, player_pitch, player_roll);
     }

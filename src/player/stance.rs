@@ -4,15 +4,19 @@ use super::{
     motion::{apply_jump_force, apply_spring_force},
 };
 use super::{body::Body, PlayerColliderFlag};
+use crate::input::Input;
+use crate::player::motion::Motion;
 use crate::utils::{exp_decay, InterpolatedValue};
 use crate::{player::config::PlayerControlConfig};
 use avian3d::prelude::*;
+use bevy::transform;
 use bevy::{
     ecs::entity::Entity,
     input::{
         gamepad::{Gamepad, GamepadButton},
         ButtonInput,
     },
+    transform::components::Transform,
     log::{info, warn},
     math::Vec3,
     prelude::{Component, EventWriter, KeyCode, Query, Res, With},
@@ -50,13 +54,15 @@ pub fn update_player_stance(
             &mut ExternalImpulse,
             &mut GravityScale,
             &mut Stance,
-            &mut Body,
+            &Motion,
+            &Body,
             &RayHits,
         ),
         With<Player>,
     >,
     player_collider_query: Query<Entity, With<PlayerColliderFlag>>,
     mut ev_footstep: EventWriter<FootstepEvent>,
+    input: Res<Input>,
 ) {
     if query.is_empty() || query.iter().len() > 1 {
         warn!(
@@ -71,6 +77,7 @@ pub fn update_player_stance(
         mut external_impulse,
         mut gravity_scale,
         mut stance,
+        motion,
         body,
         ray_hits,
     ) in &mut query
@@ -161,10 +168,10 @@ pub fn update_player_stance(
                     linear_vel.y = 0.0; // clear the jump velocity.
                     apply_jump_force(
                         &config,
-                        &mut stance,
                         &mut external_impulse,
-                        &mut linear_vel,
                         ray_length,
+                        &mut stance,
+                        &motion,
                         &body,
                     );
                 }

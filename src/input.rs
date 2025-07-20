@@ -15,23 +15,23 @@ use bevy::{
     window::{PrimaryWindow, Window},
 };
 
-use crate::{
-    config::Bindings,
-    player::config::PlayerControlConfig,
-};
+use crate::{config::Bindings, player::config::PlayerControlConfig};
 
 // todo: make this adjustable in the config.
 const ANALOGE_STICK_DEADZONE: f32 = 0.1;
 
 #[derive(Resource)]
 pub struct Input {
-    pub movement: Vec3,
-    pub direction: Vec2,
+    pub movement_raw: Vec3,
+    pub focus_delta: Vec2,
 }
 
 impl Default for Input {
     fn default() -> Self {
-        Self { movement: Default::default(), direction: Default::default() }
+        Self {
+            movement_raw: Default::default(),
+            focus_delta: Default::default(),
+        }
     }
 }
 
@@ -45,24 +45,24 @@ pub fn update_input_resource(
     key_bindings: Res<Bindings>,
 ) {
     // this is the raw input vector
-    input.movement = Vec3::ZERO.clone();
-    input.direction = Vec2::ZERO.clone();
+    input.movement_raw = Vec3::ZERO.clone();
+    input.focus_delta = Vec2::ZERO.clone();
 
     if keys.pressed(key_bindings.move_forward) {
-        input.movement.z = 1.0;
+        input.movement_raw.z = 1.0;
     }
     if keys.pressed(key_bindings.move_backward) {
-        input.movement.z = -1.0;
+        input.movement_raw.z = -1.0;
     }
     if keys.pressed(key_bindings.move_left) {
-        input.movement.x = -1.0;
+        input.movement_raw.x = -1.0;
     }
     if keys.pressed(key_bindings.move_right) {
-        input.movement.x = 1.0;
+        input.movement_raw.x = 1.0;
     }
 
-    input.direction.x = config.mouse_look_sensitivity * accumulated_mouse_motion.delta.x;
-    input.direction.y = config.mouse_look_sensitivity * accumulated_mouse_motion.delta.y;
+    input.focus_delta.x = config.mouse_look_sensitivity * accumulated_mouse_motion.delta.x;
+    input.focus_delta.y = config.mouse_look_sensitivity * accumulated_mouse_motion.delta.y;
 
     if let Ok((_entity, gamepad)) = gamepads.single() {
         let left_stick_x: f32 = gamepad.get(GamepadAxis::LeftStickX).unwrap_or_default();
@@ -71,22 +71,22 @@ pub fn update_input_resource(
         let right_stick_y: f32 = gamepad.get(GamepadAxis::RightStickY).unwrap_or_default();
 
         if left_stick_x.abs() > ANALOGE_STICK_DEADZONE {
-            input.movement.x = left_stick_x;
+            input.movement_raw.x = left_stick_x;
         }
 
         if left_stick_y.abs() > ANALOGE_STICK_DEADZONE {
-            input.movement.y = left_stick_y;
+            input.movement_raw.y = left_stick_y;
         }
 
         if let Ok(window) = primary_window.single() {
             let window_scale: f32 = window.height().min(window.width());
 
             if right_stick_x.abs() > ANALOGE_STICK_DEADZONE {
-                input.direction.x = config.gamepad_look_sensitivity * right_stick_x * window_scale
+                input.focus_delta.x = config.gamepad_look_sensitivity * right_stick_x * window_scale
             }
 
             if right_stick_y.abs() > ANALOGE_STICK_DEADZONE {
-                input.direction.y = config.gamepad_look_sensitivity * right_stick_y * window_scale
+                input.focus_delta.y = config.gamepad_look_sensitivity * right_stick_y * window_scale
             }
         }
     }

@@ -10,7 +10,7 @@ use avian3d::prelude::*;
 use bevy::{log::info, prelude::*};
 
 use crate::{
-    camera::{smooth_camera, GameCamera}, input::{Input}, player::{
+    camera::{smooth_camera, GameCamera}, player::{
         debug::{create_player_debug, update_debug_is_moving, update_debug_is_sprinting, update_debug_linear_velocity, update_debug_movement_speed_current, update_debug_movement_speed_target, update_debug_movement_vector_current, update_debug_movement_vector_decay, update_debug_movement_vector_target, update_debug_position, update_debug_rotation}, focus::player_rotation_system
     }, utils::InterpolatedValue
 };
@@ -35,7 +35,6 @@ pub struct PlayerPlugin;
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(PlayerControlConfig::default()); // later we will load from some toml file
-        app.insert_resource(Input::default());
         app.add_systems(
             Startup,
             (
