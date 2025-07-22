@@ -10,25 +10,33 @@ use avian3d::prelude::*;
 use bevy::{log::info, prelude::*};
 
 use crate::{
-    camera::{smooth_camera, GameCamera}, player::{
-        debug::{create_player_debug, update_debug_is_moving, update_debug_is_sprinting, update_debug_linear_velocity, update_debug_movement_speed_current, update_debug_movement_speed_target, update_debug_movement_vector_current, update_debug_movement_vector_decay, update_debug_movement_vector_target, update_debug_position, update_debug_rotation}, focus::player_rotation_system
-    }, utils::InterpolatedValue
+    camera::{smooth_camera, GameCamera},
+    player::{
+        debug::{
+            create_player_debug, update_debug_is_moving, update_debug_is_sprinting,
+            update_debug_linear_velocity, update_debug_movement_speed_current,
+            update_debug_movement_speed_target, update_debug_movement_vector_current,
+            update_debug_movement_vector_decay, update_debug_movement_vector_target,
+            update_debug_position, update_debug_rotation,
+        },
+        focus::player_rotation_system,
+        stance::{apply_standing_spring_force, StandingSpringForce},
+    },
+    utils::InterpolatedValue,
 };
 use body::Body;
 use config::PlayerControlConfig;
 use focus::{camera_look_system, Focus};
-use motion::{
-    compute_motion, Motion
-};
-use stance::{lock_angular_velocity, update_player_stance, Stance, StanceType};
+use motion::{compute_motion, Motion};
+use stance::{lock_angular_velocity, Stance, StanceType};
 
 pub mod actions;
 pub mod body;
 pub mod config;
+pub mod debug;
 pub mod focus;
 pub mod motion;
 pub mod stance;
-pub mod debug;
 
 pub struct PlayerPlugin;
 
@@ -48,7 +56,7 @@ impl Plugin for PlayerPlugin {
         app.add_systems(
             FixedUpdate,
             (
-                update_player_stance,
+                apply_standing_spring_force,
                 camera_look_system,
                 player_rotation_system,
                 compute_motion,
@@ -104,6 +112,7 @@ pub struct PlayerBundle {
     motion: Motion,
     focus: Focus,
     stance: Stance,
+    standing_spring_force: StandingSpringForce,
     action_step: ActionStep,
     mass: Mass,
     locked_axes: LockedAxes,
@@ -157,7 +166,6 @@ pub fn spawn_player(
                     moving: false,
                 },
                 stance: Stance {
-                    ride_height: InterpolatedValue::new(player_config.ride_height, 6.0),
                     current: StanceType::Standing,
                     _grounded: false,
                     crouched: false,
@@ -173,23 +181,27 @@ pub fn spawn_player(
                     delta: ACTION_STEP_DELTA_DEFAULT,
                     bumped: false,
                 },
+                standing_spring_force: StandingSpringForce {
+                    length: InterpolatedValue::new(player_config.ride_height, 6.0),
+                    max_extension: player_config.ray_length_offset,
+                },
             },
-            Mesh3d(meshes.add(Sphere::new(0.2).mesh().ico(8).unwrap())),
-            MeshMaterial3d(materials.add(StandardMaterial {
-                base_color: Color::srgb(1.0, 200.0 / 256.0, 0.0),
-                ..default()
-            })),
+            // Mesh3d(meshes.add(Sphere::new(0.2).mesh().ico(8).unwrap())),
+            // MeshMaterial3d(materials.add(StandardMaterial {
+            //     base_color: Color::srgb(1.0, 200.0 / 256.0, 0.0),
+            //     ..default()
+            // })),
             TransformInterpolation,
             Player,
-        ))
-        .with_children(|parent| {
-            parent.spawn((
-                PlayerColliderBundle {
-                    collider: collider.clone(),
-                },
-                PlayerColliderFlag,
-            ));
-        });
+        ));
+        // .with_children(|parent| {
+        //     parent.spawn((
+        //         PlayerColliderBundle {
+        //             collider: collider.clone(),
+        //         },
+        //         PlayerColliderFlag,
+        //     ));
+        // });
     info!("Spawned Player Actor");
 }
 

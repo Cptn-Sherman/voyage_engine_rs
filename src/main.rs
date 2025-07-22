@@ -2,9 +2,9 @@ pub mod camera;
 pub mod config;
 pub mod input;
 
-mod user_interface;
-mod terrain;
 mod player;
+mod terrain;
+mod user_interface;
 mod utils;
 
 use bevy::color::palettes::tailwind::{AMBER_400, SKY_400, ZINC_200};

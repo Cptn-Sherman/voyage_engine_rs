@@ -1,12 +1,12 @@
 use super::Player;
 use super::{
     actions::step::{FootstepDirection, FootstepEvent},
-    motion::{apply_jump_force, apply_spring_force},
+    motion::{ apply_spring_force},
 };
 use super::{body::Body, PlayerColliderFlag};
+use crate::player::config::PlayerControlConfig;
 use crate::player::motion::Motion;
 use crate::utils::{exp_decay, InterpolatedValue};
-use crate::{player::config::PlayerControlConfig};
 use avian3d::prelude::*;
 use bevy::{
     ecs::entity::Entity,
@@ -31,7 +31,6 @@ pub enum StanceType {
 
 #[derive(Component)]
 pub struct Stance {
-    pub ride_height: InterpolatedValue<f32>,
     pub current: StanceType,
     pub _grounded: bool,
     pub crouched: bool,
@@ -39,156 +38,120 @@ pub struct Stance {
 }
 
 // todo: I want to try making it faster to move "forward" and slower to move left, right or backwards. Maybe we construct a const movement speed scaler for each direction.
-pub fn update_player_stance(
-    time: Res<Time>,
-    keys: Res<ButtonInput<KeyCode>>,
-    config: Res<PlayerControlConfig>,
-    gamepad_query: Query<(Entity, &Gamepad)>,
-    mut query: Query<
-        (
-            &mut LinearVelocity,
-            &mut ExternalForce,
-            &mut ExternalImpulse,
-            &mut GravityScale,
-            &mut Stance,
-            &Motion,
-            &Body,
-            &RayHits,
-        ),
-        With<Player>,
-    >,
-    player_collider_query: Query<Entity, With<PlayerColliderFlag>>,
-    mut ev_footstep: EventWriter<FootstepEvent>,
-) {
-    if query.is_empty() || query.iter().len() > 1 {
-        warn!(
-            "Update Player Stance System found {} players, expected 1.",
-            query.iter().len()
-        );
-    }
+// pub fn update_player_stance(
+//     time: Res<Time>,
+//     keys: Res<ButtonInput<KeyCode>>,
+//     config: Res<PlayerControlConfig>,
+//     gamepad_query: Query<(Entity, &Gamepad)>,
+//     mut query: Query<
+//         (
+//             &mut LinearVelocity,
+//             &mut ExternalForce,
+//             &mut ExternalImpulse,
+//             &mut GravityScale,
+//             &mut Stance,
+//             &Motion,
+//             &Body,
+//             &RayHits,
+//         ),
+//         With<Player>,
+//     >,
+//     player_collider_query: Query<Entity, With<PlayerColliderFlag>>,
+//     mut ev_footstep: EventWriter<FootstepEvent>,
+// ) {
+//     if query.is_empty() || query.iter().len() > 1 {
+//         warn!(
+//             "Update Player Stance System found {} players, expected 1.",
+//             query.iter().len()
+//         );
+//     }
 
-    for (
-        mut linear_vel,
-        mut external_force,
-        mut external_impulse,
-        mut gravity_scale,
-        mut stance,
-        motion,
-        body,
-        ray_hits,
-    ) in &mut query
-    {
-        // We update stance_lockout.
-        stance.lockout -= time.delta_secs();
-        stance.lockout = f32::clamp(stance.lockout, 0.0, 1.0);
+//     for (
+//         mut linear_vel,
+//         mut external_force,
+//         mut external_impulse,
+//         mut gravity_scale,
+//         mut stance,
+//         motion,
+//         body,
+//         ray_hits,
+//     ) in &mut query
+//     {
+//         // // We update stance_lockout.
+//         // stance.lockout -= time.delta_secs();
+//         // stance.lockout = f32::clamp(stance.lockout, 0.0, 1.0);
 
-        // Compute the ray_length to a hit, if we don't hit anything we assume the ground is infinitly far away.
-        let mut ride_height: f32 = stance.ride_height.current;
-        let mut ray_length: f32 = f32::INFINITY;
+//         // // info!("ray_length: {}, ride_height: {}", ray_length, ride_height);
 
-        // Find the first ray hit which is not the player collider.
-        for hit in ray_hits.iter_sorted() {
-            if hit.entity != player_collider_query.single().expect("Player must exist...") {
-                ray_length = hit.distance;
-                break;
-            }
-        }
+//         // let mut pad: Option<&Gamepad> = None;
+//         // if let Ok((_entity, gamepad)) = gamepad_query.single() {
+//         //     pad = Some(gamepad);
+//         // }
+//         // // Compute the next stance for the player.
+//         // let next_stance: StanceType =
+//         //     determine_next_stance(&keys, pad, &config, &mut stance, ray_length, ride_height);
 
-        // info!("ray_length: {}, ride_height: {}", ray_length, ride_height);
+//         // // handle footstep sound event when the state has changed and only then.
+//         // if next_stance != stance.current {
+//         //     match next_stance {
+//         //         StanceType::Landing => {
+//         //             // This is the sound effect that plays when the player has jumped or fallen and will land with both feet on the ground.
+//         //             // this effect will play centered and will not pan in any direction.
+//         //             ev_footstep.write(FootstepEvent {
+//         //                 dir: FootstepDirection::None,
+//         //                 volume: 1.0,
+//         //             });
+//         //         }
+//         //         _ => (),
+//         //     }
+//         // }
 
-        let mut pad: Option<&Gamepad> = None;
-        if let Ok((_entity, gamepad)) = gamepad_query.single() {
-            pad = Some(gamepad);
-        }
-        // Compute the next stance for the player.
-        let next_stance: StanceType =
-            determine_next_stance(&keys, pad, &config, &mut stance, ray_length, ride_height);
+//         // let next_gravity_scale: f32;
 
-        // handle footstep sound event when the state has changed and only then.
-        if next_stance != stance.current {
-            match next_stance {
-                StanceType::Landing => {
-                    // This is the sound effect that plays when the player has jumped or fallen and will land with both feet on the ground.
-                    // this effect will play centered and will not pan in any direction.
-                    ev_footstep.write(FootstepEvent {
-                        dir: FootstepDirection::None,
-                        volume: 1.0,
-                    });
-                }
-                _ => (),
-            }
-        }
+//         // match next_stance {
+//         //     StanceType::Landing => {
+//         //         // Set the gravity scale to zero.
+//         //         next_gravity_scale = 0.0;
+//         //     }
+//         //     StanceType::Standing => {
+//         //         // Set the gravity scale to zero.
+//         //         next_gravity_scale = 0.0;
+//         //         // Clear any persisting forces on the rigid body.
+//         //         external_force.clear();
+//         //         // lock the rotation
+//         //     }
+//         //     StanceType::Airborne => {
+//         //         next_gravity_scale = 1.0;
+//         //         // Clear any persisting forces on the rigid body.
+//         //         external_force.clear();
+//         //     }
+//         //     StanceType::Jumping => {
+//         //         // set the gravity scale to zero.
+//         //         next_gravity_scale = 1.0;
+//         //         // clear any persisting forces on the rigid body.
+//         //         external_force.clear();
+//         //         // check if the stance has changed.
+//         //         if stance.current != StanceType::Jumping {
+//         //             linear_vel.y = 0.0; // clear the jump velocity.
+//         //             // apply_jump_force(
+//         //             //     &config,
+//         //             //     &mut external_impulse,
+//         //             //     ray_length,
+//         //             //     &mut stance,
+//         //             //     &motion,
+//         //             //     &body,
+//         //             // );
+//         //         }
+//         //     }
+//         // }
 
-        let next_gravity_scale: f32;
+//         // // Update the gravity scale.
+//         // gravity_scale.0 = next_gravity_scale;
 
-        match next_stance {
-            StanceType::Landing => {
-                // Set the gravity scale to zero.
-                next_gravity_scale = 0.0;
-                ride_height *= 0.85;
-                apply_spring_force(
-                    &config,
-                    &mut linear_vel,
-                    &mut external_force,
-                    ray_length,
-                    ride_height,
-                );
-            }
-            StanceType::Standing => {
-                // Set the gravity scale to zero.
-                next_gravity_scale = 0.0;
-                // Clear any persisting forces on the rigid body.
-                external_force.clear();
-                // lock the rotation
-
-                apply_spring_force(
-                    &config,
-                    &mut linear_vel,
-                    &mut external_force,
-                    ray_length,
-                    ride_height,
-                );
-            }
-            StanceType::Airborne => {
-                next_gravity_scale = 1.0;
-                // Clear any persisting forces on the rigid body.
-                external_force.clear();
-            }
-            StanceType::Jumping => {
-                // set the gravity scale to zero.
-                next_gravity_scale = 1.0;
-                // clear any persisting forces on the rigid body.
-                external_force.clear();
-                // check if the stance has changed.
-                if stance.current != StanceType::Jumping {
-                    linear_vel.y = 0.0; // clear the jump velocity.
-                    apply_jump_force(
-                        &config,
-                        &mut external_impulse,
-                        ray_length,
-                        &mut stance,
-                        &motion,
-                        &body,
-                    );
-                }
-            }
-        }
-
-        // Lerp current_ride_height to target_ride_height, this target_ride_height changes depending on the stance. Standing, Crouching, and Prone.
-        stance.ride_height.current = exp_decay::<f32>(
-            stance.ride_height.current,
-            stance.ride_height.target,
-            stance.ride_height.decay,
-            time.delta_secs(),
-        );
-
-        // Update the gravity scale.
-        gravity_scale.0 = next_gravity_scale;
-
-        // Update the current stance.
-        stance.current = next_stance.clone();
-    }
-}
+//         // Update the current stance.
+//         stance.current = next_stance.clone();
+//     }
+// }
 
 fn determine_next_stance(
     keys: &Res<ButtonInput<KeyCode>>,
@@ -234,6 +197,73 @@ fn determine_next_stance(
         );
     }
     return next_stance;
+}
+
+#[derive(Component)]
+pub struct StandingSpringForce {
+    pub length: InterpolatedValue<f32>,
+    pub max_extension: f32,
+}
+
+pub fn apply_standing_spring_force(
+    config: Res<PlayerControlConfig>,
+    mut query: Query<(
+        Entity,
+        &mut StandingSpringForce,
+        &mut LinearVelocity,
+        &mut ExternalForce,
+        &mut GravityScale,
+        &RayHits,
+    )>,
+    time: Res<Time>,
+) {
+    for (
+        entity,
+        mut standing_spring_force,
+        mut linear_vel,
+        mut external_force,
+        mut gravity_scale,
+        ray_hits,
+    ) in &mut query
+    {
+        // Compute the ray_length to a hit, if we don't hit anything we assume the ground is infinitly far away.
+        let mut ray_length: f32 = f32::INFINITY;
+
+        // Find the first ray hit which is not its own collider.
+        for hit in ray_hits.iter_sorted() {
+            // ! BUG: We also need to ignore all child entities.
+            if hit.entity != entity {
+                ray_length = hit.distance;
+                break;
+            }
+        }
+
+        // Lerp current_ride_height to target_ride_height, this target_ride_height changes depending on the stance. Standing, Crouching, and Prone.
+        standing_spring_force.length.current = exp_decay::<f32>(
+            standing_spring_force.length.current,
+            standing_spring_force.length.target,
+            standing_spring_force.length.decay,
+            time.delta_secs(),
+        );
+
+        let ride_height: f32 = standing_spring_force.length.current;
+        let max_ray_length: f32 = standing_spring_force.length.current + standing_spring_force.max_extension;
+        if ray_length <= max_ray_length {
+            gravity_scale.0 = 0.0f32;
+
+            external_force.clear();
+
+            apply_spring_force(
+                &config,
+                &mut linear_vel,
+                &mut external_force,
+                ray_length,
+                ride_height,
+            );
+        } else {
+            gravity_scale.0 = 1.0f32;
+        }
+    }
 }
 
 pub fn lock_angular_velocity(mut query: Query<(&mut AngularVelocity, &Stance), With<Player>>) {

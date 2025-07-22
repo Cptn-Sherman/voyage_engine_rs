@@ -184,8 +184,9 @@ pub fn tick_footstep(
             && action.delta <= BUMP_REMAINING_ACTION_STEP
             && action.bumped == false
         {
-            stance.ride_height.current =
-                config.ride_height + (ride_height_offset * current_ride_height_offset_scaler);
+            // ! DISABLING HEADBOB RIGHT NOW
+            // stance.ride_height.current =
+            //     config.ride_height + (ride_height_offset * current_ride_height_offset_scaler);
             action.bumped = true;
             let (camera_transform, mut _smoothed_camera) = camera_query.single_mut().unwrap();
             let (_yaw, _pitch, _) = camera_transform.rotation.to_euler(EulerRot::default());

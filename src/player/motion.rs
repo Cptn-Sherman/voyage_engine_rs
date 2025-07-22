@@ -10,13 +10,10 @@ use bevy::{
 use avian3d::prelude::*;
 
 use crate::{
-    input::Input,
-    ternary,
-    utils::{exp_decay, format_value_vec3, InterpolatedValue},
+    input::Input, player::body::Body, ternary, utils::{exp_decay, format_value_vec3, InterpolatedValue}
 };
 
 use super::{
-    body::Body,
     stance::{Stance, StanceType},
     Player, PlayerControlConfig,
 };
