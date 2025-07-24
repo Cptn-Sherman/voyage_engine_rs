@@ -20,7 +20,7 @@ use crate::{
             update_debug_position, update_debug_rotation,
         },
         focus::player_rotation_system,
-        stance::{apply_standing_spring_force, StandingSpringForce},
+        stance::{apply_standing_spring_force, update_player_stance, StandingSpringForce},
     },
     utils::InterpolatedValue,
 };
@@ -57,6 +57,7 @@ impl Plugin for PlayerPlugin {
             FixedUpdate,
             (
                 apply_standing_spring_force,
+                update_player_stance,
                 camera_look_system,
                 player_rotation_system,
                 compute_motion,

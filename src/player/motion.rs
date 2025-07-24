@@ -1,7 +1,9 @@
 use bevy::{
-    ecs::component::Component,
+    ecs::{component::Component, entity::Entity},
+    gizmos::config,
+    input::{keyboard::KeyCode, ButtonInput},
     log::{info, warn},
-    math::Vec3,
+    math::{Vec3, Vec3Swizzles},
     prelude::{Query, Res, With},
     time::Time,
     transform::components::Transform,
@@ -10,7 +12,13 @@ use bevy::{
 use avian3d::prelude::*;
 
 use crate::{
-    input::Input, player::body::Body, ternary, utils::{exp_decay, format_value_vec3, InterpolatedValue}
+    input::Input,
+    player::{
+        body::{self, Body},
+        stance::{compute_ray_length, StandingSpringForce},
+    },
+    ternary,
+    utils::{exp_decay, format_value_vec3, InterpolatedValue},
 };
 
 use super::{
@@ -29,10 +37,21 @@ pub struct Motion {
 
 pub fn compute_motion(
     mut player_query: Query<
-        (&mut LinearVelocity, &mut Transform, &mut Motion, &Stance),
+        (
+            Entity,
+            &mut StandingSpringForce,
+            &mut LinearVelocity,
+            &mut ExternalImpulse,
+            &mut Transform,
+            &mut Motion,
+            &mut Stance,
+            &Body,
+            &RayHits,
+        ),
         With<Player>,
     >,
     player_config: Res<PlayerControlConfig>,
+    keys: Res<ButtonInput<KeyCode>>,
     input: Res<Input>,
     time: Res<Time>,
 ) {
@@ -44,10 +63,19 @@ pub fn compute_motion(
         return;
     }
 
-    let (mut linear_vel, player_transform, mut motion, stance) =
-        player_query.single_mut().expect("We do some errors");
+    let (
+        entity,
+        mut standing_spring,
+        mut linear_vel,
+        mut external_impulse,
+        player_transform,
+        mut motion,
+        mut stance,
+        body,
+        ray_hits,
+    ) = player_query.single_mut().expect("We do some errors");
 
-    // * COMPUTE CURRENT MOVEMENT SPEED AND LERP
+    // * - COMPUTE CURRENT MOVEMENT SPEED AND LERP -
 
     if motion.sprinting == true {
         if stance.crouched == true {
@@ -103,10 +131,10 @@ pub fn compute_motion(
         time.delta_secs(),
     );
 
-    info!(
-        "Current Movement Vector: {}",
-        format_value_vec3(motion.movement_vector.current, Some(4), true),
-    );
+    // info!(
+    //     "Current Movement Vector: {}",
+    //     format_value_vec3(motion.movement_vector.current, Some(4), true),
+    // );
 
     // * APPLY MOVEMENT_VECTOR TO PLAYER TRANSFORM LINEAR VELOCITY
 
@@ -116,12 +144,31 @@ pub fn compute_motion(
             motion.movement_vector.current.x * motion.movement_speed.current;
         motion.linear_velocity_interp.target.z =
             motion.movement_vector.current.z * motion.movement_speed.current;
-    } else { // ! BUG: How do we add air time movement without moving too much. 
-        let clamped_movement_speed: f32  = motion.movement_speed.current.clamp(0.0, 5.0);
-        motion.linear_velocity_interp.target.x +=
-            motion.movement_vector.current.x * clamped_movement_speed * movement_scale * time.delta_secs();
-        motion.linear_velocity_interp.target.z +=
-            motion.movement_vector.current.z * clamped_movement_speed * movement_scale * time.delta_secs();
+    } else {
+        let pi: f32 = 3.1459;
+        let scale: f32 = 0.0;
+        let offset: f32 = 0.1;
+
+        let dot: f32 = motion
+            .linear_velocity_interp
+            .current
+            .dot(motion.movement_vector.current);
+        let clamped_movement_speed: f32 = motion.movement_speed.current.clamp(0.0, 5.0);
+        let air_time_scale: f32 =
+            ((1f32 - f32::cos(0.5 * pi * dot - 0.5 * pi)) / 2.0 - scale) + offset;
+        let clamped_air_time_scaled_movement_speed: f32 =
+            clamped_movement_speed * movement_scale * air_time_scale;
+        // info!(
+        //     "final movement speed: {}",
+        //     clamped_air_time_scaled_movement_speed
+        // );
+
+        motion.linear_velocity_interp.target.x += motion.movement_vector.current.x
+            * clamped_air_time_scaled_movement_speed
+            * time.delta_secs();
+        motion.linear_velocity_interp.target.z += motion.movement_vector.current.z
+            * clamped_air_time_scaled_movement_speed
+            * time.delta_secs();
     }
 
     motion.linear_velocity_interp.current = exp_decay::<Vec3>(
@@ -132,28 +179,138 @@ pub fn compute_motion(
     );
 
     linear_vel.x = motion.linear_velocity_interp.current.x;
+    // linear_vel.y = motion.linear_velocity_interp.current.y;
     linear_vel.z = motion.linear_velocity_interp.current.z;
 
-    if stance.current == StanceType::Standing {
-    } else {
-        // linear_vel.x += input.movement_raw.x
-        //     * motion.linear_velocity_interp.current.x
-        //     * movement_scale
-        //     * time.delta().as_secs_f32();
-        // linear_vel.z += input.movement_raw.z
-        //     * motion.linear_velocity_interp.current.z
-        //     * movement_scale
-        //     * time.delta().as_secs_f32();
-    }
-
+    info!(
+        "Interpolated Linear Velocity: current {}",
+        format_value_vec3(motion.linear_velocity_interp.current, Some(3), true)
+    );
+    info!(
+        "Interpolated Linear Velocity: target {}",
+        format_value_vec3(motion.linear_velocity_interp.target, Some(3), true)
+    );
     info!(
         "Linear Velocity: {}",
         format_value_vec3(linear_vel.0, Some(4), true),
     );
 
+    // * -   -
+
+    // ! BUG:
+
+    if stance.current == StanceType::Standing
+        && keys.pressed(KeyCode::Space)
+        && stance.lockout <= 0.0
+    {
+        let ray_length: f32 = compute_ray_length(entity, ray_hits);
+        stance.current = StanceType::Airborne;
+        stance.lockout = player_config.stance_lockout;
+        linear_vel.y = 0.0;
+        info!("APPLYING JUMP FORCE");
+        apply_jump_force(
+            &player_config,
+            &mut external_impulse,
+            ray_length,
+            &mut stance,
+            &mut standing_spring,
+            &motion,
+            &body,
+        );
+    }
+
+        info!("External Impulse: {}", format_value_vec3(external_impulse.xyz(), Some(3), true));
+
     // * Detected and apply MOVING flag.
     // set the motion.moving when the magnituted of the movement_vector is greater than some arbitrary small threshold.
     motion.moving = motion.movement_vector.current.length() >= 0.01;
+}
+
+pub fn apply_jump_force(
+    player_config: &Res<PlayerControlConfig>,
+    external_impulse: &mut ExternalImpulse,
+    ray_length: f32,
+    stance: &mut Stance,
+    standing_spring: &mut StandingSpringForce,
+    motion: &Motion,
+    body: &Body,
+) {
+    // Apply the stance cooldown now that we are jumping.
+    stance.lockout = player_config.stance_lockout;
+
+    let half_jump_strength: f32 = player_config.jump_strength / 2.0;
+    let clamped_jump_force: f32 =
+        compute_clamped_jump_force_factor(&body, &standing_spring, ray_length);
+
+    // todo: make this value changable.
+    let dynamic_jump_strength: f32 = half_jump_strength + (half_jump_strength * clamped_jump_force);
+
+    // todo: right now we are applying this jump force directly up, this needs to consider the original movement velocities.
+    // maybe instead of half the strength getting added to the up we added it directionally only so you always jump x height but can
+    // use more of the timing to aid in forward momentum.
+
+    // remove any previous impulse on the object.
+    external_impulse.clear();
+    info!("Cleared impulses");
+
+    // find the movement vector in the x and z direction.
+    let normalized_midpoint_movement_vector: Vec3 = Vec3 {
+        x: motion.movement_vector.current.x,
+        y: 1.0,
+        z: motion.movement_vector.current.z,
+    };
+
+    // info!(
+    //     "normalized_midpoint_movement_vector: {}",
+    //     format_value_vec3(normalized_midpoint_movement_vector, Some(3), true)
+    // );
+
+    let impulse_vec: Vec3 = Vec3::from((
+        normalized_midpoint_movement_vector.x * dynamic_jump_strength,
+        normalized_midpoint_movement_vector.y * dynamic_jump_strength,
+        normalized_midpoint_movement_vector.z * dynamic_jump_strength,
+    ));
+
+    // info!("impulse_vec: {}", format_value_vec3(impulse_vec, Some(3), true));
+
+    // apply the jump force.
+    external_impulse.apply_impulse(impulse_vec.into());
+    
+    info!(
+        "\tJumped with {}/{} due to distance to ground, jump_factor {}, of ray length: {}",
+        dynamic_jump_strength, player_config.jump_strength, clamped_jump_force, ray_length
+    );
+}
+
+fn compute_clamped_jump_force_factor(
+    body: &Body,
+    standing_spring: &StandingSpringForce,
+    ray_length: f32,
+) -> f32 {
+    // Constants defined elsewhere in the code
+    let full_standing_ray_length: f32 = standing_spring.length.current;
+    let half_standing_ray_length: f32 =
+        standing_spring.length.current - (body.current_body_height / 4.0);
+    // This value represents the range of acceptable ray lengths for the player.
+    let standing_ray_length_range: f32 = full_standing_ray_length - half_standing_ray_length;
+
+    // Ensure the input is within the specified range
+    let clamped_ray_length = f32::clamp(
+        ray_length,
+        half_standing_ray_length,
+        standing_spring.length.current,
+    );
+
+    // Apply the linear transformation
+    // Step 1: Normalize clamped_ray_length to a value between 0.0 and 1.0.
+    let normalized_distance =
+        (clamped_ray_length - half_standing_ray_length) / standing_ray_length_range;
+
+    // Step 2: Subtract the normalized distance from CAPSULE_HEIGHT.
+    let result: f32 = body.current_body_height - normalized_distance;
+
+    // Ensure the output is within the range [0.0, 1.0].
+    f32::clamp(result, 0.0, 1.0)
 }
 
 pub fn apply_spring_force(
@@ -173,100 +330,6 @@ pub fn apply_spring_force(
     /* Now we apply our spring force vector in the direction to return the bodies distance from the ground towards RIDE_HEIGHT. */
     external_force.clear();
     external_force.apply_force(Vec3::from((0.0, -spring_force, 0.0)));
-}
 
-pub fn apply_jump_force(
-    player_config: &Res<PlayerControlConfig>,
-    external_impulse: &mut ExternalImpulse,
-    ray_length: f32,
-    stance: &mut Stance,
-    motion: &Motion,
-    body: &Body,
-) {
-    // Apply the stance cooldown now that we are jumping.
-    stance.lockout = player_config.stance_lockout;
-
-    let half_jump_strength: f32 = player_config.jump_strength / 2.0;
-    let clamped_jump_force: f32 = compute_clamped_jump_force_factor(&body, &stance, ray_length);
-
-    // todo: make this value changable.
-    let dynamic_jump_strength: f32 = half_jump_strength + (half_jump_strength * clamped_jump_force);
-
-    // todo: right now we are applying this jump force directly up, this needs to consider the original movement velocities.
-    // maybe instead of half the strength getting added to the up we added it directionally only so you always jump x height but can
-    // use more of the timing to aid in forward momentum.
-
-    // remove any previous impulse on the object.
-    external_impulse.clear();
-
-    // find the movement vector in the x and z direction.
-    let normalized_midpoint_movement_vector: Vec3 = Vec3 {
-        x: motion.movement_vector.current.x,
-        y: 1.0,
-        z: motion.movement_vector.current.z,
-    };
-
-    info!(
-        "normalized_midpoint_movement_vector: {}",
-        format_value_vec3(normalized_midpoint_movement_vector, Some(3), true)
-    );
-
-    // apply the jump force.
-    external_impulse.apply_impulse(
-        Vec3::from((
-            normalized_midpoint_movement_vector.x * dynamic_jump_strength,
-            normalized_midpoint_movement_vector.y * dynamic_jump_strength,
-            normalized_midpoint_movement_vector.z * dynamic_jump_strength,
-        ))
-        .into(),
-    );
-
-    info!(
-        "\tJumped with {}/{} due to distance to ground, jump_factor {}, of ray length: {}",
-        dynamic_jump_strength, player_config.jump_strength, clamped_jump_force, ray_length
-    );
-}
-
-/// Computes a clamped jump force factor based on the provided ray length.
-///
-/// # Arguments
-///
-/// * `ray_length` - The length of the ray used in the computation.
-///
-/// # Returns
-///
-/// The clamped jump force factor within the range [0.0, 1.0].
-///
-/// # Examples
-///
-/// ```
-/// let ray_length = 3.0;
-/// let jump_force_factor = compute_clamped_jump_force_factor(ray_length);
-/// println!("Jump Force Factor: {}", jump_force_factor);
-/// ```
-fn compute_clamped_jump_force_factor(body: &Body, stance: &Stance, ray_length: f32) -> f32 {
-    // Constants defined elsewhere in the code
-    let full_standing_ray_length: f32 = stance.ride_height.current;
-    let half_standing_ray_length: f32 =
-        stance.ride_height.current - (body.current_body_height / 4.0);
-    // This value represents the range of acceptable ray lengths for the player.
-    let standing_ray_length_range: f32 = full_standing_ray_length - half_standing_ray_length;
-
-    // Ensure the input is within the specified range
-    let clamped_ray_length = f32::clamp(
-        ray_length,
-        half_standing_ray_length,
-        stance.ride_height.current,
-    );
-
-    // Apply the linear transformation
-    // Step 1: Normalize clamped_ray_length to a value between 0.0 and 1.0.
-    let normalized_distance =
-        (clamped_ray_length - half_standing_ray_length) / standing_ray_length_range;
-
-    // Step 2: Subtract the normalized distance from CAPSULE_HEIGHT.
-    let result: f32 = body.current_body_height - normalized_distance;
-
-    // Ensure the output is within the range [0.0, 1.0].
-    f32::clamp(result, 0.0, 1.0)
+    
 }
