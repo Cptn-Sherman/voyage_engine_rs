@@ -146,22 +146,25 @@ pub fn compute_motion(
             motion.movement_vector.current.z * motion.movement_speed.current;
     } else {
         let pi: f32 = 3.1459;
-        let scale: f32 = 0.0;
-        let offset: f32 = 0.1;
+        let scale: f32 = 0.2;
+        let offset: f32 = 0.3;
 
         let dot: f32 = motion
             .linear_velocity_interp
-            .current
+            .current    
+            .normalize_or_zero()
             .dot(motion.movement_vector.current);
         let clamped_movement_speed: f32 = motion.movement_speed.current.clamp(0.0, 5.0);
         let air_time_scale: f32 =
-            ((1f32 - f32::cos(0.5 * pi * dot - 0.5 * pi)) / 2.0 - scale) + offset;
+            ((1f32 - f32::cos(0.5 * pi * dot - 0.5 * pi)) / (2.0 - scale)) + offset;
         let clamped_air_time_scaled_movement_speed: f32 =
             clamped_movement_speed * movement_scale * air_time_scale;
-        // info!(
-        //     "final movement speed: {}",
-        //     clamped_air_time_scaled_movement_speed
-        // );
+        info!(
+            "final movement speed: {}, dot: {}, air scale: {}",
+            clamped_air_time_scaled_movement_speed,
+            dot,
+            air_time_scale
+        );
 
         motion.linear_velocity_interp.target.x += motion.movement_vector.current.x
             * clamped_air_time_scaled_movement_speed
