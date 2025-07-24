@@ -182,18 +182,18 @@ pub fn compute_motion(
     // linear_vel.y = motion.linear_velocity_interp.current.y;
     linear_vel.z = motion.linear_velocity_interp.current.z;
 
-    info!(
-        "Interpolated Linear Velocity: current {}",
-        format_value_vec3(motion.linear_velocity_interp.current, Some(3), true)
-    );
-    info!(
-        "Interpolated Linear Velocity: target {}",
-        format_value_vec3(motion.linear_velocity_interp.target, Some(3), true)
-    );
-    info!(
-        "Linear Velocity: {}",
-        format_value_vec3(linear_vel.0, Some(4), true),
-    );
+    // info!(
+    //     "Interpolated Linear Velocity: current {}",
+    //     format_value_vec3(motion.linear_velocity_interp.current, Some(3), true)
+    // );
+    // info!(
+    //     "Interpolated Linear Velocity: target {}",
+    //     format_value_vec3(motion.linear_velocity_interp.target, Some(3), true)
+    // );
+    // info!(
+    //     "Linear Velocity: {}",
+    //     format_value_vec3(linear_vel.0, Some(4), true),
+    // );
 
     // * -   -
 
@@ -204,10 +204,10 @@ pub fn compute_motion(
         && stance.lockout <= 0.0
     {
         let ray_length: f32 = compute_ray_length(entity, ray_hits);
-        stance.current = StanceType::Airborne;
         stance.lockout = player_config.stance_lockout;
+        stance.current = StanceType::Airborne;
         linear_vel.y = 0.0;
-        info!("APPLYING JUMP FORCE");
+
         apply_jump_force(
             &player_config,
             &mut external_impulse,
@@ -219,7 +219,10 @@ pub fn compute_motion(
         );
     }
 
-        info!("External Impulse: {}", format_value_vec3(external_impulse.xyz(), Some(3), true));
+    // info!(
+    //     "External Impulse: {}",
+    //     format_value_vec3(external_impulse.xyz(), Some(3), true)
+    // );
 
     // * Detected and apply MOVING flag.
     // set the motion.moving when the magnituted of the movement_vector is greater than some arbitrary small threshold.
@@ -253,30 +256,22 @@ pub fn apply_jump_force(
     external_impulse.clear();
 
     // find the movement vector in the x and z direction.
-    let normalized_midpoint_movement_vector: Vec3 = Vec3 {
-        x: motion.movement_vector.current.x,
-        y: 1.0,
-        z: motion.movement_vector.current.z,
-    };
 
-    // info!(
-    //     "normalized_midpoint_movement_vector: {}",
-    //     format_value_vec3(normalized_midpoint_movement_vector, Some(3), true)
-    // );
+    let jump_direction: Vec3 = motion
+        .movement_vector
+        .current
+        .mul_add(Vec3::ONE, Vec3::from_array([0.0, 1.0, 0.0]))
+        .normalize_or_zero();
 
-    let impulse_vec: Vec3 = Vec3::from((
-        normalized_midpoint_movement_vector.x * dynamic_jump_strength,
-        normalized_midpoint_movement_vector.y * dynamic_jump_strength,
-        normalized_midpoint_movement_vector.z * dynamic_jump_strength,
-    ));
+    let impulse_vec: Vec3 = jump_direction * dynamic_jump_strength;
 
-    // info!("impulse_vec: {}", format_value_vec3(impulse_vec, Some(3), true));
+    info!("impulse_vec: {}", format_value_vec3(impulse_vec, Some(3), true));
 
     // apply the jump force.
     external_impulse.apply_impulse(impulse_vec.into());
-    
+
     info!(
-        "\tJumped with {}/{} due to distance to ground, jump_factor {}, of ray length: {}",
+        "Jumped with {}/{} due to distance to ground, /njump_factor {}, of ray length: {}",
         dynamic_jump_strength, player_config.jump_strength, clamped_jump_force, ray_length
     );
 }
@@ -329,6 +324,4 @@ pub fn apply_spring_force(
     /* Now we apply our spring force vector in the direction to return the bodies distance from the ground towards RIDE_HEIGHT. */
     external_force.clear();
     external_force.apply_force(Vec3::from((0.0, -spring_force, 0.0)));
-
-    
 }

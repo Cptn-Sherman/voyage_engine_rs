@@ -75,7 +75,9 @@ pub fn update_player_stance(
         } else if stance.lockout != 0.0 {
             stance.lockout -= time.delta_secs();
             stance.lockout = f32::max(stance.lockout, 0.0);
-            info!("stance lockout: {}", stance.lockout);
+            if stance.lockout <= 0.0 {
+                info!("stance lockout released");
+            }
         }
 
         if next_stance != previous_stance {
@@ -84,6 +86,7 @@ pub fn update_player_stance(
                 previous_stance, next_stance
             );
         }
+        
         // handle footstep sound event when the state has changed and only then.
         if next_stance != stance.current {
             match next_stance {
@@ -165,8 +168,7 @@ pub fn apply_standing_spring_force(
         );
 
         let ride_height: f32 = standing_spring_force.length.current;
-        let max_ray_length: f32 =
-            standing_spring_force.length.current;
+        let max_ray_length: f32 = standing_spring_force.length.current;
         if ray_length <= max_ray_length {
             gravity_scale.0 = 0.0f32;
             apply_spring_force(
