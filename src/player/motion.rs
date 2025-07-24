@@ -108,12 +108,6 @@ pub fn compute_motion(
 
     // * UPDATE MOVEMENT_VECTOR AND LERP
 
-    let movement_scale: f32 = ternary!(
-        stance.current != StanceType::Standing && stance.current != StanceType::Landing,
-        0.5,
-        1.0
-    );
-
     let mut movement_vector: Vec3 = Vec3::ZERO.clone();
     // Apply the input_vector to the player to update the movement_vector.
     movement_vector += player_transform.forward().as_vec3() * input.movement_raw.z;
@@ -127,7 +121,7 @@ pub fn compute_motion(
     motion.movement_vector.current = exp_decay::<Vec3>(
         motion.movement_vector.current,
         motion.movement_vector.target,
-        motion.movement_vector.decay * movement_scale,
+        motion.movement_vector.decay,
         time.delta_secs(),
     );
 
@@ -158,7 +152,7 @@ pub fn compute_motion(
         let air_time_scale: f32 =
             ((1f32 - f32::cos(0.5 * pi * dot - 0.5 * pi)) / (2.0 - scale)) + offset;
         let clamped_air_time_scaled_movement_speed: f32 =
-            clamped_movement_speed * movement_scale * air_time_scale;
+            clamped_movement_speed * air_time_scale;
         info!(
             "final movement speed: {}, dot: {}, air scale: {}",
             clamped_air_time_scaled_movement_speed,
