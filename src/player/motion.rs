@@ -251,7 +251,6 @@ pub fn apply_jump_force(
 
     // remove any previous impulse on the object.
     external_impulse.clear();
-    info!("Cleared impulses");
 
     // find the movement vector in the x and z direction.
     let normalized_midpoint_movement_vector: Vec3 = Vec3 {
