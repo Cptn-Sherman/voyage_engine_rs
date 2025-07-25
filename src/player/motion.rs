@@ -1,9 +1,8 @@
 use bevy::{
     ecs::{component::Component, entity::Entity},
-    gizmos::config,
     input::{keyboard::KeyCode, ButtonInput},
     log::{info, warn},
-    math::{Vec3, Vec3Swizzles},
+    math::Vec3,
     prelude::{Query, Res, With},
     time::Time,
     transform::components::Transform,
@@ -14,11 +13,10 @@ use avian3d::prelude::*;
 use crate::{
     input::Input,
     player::{
-        body::{self, Body},
-        stance::{compute_ray_length, StandingSpringForce},
+        body::Body,
+        stance::{compute_ray_length, IgnoreRayCollision, StandingSpringForce},
     },
-    ternary,
-    utils::{exp_decay, format_value_vec3, InterpolatedValue},
+    utils::{exp_decay, format_value_f32, format_value_vec3, InterpolatedValue},
 };
 
 use super::{
@@ -50,6 +48,7 @@ pub fn compute_motion(
         ),
         With<Player>,
     >,
+    ignored_entities: Query<Entity, With<IgnoreRayCollision>>,
     player_config: Res<PlayerControlConfig>,
     keys: Res<ButtonInput<KeyCode>>,
     input: Res<Input>,
@@ -139,33 +138,30 @@ pub fn compute_motion(
         motion.linear_velocity_interp.target.z =
             motion.movement_vector.current.z * motion.movement_speed.current;
     } else {
-        let pi: f32 = 3.1459;
-        let scale: f32 = 0.2;
-        let offset: f32 = 0.3;
+        const PI: f32 = 3.1459;
+        const SCALE: f32 = 0.2;
+        const OFFSET: f32 = 0.3;
 
         let dot: f32 = motion
             .linear_velocity_interp
-            .current    
+            .current
             .normalize_or_zero()
             .dot(motion.movement_vector.current);
-        let clamped_movement_speed: f32 = motion.movement_speed.current.clamp(0.0, 5.0);
         let air_time_scale: f32 =
-            ((1f32 - f32::cos(0.5 * pi * dot - 0.5 * pi)) / (2.0 - scale)) + offset;
-        let clamped_air_time_scaled_movement_speed: f32 =
-            clamped_movement_speed * air_time_scale;
-        info!(
-            "final movement speed: {}, dot: {}, air scale: {}",
-            clamped_air_time_scaled_movement_speed,
-            dot,
-            air_time_scale
-        );
+            ((1f32 - f32::cos(0.5 * PI * dot - 0.5 * PI)) / (2.0 - SCALE)) + OFFSET;
+        let final_air_time: f32 = motion.movement_speed.current * air_time_scale;
 
-        motion.linear_velocity_interp.target.x += motion.movement_vector.current.x
-            * clamped_air_time_scaled_movement_speed
-            * time.delta_secs();
-        motion.linear_velocity_interp.target.z += motion.movement_vector.current.z
-            * clamped_air_time_scaled_movement_speed
-            * time.delta_secs();
+        // info!(
+        //     "final movement speed: {}, dot: {}, air scale: {}",
+        //     format_value_f32(final_air_time, Some(3), true),
+        //     format_value_f32(dot, Some(3), true),
+        //     format_value_f32(air_time_scale, Some(3), true)
+        // );
+
+        motion.linear_velocity_interp.target.x +=
+            motion.movement_vector.current.x * final_air_time * time.delta_secs();
+        motion.linear_velocity_interp.target.z +=
+            motion.movement_vector.current.z * final_air_time * time.delta_secs();
     }
 
     motion.linear_velocity_interp.current = exp_decay::<Vec3>(
@@ -176,7 +172,6 @@ pub fn compute_motion(
     );
 
     linear_vel.x = motion.linear_velocity_interp.current.x;
-    // linear_vel.y = motion.linear_velocity_interp.current.y;
     linear_vel.z = motion.linear_velocity_interp.current.z;
 
     // info!(
@@ -200,7 +195,7 @@ pub fn compute_motion(
         && keys.pressed(KeyCode::Space)
         && stance.lockout <= 0.0
     {
-        let ray_length: f32 = compute_ray_length(entity, ray_hits);
+        let ray_length: f32 = compute_ray_length(entity, ignored_entities, ray_hits);
         stance.lockout = player_config.stance_lockout;
         stance.current = StanceType::Airborne;
         linear_vel.y = 0.0;
@@ -262,7 +257,10 @@ pub fn apply_jump_force(
 
     let impulse_vec: Vec3 = jump_direction * dynamic_jump_strength;
 
-    info!("impulse_vec: {}", format_value_vec3(impulse_vec, Some(3), true));
+    info!(
+        "impulse_vec: {}",
+        format_value_vec3(impulse_vec, Some(3), true)
+    );
 
     // apply the jump force.
     external_impulse.apply_impulse(impulse_vec.into());

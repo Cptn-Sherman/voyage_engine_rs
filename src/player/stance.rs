@@ -7,6 +7,7 @@ use crate::player::config::PlayerControlConfig;
 use crate::utils::{exp_decay, format_value_vec3, InterpolatedValue};
 use avian3d::prelude::*;
 use bevy::math::Vec3Swizzles;
+use bevy::reflect::List;
 use bevy::{
     ecs::entity::Entity,
     log::{info, warn},
@@ -43,6 +44,7 @@ impl UpdateStance for Stance {
 
 pub fn update_player_stance(
     mut query: Query<(Entity, &StandingSpringForce, &mut Stance, &RayHits), With<Player>>,
+    ignored_entities: Query<Entity, With<IgnoreRayCollision>>,
     mut ev_footstep: EventWriter<FootstepEvent>,
     config: Res<PlayerControlConfig>,
     time: Res<Time>,
@@ -59,7 +61,7 @@ pub fn update_player_stance(
         let previous_stance: StanceType = stance.current.clone();
         let mut next_stance: StanceType = stance.current.clone();
 
-        let ray_length: f32 = compute_ray_length(entity, ray_hits);
+        let ray_length: f32 = compute_ray_length(entity, ignored_entities, ray_hits);
 
         // If your locked in you cannot change state.
         if stance.lockout <= 0.0 {
@@ -86,7 +88,7 @@ pub fn update_player_stance(
                 previous_stance, next_stance
             );
         }
-        
+
         // handle footstep sound event when the state has changed and only then.
         if next_stance != stance.current {
             match next_stance {
@@ -113,18 +115,29 @@ pub struct StandingSpringForce {
     pub max_extension: f32,
 }
 
-pub fn compute_ray_length(entity: Entity, ray_hits: &RayHits) -> f32 {
+#[derive(Component)]
+pub struct IgnoreRayCollision;
+
+pub fn compute_ray_length(
+    entity: Entity,
+    entities_to_ignore: Query<Entity, With<IgnoreRayCollision>>,
+    ray_hits: &RayHits,
+) -> f32 {
     // Compute the ray_length to a hit, if we don't hit anything we assume the ground is infinitly far away.
     let mut ray_length: f32 = f32::INFINITY;
 
     // Find the first ray hit which is not its own collider.
     for hit in ray_hits.iter_sorted() {
-        // First we ensure that the hit is not a child entity.
-        // for child_entity in children {
-        //     if hit.entity == child_entity {
-        //         continue;
-        //     }
-        // }
+        // First we ensure that the hit is not an ignored entity.
+        let mut can_skip: bool = false;
+        for child_entity in entities_to_ignore {
+            if hit.entity == child_entity {
+                can_skip = true;
+            }
+        }
+        if can_skip {
+            continue;
+        }
         // Next we ensure the hit is not the entity,
         // if true this is the ray_length.
         if hit.entity != entity {
@@ -137,6 +150,7 @@ pub fn compute_ray_length(entity: Entity, ray_hits: &RayHits) -> f32 {
 
 pub fn apply_standing_spring_force(
     config: Res<PlayerControlConfig>,
+    ignored_entities: Query<Entity, With<IgnoreRayCollision>>,
     mut query: Query<(
         Entity,
         &mut StandingSpringForce,
@@ -157,7 +171,7 @@ pub fn apply_standing_spring_force(
     ) in &mut query
     {
         // Compute the ray_length to a hit, if we don't hit anything we assume the ground is infinitly far away.
-        let ray_length: f32 = compute_ray_length(entity, ray_hits);
+        let ray_length: f32 = compute_ray_length(entity, ignored_entities, ray_hits);
 
         // Lerp current_ride_height to target_ride_height, this target_ride_height changes depending on the stance. Standing, Crouching, and Prone.
         standing_spring_force.length.current = exp_decay::<f32>(

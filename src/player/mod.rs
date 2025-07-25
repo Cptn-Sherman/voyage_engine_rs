@@ -20,7 +20,7 @@ use crate::{
             update_debug_position, update_debug_rotation,
         },
         focus::player_rotation_system,
-        stance::{apply_standing_spring_force, update_player_stance, StandingSpringForce},
+        stance::{apply_standing_spring_force, update_player_stance, IgnoreRayCollision, StandingSpringForce},
     },
     utils::InterpolatedValue,
 };
@@ -187,22 +187,24 @@ pub fn spawn_player(
                     max_extension: player_config.ray_length_offset,
                 },
             },
-            // Mesh3d(meshes.add(Sphere::new(0.2).mesh().ico(8).unwrap())),
-            // MeshMaterial3d(materials.add(StandardMaterial {
-            //     base_color: Color::srgb(1.0, 200.0 / 256.0, 0.0),
-            //     ..default()
-            // })),
+            Mesh3d(meshes.add(Sphere::new(0.2).mesh().ico(8).unwrap())),
+            MeshMaterial3d(materials.add(StandardMaterial {
+                base_color: Color::srgb(1.0, 200.0 / 256.0, 0.0),
+                ..default()
+            })),
             TransformInterpolation,
+            IgnoreRayCollision,
             Player,
-        ));
-        // .with_children(|parent| {
-        //     parent.spawn((
-        //         PlayerColliderBundle {
-        //             collider: collider.clone(),
-        //         },
-        //         PlayerColliderFlag,
-        //     ));
-        // });
+        ))
+        .with_children(|parent| {
+            parent.spawn((
+                PlayerColliderBundle {
+                    collider: collider.clone(),
+                },
+                PlayerColliderFlag,
+                IgnoreRayCollision,
+            ));
+        });
     info!("Spawned Player Actor");
 }
 
