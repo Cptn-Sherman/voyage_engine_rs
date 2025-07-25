@@ -177,7 +177,6 @@ pub fn tick_footstep(
         if motion.sprinting {
             vol += 0.15;
         }
-        let current_ride_height_offset_scaler: f32 = ternary!(motion.moving, 1.0, 0.5);
 
         // bump the riding height when the delta is less than the bump threshold.
         if config.enable_view_bobbing

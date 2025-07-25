@@ -233,7 +233,7 @@ fn attached_camera_system(
                     .add_children(&[camera_entity]);
                 info!("Attached Camera to player character as child");
             } else {
-                info!("Camera parent already exists, will not set player as parent! ");
+                info!("Camera parent already exists, will not set player as parent!");
             }
         }
     }
