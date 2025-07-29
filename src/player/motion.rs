@@ -16,7 +16,7 @@ use crate::{
         body::Body,
         stance::{compute_ray_length, IgnoreRayCollision, StandingSpringForce},
     },
-    utils::{exp_decay, format_value_f32, format_value_vec3, InterpolatedValue},
+    utils::{exp_decay, format_value_vec3, InterpolatedValue},
 };
 
 use super::{
