@@ -1,4 +1,4 @@
-use crate::input::Input;
+use crate::{input::Input, utils::exp_decay};
 use bevy::prelude::*;
 
 use super::Player;
@@ -13,6 +13,7 @@ pub struct FocusTarget;
 pub fn camera_look_system(
     mut camera_query: Query<&mut Transform, (With<Camera3d>, Without<Player>)>,
     keys: Res<ButtonInput<KeyCode>>,
+    time: Res<Time>,
     input: Res<Input>,
 ) {
     for mut cam_transform in camera_query.iter_mut() {
@@ -20,11 +21,12 @@ pub fn camera_look_system(
             cam_transform.rotation.to_euler(EulerRot::YXZ);
 
         if keys.pressed(KeyCode::AltLeft) {
-            info!("FREE CAMERA");
             camera_yaw -= (input.focus_delta.x).to_radians();
+            info!("Camera Yaw: {}", camera_yaw);
             // need to limit the difference between camera yaw and true yaw.
         } else {
             // lerp the camera yaw back to true yaw.
+            camera_yaw = exp_decay(camera_yaw, 0.0, 4.0, time.delta_secs());
         }
 
         camera_pitch -= (input.focus_delta.y).to_radians();

@@ -233,6 +233,7 @@ pub fn player_rotation_system(
 
         if !keys.pressed(KeyCode::AltLeft) {
             player_yaw -= (input.focus_delta.x).to_radians();
+            info!("Player Yaw: {}", player_yaw);
         }
         player_transform.rotation =
             Quat::from_euler(EulerRot::default(), player_yaw, player_pitch, player_roll);
