@@ -18,9 +18,10 @@ use crate::{
             update_debug_movement_speed_target, update_debug_movement_vector_current,
             update_debug_movement_vector_decay, update_debug_movement_vector_target,
             update_debug_position, update_debug_rotation,
-        },
-        focus::player_rotation_system,
-        stance::{apply_standing_spring_force, update_player_stance, IgnoreRayCollision, StandingSpringForce},
+        }, motion::player_rotation_system, stance::{
+            apply_standing_spring_force, update_player_stance, IgnoreRayCollision,
+            StandingSpringForce,
+        }
     },
     utils::InterpolatedValue,
 };
@@ -172,11 +173,7 @@ pub fn spawn_player(
                     crouched: false,
                     lockout: 0.0,
                 },
-                focus: Focus {
-                    _point_of_focus: Vec3::from_array([0.0, 0.0, 0.0]),
-                    _face_direction: Vec3::from_array([0.0, 0.0, 0.0]),
-                    _free_look: false,
-                },
+                focus: Focus {},
                 action_step: ActionStep {
                     dir: FootstepDirection::Right,
                     delta: ACTION_STEP_DELTA_DEFAULT,

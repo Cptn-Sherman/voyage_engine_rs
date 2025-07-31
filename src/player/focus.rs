@@ -1,25 +1,31 @@
-use bevy::{
-    prelude::*,
-};
 use crate::input::Input;
+use bevy::prelude::*;
 
-use super::{Player};
+use super::Player;
 
 #[derive(Component)]
-pub struct Focus {
-    pub _point_of_focus: Vec3,
-    pub _face_direction: Vec3,
-    pub _free_look: bool,
-}
+pub struct Focus;
+
+#[derive(Component)]
+pub struct FocusTarget;
 
 // This function and many of its helpers are ripped from, bevy_fly_cam.
 pub fn camera_look_system(
     mut camera_query: Query<&mut Transform, (With<Camera3d>, Without<Player>)>,
+    keys: Res<ButtonInput<KeyCode>>,
     input: Res<Input>,
 ) {
     for mut cam_transform in camera_query.iter_mut() {
-        let (camera_yaw, mut camera_pitch, camera_roll) =
+        let (mut camera_yaw, mut camera_pitch, camera_roll) =
             cam_transform.rotation.to_euler(EulerRot::YXZ);
+
+        if keys.pressed(KeyCode::AltLeft) {
+            info!("FREE CAMERA");
+            camera_yaw -= (input.focus_delta.x).to_radians();
+            // need to limit the difference between camera yaw and true yaw.
+        } else {
+            // lerp the camera yaw back to true yaw.
+        }
 
         camera_pitch -= (input.focus_delta.y).to_radians();
         // Prevent the Camera from wrapping over itself in pitch only.
@@ -27,20 +33,5 @@ pub fn camera_look_system(
         // Order is important to prevent unintended roll.
         cam_transform.rotation =
             Quat::from_euler(EulerRot::default(), camera_yaw, camera_pitch, camera_roll);
-    }
-}
-
-// This function and many of its helpers are ripped from, bevy_fly_cam.
-pub fn player_rotation_system(
-    mut player_query: Query<&mut Transform, With<Player>>,
-    input: Res<Input>,
-) {
-    for mut player_transform in player_query.iter_mut() {
-        let (mut player_yaw, player_pitch, player_roll) =
-            player_transform.rotation.to_euler(EulerRot::default());
-
-        player_yaw -= (input.focus_delta.x).to_radians();
-        player_transform.rotation =
-            Quat::from_euler(EulerRot::default(), player_yaw, player_pitch, player_roll);
     }
 }

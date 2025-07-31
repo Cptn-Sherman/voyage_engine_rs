@@ -2,7 +2,7 @@ use bevy::{
     ecs::{component::Component, entity::Entity},
     input::{keyboard::KeyCode, ButtonInput},
     log::{info, warn},
-    math::Vec3,
+    math::{EulerRot, Quat, Vec3},
     prelude::{Query, Res, With},
     time::Time,
     transform::components::Transform,
@@ -219,6 +219,24 @@ pub fn compute_motion(
     // * Detected and apply MOVING flag.
     // set the motion.moving when the magnituted of the movement_vector is greater than some arbitrary small threshold.
     motion.moving = motion.movement_vector.current.length() >= 0.01;
+}
+
+// This function and many of its helpers are ripped from, bevy_fly_cam.
+pub fn player_rotation_system(
+    mut player_query: Query<&mut Transform, With<Player>>,
+    keys: Res<ButtonInput<KeyCode>>,
+    input: Res<Input>,
+) {
+    for mut player_transform in player_query.iter_mut() {
+        let (mut player_yaw, player_pitch, player_roll) =
+            player_transform.rotation.to_euler(EulerRot::default());
+
+        if !keys.pressed(KeyCode::AltLeft) {
+            player_yaw -= (input.focus_delta.x).to_radians();
+        }
+        player_transform.rotation =
+            Quat::from_euler(EulerRot::default(), player_yaw, player_pitch, player_roll);
+    }
 }
 
 pub fn apply_jump_force(
