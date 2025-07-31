@@ -22,8 +22,9 @@ pub fn camera_look_system(
 
         if keys.pressed(KeyCode::AltLeft) {
             camera_yaw -= (input.focus_delta.x).to_radians();
-            info!("Camera Yaw: {}", camera_yaw);
-            // need to limit the difference between camera yaw and true yaw.
+            let max_free_look_angle: f32 = 110.0f32.to_radians(); // fix this number.
+            camera_yaw = camera_yaw.clamp(-1.0 * max_free_look_angle, max_free_look_angle);
+            //info!("Camera Yaw: {}", camera_yaw);
         } else {
             // lerp the camera yaw back to true yaw.
             camera_yaw = exp_decay(camera_yaw, 0.0, 4.0, time.delta_secs());
