@@ -26,8 +26,7 @@ pub fn camera_look_system(
             camera_yaw = camera_yaw.clamp(-1.0 * max_free_look_angle, max_free_look_angle);
             //info!("Camera Yaw: {}", camera_yaw);
         } else {
-            // lerp the camera yaw back to true yaw.
-            camera_yaw = exp_decay(camera_yaw, 0.0, 4.0, time.delta_secs());
+            camera_yaw = exp_decay(camera_yaw, 0.0, 8.0, time.delta_secs());
         }
 
         camera_pitch -= (input.focus_delta.y).to_radians();

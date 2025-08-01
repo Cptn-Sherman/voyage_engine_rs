@@ -25,7 +25,7 @@ impl Default for PlayerControlConfig {
             capsule_height: 1.0,
             ride_height: 1.5,
             ride_height_step_offset: 0.15,
-            ray_length_offset: 0.5,
+            ray_length_offset: 0.1,
             ride_spring_strength: 3500.0,
             ride_spring_damper: 300.0,
             stance_lockout: 0.25,

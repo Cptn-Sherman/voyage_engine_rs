@@ -4,10 +4,8 @@ use super::{
     motion::apply_spring_force,
 };
 use crate::player::config::PlayerControlConfig;
-use crate::utils::{exp_decay, format_value_vec3, InterpolatedValue};
+use crate::utils::{exp_decay, InterpolatedValue};
 use avian3d::prelude::*;
-use bevy::math::Vec3Swizzles;
-use bevy::reflect::List;
 use bevy::{
     ecs::entity::Entity,
     log::{info, warn},
@@ -33,13 +31,7 @@ pub struct Stance {
 }
 
 pub trait UpdateStance {
-    fn Set();
-}
-
-impl UpdateStance for Stance {
-    fn Set() {
-        todo!()
-    }
+    fn set<T>(next_val: T);
 }
 
 pub fn update_player_stance(
@@ -70,7 +62,7 @@ pub fn update_player_stance(
             } else if ray_length < standing_spring.length.current {
                 next_stance = StanceType::Standing;
             } else if previous_stance != StanceType::Standing
-                && ray_length < standing_spring.length.current + config.ray_length_offset
+                && ray_length < standing_spring.length.current + standing_spring.extension
             {
                 next_stance = StanceType::Landing;
             }
@@ -112,7 +104,7 @@ pub fn update_player_stance(
 #[derive(Component)]
 pub struct StandingSpringForce {
     pub length: InterpolatedValue<f32>,
-    pub max_extension: f32,
+    pub extension: f32,
 }
 
 #[derive(Component)]
@@ -181,8 +173,10 @@ pub fn apply_standing_spring_force(
             time.delta_secs(),
         );
 
+        // Todo: We should limit detecting landing unless the ray_length is now LESS than the current length (NOT INCLUDING MAX EXTENSION).
+
         let ride_height: f32 = standing_spring_force.length.current;
-        let max_ray_length: f32 = standing_spring_force.length.current;
+        let max_ray_length: f32 = standing_spring_force.length.current + standing_spring_force.extension;
         if ray_length <= max_ray_length {
             gravity_scale.0 = 0.0f32;
             apply_spring_force(

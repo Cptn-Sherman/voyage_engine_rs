@@ -181,7 +181,7 @@ pub fn spawn_player(
                 },
                 standing_spring_force: StandingSpringForce {
                     length: InterpolatedValue::new(player_config.ride_height, 6.0),
-                    max_extension: player_config.ray_length_offset,
+                    extension: player_config.ray_length_offset,
                 },
             },
             Mesh3d(meshes.add(Sphere::new(0.2).mesh().ico(8).unwrap())),
