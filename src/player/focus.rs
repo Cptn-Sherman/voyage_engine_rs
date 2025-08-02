@@ -13,24 +13,25 @@ pub struct FocusTarget;
 pub fn camera_look_system(
     mut camera_query: Query<&mut Transform, (With<Camera3d>, Without<Player>)>,
     keys: Res<ButtonInput<KeyCode>>,
-    time: Res<Time>,
     input: Res<Input>,
+    time: Res<Time>,
 ) {
     for mut cam_transform in camera_query.iter_mut() {
         let (mut camera_yaw, mut camera_pitch, camera_roll) =
             cam_transform.rotation.to_euler(EulerRot::YXZ);
 
+        // Check for free camera movement. Allowing the user to turn their head while maintaining a movement direction.
         if keys.pressed(KeyCode::AltLeft) {
-            camera_yaw -= (input.focus_delta.x).to_radians();
-            let max_free_look_angle: f32 = 110.0f32.to_radians(); // fix this number.
-            camera_yaw = camera_yaw.clamp(-1.0 * max_free_look_angle, max_free_look_angle);
-            //info!("Camera Yaw: {}", camera_yaw);
+            camera_yaw -= input.focus_delta.x.to_radians();
+            let max_free_look_angle: f32 = 110.0f32.to_radians();
+            camera_yaw = camera_yaw.clamp(-max_free_look_angle, max_free_look_angle);
+            // info!("Camera Yaw: {}", camera_yaw);
         } else {
             camera_yaw = exp_decay(camera_yaw, 0.0, 8.0, time.delta_secs());
         }
 
-        camera_pitch -= (input.focus_delta.y).to_radians();
-        // Prevent the Camera from wrapping over itself in pitch only.
+        camera_pitch -= input.focus_delta.y.to_radians();
+        // Prevent the Camera from wrapping over itself when looking up or down.
         camera_pitch = camera_pitch.clamp(-1.54, 1.54);
         // Order is important to prevent unintended roll.
         cam_transform.rotation =
