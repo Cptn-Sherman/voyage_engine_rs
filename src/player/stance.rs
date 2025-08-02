@@ -73,13 +73,22 @@ pub fn update_player_stance(
         if stance.lockout <= 0.0 {
             if ray_length > standing_spring.length.current + config.ray_length_offset {
                 next_stance = StanceType::Airborne;
-            } else if ray_length < standing_spring.length.current {
-                next_stance = StanceType::Standing;
+
+
+
             } else if previous_stance != StanceType::Standing
                 && ray_length < standing_spring.length.current + standing_spring.extension
             {
                 next_stance = StanceType::Landing;
-            }
+
+
+
+            } else if ray_length < standing_spring.length.current {
+                next_stance = StanceType::Standing;
+
+
+
+            } 
         } else if stance.lockout != 0.0 {
             stance.lockout -= time.delta_secs();
             stance.lockout = f32::max(stance.lockout, 0.0);
