@@ -6,6 +6,7 @@ use super::{
 use crate::player::config::PlayerControlConfig;
 use crate::utils::{exp_decay, InterpolatedValue};
 use avian3d::prelude::*;
+use bevy::ecs::error::Result;
 use bevy::{
     ecs::entity::Entity,
     log::{info, warn},
@@ -30,8 +31,21 @@ pub struct Stance {
     pub lockout: f32,
 }
 
-pub trait UpdateStance {
-    fn set<T>(next_val: T);
+pub trait Set {
+    fn set<T>(&self, next_val: T);
+}
+
+pub trait SetWithLockout {
+    fn try_set(&mut self, next_val: StanceType, lockout: Option<f32>);
+}
+
+impl SetWithLockout for Stance {
+    fn try_set(&mut self, next_val: StanceType, lockout: Option<f32>) {
+        if self.lockout <= 0.0 {
+            self.current = next_val;
+            self.lockout = lockout.unwrap_or(0.0f32);
+        }
+    }
 }
 
 pub fn update_player_stance(
@@ -176,7 +190,8 @@ pub fn apply_standing_spring_force(
         // Todo: We should limit detecting landing unless the ray_length is now LESS than the current length (NOT INCLUDING MAX EXTENSION).
 
         let ride_height: f32 = standing_spring_force.length.current;
-        let max_ray_length: f32 = standing_spring_force.length.current + standing_spring_force.extension;
+        let max_ray_length: f32 =
+            standing_spring_force.length.current + standing_spring_force.extension;
         if ray_length <= max_ray_length {
             gravity_scale.0 = 0.0f32;
             apply_spring_force(
