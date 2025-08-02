@@ -39,7 +39,7 @@ use std::time::Duration;
 use utils::{detect_toggle_cursor, generate_plane_mesh};
 
 use crate::input::{update_input_resource, Input};
-use crate::utils::{format_percentage, initial_grab_cursor};
+use crate::utils::{close_on_key, format_percentage, initial_grab_cursor};
 
 #[derive(Component)]
 struct Sun;
@@ -88,6 +88,7 @@ fn main() {
                 move_free_camera,
                 play_toggle_camera_soundfx,
                 take_screenshot,
+                close_on_key,
             ),
         )
         .add_event::<ToggleCameraEvent>()
