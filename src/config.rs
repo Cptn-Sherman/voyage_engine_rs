@@ -29,6 +29,7 @@ pub struct Bindings {
     pub action_screenshot: Binding,
     pub action_toggle_cursor_focus: KeyCode,
     pub action_toggle_camera_mode: KeyCode,
+    pub action_close_application: KeyCode,
 }
 
 impl Default for Bindings {
@@ -48,7 +49,7 @@ impl Default for Bindings {
                 key: KeyCode::ControlLeft,
                 button: GamepadButton::LeftThumb,
             },
-            action_toggle_cursor_focus: KeyCode::Escape,
+            action_toggle_cursor_focus: KeyCode::Tab,
             action_interact: Binding {
                 key: KeyCode::KeyE,
                 button: GamepadButton::East,
@@ -58,6 +59,7 @@ impl Default for Bindings {
                 button: GamepadButton::Start,
             },
             action_toggle_camera_mode: KeyCode::F3,
+            action_close_application: KeyCode::Escape,
         }
     }
 }

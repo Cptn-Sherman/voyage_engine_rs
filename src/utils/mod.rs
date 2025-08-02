@@ -1,5 +1,6 @@
 use bevy::{
     asset::{Assets, Handle},
+    ecs::{entity::Entity, system::Commands},
     input::ButtonInput,
     log::{info, warn},
     math::{f32, EulerRot, Quat, Vec2, Vec3},
@@ -173,12 +174,8 @@ pub fn format_value_quat(
 // ! There is currently a bug in the x11 implementation which causes this to fail on linux and sets the window to monitor 0.
 pub fn initial_grab_cursor(mut primary_window: Query<&mut Window, With<PrimaryWindow>>) {
     if let Ok(mut window) = primary_window.single_mut() {
-        // Check if the cursor is already grabbed
-        if window.cursor_options.grab_mode != CursorGrabMode::Confined {
-            toggle_cursor_grab_mode(&mut window);
-        } else {
-            warn!("Expected window grab mode to not be locked, cursor not grabbed.");
-        }
+        info!("Window Focused: {}", window.focused);
+        set_cursor_grab_mode(&mut window, CursorGrabMode::Locked, true);
     } else {
         warn!("Primary window not found for `initial_grab_cursor`!");
     }
@@ -201,7 +198,7 @@ pub fn detect_toggle_cursor(
 fn toggle_cursor_grab_mode(window: &mut Window) {
     match window.cursor_options.grab_mode {
         CursorGrabMode::None => {
-            set_cursor_grab_mode(window, CursorGrabMode::Confined, true);
+            set_cursor_grab_mode(window, CursorGrabMode::Locked, true);
         }
         _ => {
             set_cursor_grab_mode(window, CursorGrabMode::None, true);
@@ -210,24 +207,48 @@ fn toggle_cursor_grab_mode(window: &mut Window) {
 }
 
 fn set_cursor_grab_mode(window: &mut Window, grab_mode: CursorGrabMode, center_cursor: bool) {
+    if center_cursor {
+        // set the cursor to the center of the screen.
+        let center: Vec2 = Vec2 {
+            x: window.width() / 2.,
+            y: window.height() / 2.,
+        };
+        window.set_cursor_position(Some(center));
+    }
+
     window.cursor_options.grab_mode = grab_mode;
     window.cursor_options.visible = ternary!(grab_mode == CursorGrabMode::None, true, false);
 
-    if center_cursor {
-        // set the cursor to the center of the screen.
-        let window_width: f32 = (window.width() / 2.0) + window.ime_position.x;
-        let window_height: f32 = (window.height() / 2.0) + window.ime_position.y;
-        window.set_cursor_position(Some(Vec2::new(window_width / 2.0, window_height / 2.0)));
-    }
-
-    info!("Setting window grab mode: {}", grab_mode_stringified(&grab_mode));
+    info!(
+        "Setting window grab mode: {}",
+        grab_mode_stringified(&grab_mode)
+    );
 }
 
 fn grab_mode_stringified(grab_mode: &CursorGrabMode) -> String {
     match grab_mode {
-        CursorGrabMode::Confined =>  "Confined".to_string(),
+        CursorGrabMode::Confined => "Confined".to_string(),
         CursorGrabMode::Locked => "Locked".to_string(),
         CursorGrabMode::None => "None".to_string(),
+    }
+}
+
+// Close the focused window whenever the escape key (Esc) is pressed
+// This is useful for examples or prototyping.
+pub fn close_on_key(
+    mut commands: Commands,
+    focused_windows: Query<(Entity, &Window)>,
+    input: Res<ButtonInput<KeyCode>>,
+    key_bindings: Res<Bindings>,
+) {
+    for (window, focus) in focused_windows.iter() {
+        if !focus.focused {
+            continue;
+        }
+
+        if input.just_pressed(key_bindings.action_close_application) {
+            commands.entity(window).despawn();
+        }
     }
 }
 
