@@ -7,22 +7,16 @@ mod terrain;
 mod user_interface;
 mod utils;
 
+use bevy::anti_alias::taa::TemporalAntiAliasPlugin;
 use bevy::color::palettes::tailwind::{AMBER_400, SKY_400, ZINC_200};
-use bevy::core_pipeline::experimental::taa::TemporalAntiAliasPlugin;
-use bevy::pbr::{CascadeShadowConfigBuilder, ExtendedMaterial};
-
-use bevy::render::mesh::Mesh;
+use bevy::light::{CascadeShadowConfigBuilder, DirectionalLightShadowMap};
+use bevy::pbr::{ExtendedMaterial};
 
 use bevy::render::render_asset::RenderAssetBytesPerFrame;
-use bevy::{pbr::DirectionalLightShadowMap, prelude::*};
+use bevy::{prelude::*};
 
 use avian3d::prelude::*;
-use bevy_atmosphere::plugin::AtmospherePlugin;
-use bevy_blockout::{BlockoutMaterialExt, BlockoutPlugin};
-use bevy_infinite_grid::{InfiniteGridBundle, InfiniteGridPlugin};
 use bevy_kira_audio::{Audio, AudioControl, AudioEasing, AudioPlugin, AudioTween};
-use bevy_sun_move::random_stars::{RandomStarsPlugin, StarSpawner};
-use bevy_sun_move::{SkyCenter, SunMovePlugin};
 use bevy_turborand::prelude::RngPlugin;
 
 use camera::{
@@ -54,7 +48,7 @@ fn main() {
         .insert_resource(Input::default())
         .add_plugins((
             DefaultPlugins,
-            bevy_panic_handler::PanicHandler::new().build(),
+            // bevy_panic_handler::PanicHandler::new().build(),
             RngPlugin::new().with_rng_seed(0),
             PhysicsDebugPlugin::default(),
             PhysicsPlugins::default(),
@@ -62,11 +56,11 @@ fn main() {
             TemporalAntiAliasPlugin,
             PlayerPlugin,
             AudioPlugin,
-            AtmospherePlugin,
-            InfiniteGridPlugin,
+            // AtmospherePlugin,
             BlockoutPlugin,
-            SunMovePlugin,
-            RandomStarsPlugin,
+            //InfiniteGridPlugin,
+            // SunMovePlugin,
+            // RandomStarsPlugin,
         ))
         .add_systems(PreStartup, (create_camera, create_free_camera))
         .add_systems(
@@ -91,7 +85,7 @@ fn main() {
                 close_on_key,
             ),
         )
-        .add_event::<ToggleCameraEvent>()
+        .add_message::<ToggleCameraEvent>()
         .run();
 }
 
@@ -112,11 +106,11 @@ fn setup(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut standard_materials: ResMut<Assets<StandardMaterial>>,
-    mut extended_materials: ResMut<Assets<ExtendedMaterial<StandardMaterial, BlockoutMaterialExt>>>,
+    //mut extended_materials: ResMut<Assets<ExtendedMaterial<StandardMaterial, BlockoutMaterialExt>>>,
 ) {
     info!("Percentage Test: {}", format_percentage::<f32>(120.0f32));
 
-    commands.spawn(InfiniteGridBundle::default());
+    // commands.spawn(InfiniteGridBundle::default());
 
     let _cascade_shadow_config = CascadeShadowConfigBuilder {
         first_cascade_far_bound: 0.3,
@@ -137,23 +131,23 @@ fn setup(
         ))
         .id();
 
-    commands.spawn((
-        SkyCenter {
-            sun: sun_id,
-            latitude_degrees: 51.5,    // e.g., London's approximate latitude
-            planet_tilt_degrees: 23.5, // Earth's axial tilt
-            year_fraction: 0.25,       // e.g., Summer Solstice
-            cycle_duration_secs: 12000.0, // 60-second day/night cycle
-            current_cycle_time: 6000.0, // Start at midnight
-            ..default()
-        },
-        Visibility::Visible,
-        Transform::default(),
-        StarSpawner {
-            star_count: 1000,
-            spawn_radius: 5000.0,
-        }, // Optional
-    ));
+    // commands.spawn((
+    //     SkyCenter {
+    //         sun: sun_id,
+    //         latitude_degrees: 51.5,    // e.g., London's approximate latitude
+    //         planet_tilt_degrees: 23.5, // Earth's axial tilt
+    //         year_fraction: 0.25,       // e.g., Summer Solstice
+    //         cycle_duration_secs: 12000.0, // 60-second day/night cycle
+    //         current_cycle_time: 6000.0, // Start at midnight
+    //         ..default()
+    //     },
+    //     Visibility::Visible,
+    //     Transform::default(),
+    //     StarSpawner {
+    //         star_count: 1000,
+    //         spawn_radius: 5000.0,
+    //     }, // Optional
+    // ));
 
     // Plane
     let plane_size: f32 = 128.0;

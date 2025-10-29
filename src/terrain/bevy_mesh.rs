@@ -19,7 +19,7 @@ impl BevyMeshBuilder {
     from our mesh, but UV coordinates all set to 0
     */
     pub fn build(self) -> Mesh {
-        let mut bevy_mesh: BevyMesh = Mesh::new(TriangleList, RenderAssetUsages::RENDER_WORLD);
+        let mut bevy_mesh: Mesh = Mesh::new(TriangleList, RenderAssetUsages::RENDER_WORLD);
         bevy_mesh.insert_indices(Indices::U32(self.triangle_indices));
         bevy_mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, self.positions);
         bevy_mesh.insert_attribute(Mesh::ATTRIBUTE_NORMAL, self.normals);
@@ -84,13 +84,13 @@ where
     }
 }
 
+use bevy::asset::RenderAssetUsages;
+use bevy::mesh::Indices;
+use bevy::mesh::Mesh;
+use bevy::mesh::VertexAttributeValues;
 use bevy::prelude::Transform;
 use bevy::prelude::Vec3;
-use bevy::render::mesh::Indices;
-use bevy::render::mesh::Mesh as BevyMesh;
-use bevy::render::mesh::Mesh;
-use bevy::render::mesh::VertexAttributeValues;
-use bevy::render::render_asset::RenderAssetUsages;
+
 use bevy::render::render_resource::PrimitiveTopology::{LineList, TriangleList};
 use transvoxel::mesh_builder::GridPoint;
 use transvoxel::mesh_builder::MeshBuilder;
@@ -111,7 +111,7 @@ pub fn mesh_for_model(
     wireframe: bool,
     block: &Block<f32>,
     transition_sides: &TransitionSides,
-) -> BevyMesh {
+) -> Mesh {
     let mut models_map = models_map();
     let field = models_map.get_mut(model).unwrap().as_mut();
     field_model(field, wireframe, block, transition_sides)
@@ -132,7 +132,7 @@ fn field_model(
     wireframe: bool,
     block: &Block<f32>,
     transition_sides: &TransitionSides,
-) -> BevyMesh {
+) -> Mesh {
     let source = WorldMappingVoxelSource {
         field: field,
         block: &block,
@@ -190,9 +190,9 @@ fn inside_grid_points_for_field(
     return result;
 }
 
-pub fn grid_lines(block: &Block<f32>, transition_sides: &TransitionSides) -> BevyMesh {
+pub fn grid_lines(block: &Block<f32>, transition_sides: &TransitionSides) -> Mesh {
     let subs = block.subdivisions;
-    let mut bevy_mesh = BevyMesh::new(bevy::render::render_resource::PrimitiveTopology::LineList, RenderAssetUsages::RENDER_WORLD);
+    let mut bevy_mesh = Mesh::new(bevy::render::render_resource::PrimitiveTopology::LineList, RenderAssetUsages::RENDER_WORLD);
     let mut positions = Vec::<[f32; 3]>::new();
     let mut indices = Vec::<u32>::new();
     for i in 0..=subs {
@@ -298,8 +298,8 @@ pub fn grid_lines(block: &Block<f32>, transition_sides: &TransitionSides) -> Bev
     }
     let normals = positions.clone(); // Not really important for lines ?
     bevy_mesh.insert_indices(Indices::U32(indices));
-    bevy_mesh.insert_attribute(BevyMesh::ATTRIBUTE_POSITION, positions);
-    bevy_mesh.insert_attribute(BevyMesh::ATTRIBUTE_NORMAL, normals);
+    bevy_mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, positions);
+    bevy_mesh.insert_attribute(Mesh::ATTRIBUTE_NORMAL, normals);
     return bevy_mesh;
 }
 

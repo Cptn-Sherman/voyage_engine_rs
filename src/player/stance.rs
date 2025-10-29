@@ -6,12 +6,12 @@ use super::{
 use crate::player::config::PlayerControlConfig;
 use crate::utils::{exp_decay, InterpolatedValue};
 use avian3d::prelude::*;
-use bevy::ecs::error::Result;
+use bevy::ecs::message::MessageWriter;
 use bevy::{
     ecs::entity::Entity,
     log::{info, warn},
     math::Vec3,
-    prelude::{Component, EventWriter, Query, Res, With},
+    prelude::{Component, Query, Res, With},
     time::Time,
 };
 
@@ -51,7 +51,7 @@ impl SetWithLockout for Stance {
 pub fn update_player_stance(
     mut query: Query<(Entity, &StandingSpringForce, &mut Stance, &RayHits), With<Player>>,
     ignored_entities: Query<Entity, With<IgnoreRayCollision>>,
-    mut ev_footstep: EventWriter<FootstepEvent>,
+    mut ev_footstep: MessageWriter<FootstepEvent>,
     config: Res<PlayerControlConfig>,
     time: Res<Time>,
 ) {
@@ -73,22 +73,13 @@ pub fn update_player_stance(
         if stance.lockout <= 0.0 {
             if ray_length > standing_spring.length.current + config.ray_length_offset {
                 next_stance = StanceType::Airborne;
-
-
-
             } else if previous_stance != StanceType::Standing
                 && ray_length < standing_spring.length.current + standing_spring.extension
             {
                 next_stance = StanceType::Landing;
-
-
-
             } else if ray_length < standing_spring.length.current {
                 next_stance = StanceType::Standing;
-
-
-
-            } 
+            }
         } else if stance.lockout != 0.0 {
             stance.lockout -= time.delta_secs();
             stance.lockout = f32::max(stance.lockout, 0.0);

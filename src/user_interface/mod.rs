@@ -77,7 +77,7 @@ pub fn create_debug_interface(mut cmd: Commands, asset_server: Res<AssetServer>)
                 ..Default::default()
             },
             BackgroundColor(Color::srgba(0.05, 0.05, 0.05, 0.75)),
-            BorderColor(BORDER_COLOR),
+            BorderColor::all(BORDER_COLOR),
         )).with_children(|parent| {
             parent.spawn((Text::new("fps: "), text_font.clone(), TextColor(Color::WHITE))).with_children(|parent| {
                 parent.spawn((TextSpan::new("000"), text_font.clone(), TextColor(Color::WHITE), FpsText)).with_children(|parent| {

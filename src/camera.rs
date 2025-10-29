@@ -3,12 +3,7 @@ use crate::{
 };
 use avian3d::prelude::TransformInterpolation;
 use bevy::{
-    core_pipeline::{tonemapping::Tonemapping},
-    math::Vec3,
-    pbr::{Atmosphere, AtmosphereSettings, VolumetricFog},
-    prelude::*,
-    render::camera::Exposure,
-    utils::default,
+    camera::Exposure, core_pipeline::tonemapping::Tonemapping, light::VolumetricFog, math::Vec3, pbr::{Atmosphere, AtmosphereMode, AtmosphereSettings}, prelude::*, utils::default
 };
 use bevy_kira_audio::{Audio, AudioControl, AudioSource};
 
@@ -42,14 +37,12 @@ pub fn create_camera(mut commands: Commands, camera_config: Res<CameraConfig>) {
     commands
         .spawn((
             Camera3d::default(),
-            Camera {
-                hdr: camera_config.hdr,
-                ..default()
-            },
+            Camera::default(),
             Transform::from_xyz(0.0, 0.0, 0.0).looking_to(Vec3::ZERO, Vec3::Y),
             Tonemapping::ReinhardLuminance,
             Atmosphere::EARTH,
             AtmosphereSettings {
+                rendering_method: AtmosphereMode::Raymarched,
                 aerial_view_lut_max_distance: 3.2e5,
                 scene_units_to_m: 100.0,
                 ..Default::default()
@@ -79,7 +72,7 @@ pub fn create_free_camera(mut commands: Commands) {
     ));
 }
 
-#[derive(Event, Clone)]
+#[derive(Message, Event, Clone)]
 pub struct ToggleCameraEvent {
     mode: CameraMode,
 }
@@ -140,7 +133,7 @@ pub fn move_free_camera(
 
 pub fn swap_camera_target(
     mut commands: Commands,
-    mut ev_toggle_cam: EventWriter<ToggleCameraEvent>,
+    mut ev_toggle_cam: MessageWriter<ToggleCameraEvent>,
     keys: Res<ButtonInput<KeyCode>>,
     key_bindings: Res<Bindings>,
     mut camera_query: Query<(Entity, &mut Transform, Option<&ChildOf>), With<GameCamera>>,
@@ -263,12 +256,12 @@ pub fn load_toggle_camera_soundfxs(mut commands: Commands, asset_server: Res<Ass
 pub fn play_toggle_camera_soundfx(
     first_handle: Res<ToggleCameraFirstModeAudioHandle>,
     free_handle: Res<ToggleCameraFreeModeAudioHandle>,
-    mut _ev_footstep: EventReader<ToggleCameraEvent>,
+    mut _ev_footstep: MessageReader<ToggleCameraEvent>,
     audio: Res<Audio>,
 ) {
     let mut mode: CameraMode = CameraMode::FreeCam;
     let mut should_play: bool = false;
-    let volume: f64 = 0.15;
+    let volume: f32 = 0.15;
 
     for _ev in _ev_footstep.read() {
         should_play = true;

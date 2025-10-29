@@ -1,5 +1,5 @@
 use avian3d::prelude::LinearVelocity;
-use bevy::{asset::{AssetServer, Handle}, color::Color, core_pipeline::core_3d::Camera3d, ecs::{component::Component, query::{With, Without}, system::{Commands, Query, Res}}, log::info, math::{EulerRot, Quat}, text::{Font, TextColor, TextFont, TextSpan}, transform::components::Transform, ui::{widget::Text, AlignItems, BackgroundColor, BorderColor, Display, FlexDirection, JustifyContent, Node, PositionType, UiRect, Val}, utils::default};
+use bevy::{asset::{AssetServer, Handle}, camera::Camera3d, color::Color, ecs::{component::Component, query::{With, Without}, system::{Commands, Query, Res}}, log::info, math::{EulerRot, Quat}, text::{Font, TextColor, TextFont, TextSpan}, transform::components::Transform, ui::{widget::Text, AlignItems, BackgroundColor, BorderColor, Display, FlexDirection, JustifyContent, Node, PositionType, UiRect, Val}, utils::default};
 
 use crate::{player::{motion::Motion, Player}, user_interface::themes::{BORDER_COLOR, DEFAULT_DEBUG_FONT_PATH}, utils::{format_value_f32, format_value_quat, format_value_vec3}};
 
@@ -37,7 +37,7 @@ pub fn create_player_debug(mut commands: Commands, asset_server: Res<AssetServer
                         ..Default::default()
                     },
                     BackgroundColor(Color::srgba(0.05, 0.05, 0.05, 0.75)),
-                    BorderColor(BORDER_COLOR),
+                    BorderColor::all(BORDER_COLOR),
                 ))
                 .with_children(|parent| {
                     parent
@@ -113,23 +113,22 @@ pub fn create_player_debug(mut commands: Commands, asset_server: Res<AssetServer
                                 TextColor(Color::WHITE),
                                 MotionMovementVectorCurrentDebug,
                             ));
-                        });
-
-                    parent
-                        .spawn((
-                            Text::new("target: "),
-                            text_font.clone(),
-                            TextColor(Color::WHITE),
-                        ))
-                        .with_children(|parent| {
-                            parent.spawn((
-                                TextSpan::new("000"),
+                            
+                            parent
+                            .spawn((
+                                Text::new("target: "),
                                 text_font.clone(),
                                 TextColor(Color::WHITE),
-                                MotionMovementVectorTargetDebug,
-                            ));
+                            ))
+                            .with_children(|parent| {
+                                parent.spawn((
+                                    TextSpan::new("000"),
+                                    text_font.clone(),
+                                    TextColor(Color::WHITE),
+                                    MotionMovementVectorTargetDebug,
+                                ));
+                            });
                         });
-
                     parent
                         .spawn((
                             Text::new("moving: "),

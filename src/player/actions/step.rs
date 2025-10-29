@@ -1,10 +1,11 @@
+use bevy::camera::Camera3d;
+use bevy::ecs::message::{Message, MessageReader, MessageWriter};
 use bevy::prelude::Resource;
 use bevy::{
     asset::{AssetServer, Handle},
-    core_pipeline::core_3d::Camera3d,
     ecs::{
         component::Component,
-        event::{Event, EventReader, EventWriter},
+        event::{Event},
         query::{With, Without},
         system::{Commands, Query, Res, ResMut},
     },
@@ -30,11 +31,11 @@ use crate::{
 
 const PLAYBACK_RANGE: f64 = 0.4;
 
-#[derive(Event, Clone)]
+#[derive(Message, Event, Clone)]
 pub struct FootstepEvent {
     pub(crate) dir: FootstepDirection,
 
-    pub(crate) volume: f64,
+    pub(crate) volume: f32,
 }
 
 // this is the time in seconds between when the player takes a step. When running this is increased by the configured running speed multiplier.
@@ -72,11 +73,11 @@ impl Default for FootstepDirection {
 // todo: update this to use constants so you can customize the offset from each ear.
 // Maybe obsolete if a 3D sound implementation is used instead. Would be nice for ui.
 
-const FOOTSTEP_CENTER: f64 = 0.5;
-const FOOTSTEP_OFFSET: f64 = 0.05;
+const FOOTSTEP_CENTER: f32 = 0.5;
+const FOOTSTEP_OFFSET: f32 = 0.05;
 
 impl FootstepDirection {
-    fn value(&self) -> f64 {
+    fn value(&self) -> f32 {
         match self {
             FootstepDirection::None => FOOTSTEP_CENTER,
             FootstepDirection::Left => FOOTSTEP_CENTER - FOOTSTEP_OFFSET,
@@ -106,14 +107,14 @@ pub fn load_footstep_sfx(mut commands: Commands, asset_server: Res<AssetServer>)
 // ! ALSO GENERALIZE THIS TO ANY SOUND.
 // ! You should only need to send panning, volume and a sound effect tag to get the right one and it looks up from asset map or some shit...
 pub fn play_footstep_sfx(
-    mut ev_footstep: EventReader<FootstepEvent>,
+    mut ev_footstep: MessageReader<FootstepEvent>,
     mut global_rng: ResMut<GlobalRng>,
     audio: Res<Audio>,
     my_audio_handle: Res<FootstepAudioHandle>,
 ) {
     let mut should_play: bool = false;
-    let mut panning: f64 = 0.5;
-    let mut volume: f64 = 0.5;
+    let mut panning: f32 = 0.5;
+    let mut volume: f32 = 0.5;
 
     for ev in ev_footstep.read() {
         should_play = true;
@@ -133,7 +134,7 @@ pub fn play_footstep_sfx(
 }
 
 pub fn tick_footstep(
-    mut ev_footstep: EventWriter<FootstepEvent>,
+    mut ev_footstep: MessageWriter<FootstepEvent>,
     mut query: Query<(&mut ActionStep, &mut Stance, &Motion), With<Player>>,
     mut camera_query: Query<
         (&mut Transform, &mut SmoothedCamera),
@@ -143,7 +144,7 @@ pub fn tick_footstep(
     config: Res<PlayerControlConfig>,
     time: Res<Time>,
 ) {
-    for (mut action, mut stance, motion) in query.iter_mut() {
+    for (mut action, stance, motion) in query.iter_mut() {
         // you must be on the ground for this sound to play.
         if stance.current != StanceType::Standing && stance.current != StanceType::Landing {
             continue;
@@ -173,7 +174,7 @@ pub fn tick_footstep(
 
         // reduce the time by elaspsed times the scale.
         action.delta -= time.delta_secs() * step_speed_scale;
-        let mut vol: f64 = ternary!(motion.moving, 0.75, 0.50);
+        let mut vol: f32 = ternary!(motion.moving, 0.75, 0.50);
         if motion.sprinting {
             vol += 0.15;
         }
