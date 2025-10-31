@@ -13,7 +13,7 @@ bevy = { version = "0.17.0", features = [
 bevy_kira_audio = { version = "0.24.0", features = ["wav"] }
 avian3d = { version = "0.4" }
 bevy_turborand = "0.12.0"
-#transvoxel = "1.2.0"
+transvoxel = "1.2.0"
 chrono = "0.4.41"
 noise = "0.9.0"
 #bevy_blockout = "0.1.0"

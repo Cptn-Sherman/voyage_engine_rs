@@ -10,10 +10,9 @@ mod utils;
 use bevy::anti_alias::taa::TemporalAntiAliasPlugin;
 use bevy::color::palettes::tailwind::{AMBER_400, SKY_400, ZINC_200};
 use bevy::light::{CascadeShadowConfigBuilder, DirectionalLightShadowMap};
-use bevy::pbr::{ExtendedMaterial};
 
+use bevy::prelude::*;
 use bevy::render::render_asset::RenderAssetBytesPerFrame;
-use bevy::{prelude::*};
 
 use avian3d::prelude::*;
 use bevy_kira_audio::{Audio, AudioControl, AudioEasing, AudioPlugin, AudioTween};
@@ -57,8 +56,8 @@ fn main() {
             PlayerPlugin,
             AudioPlugin,
             // AtmospherePlugin,
-            BlockoutPlugin,
-            //InfiniteGridPlugin,
+            // BlockoutPlugin,
+            // InfiniteGridPlugin,
             // SunMovePlugin,
             // RandomStarsPlugin,
         ))
@@ -120,7 +119,7 @@ fn setup(
     .build();
 
     // create the 'Sun' with volumetric Lighting enabled.
-    let sun_id = commands
+    let _sun_id = commands
         .spawn((
             DirectionalLight {
                 illuminance: light_consts::lux::RAW_SUNLIGHT,
@@ -157,13 +156,7 @@ fn setup(
         RigidBody::Static,
         Collider::cuboid(plane_size, plane_thickness, plane_size),
         Transform::from_xyz(0.0, 2.0, 0.0),
-        MeshMaterial3d(extended_materials.add(ExtendedMaterial {
-            base: StandardMaterial {
-                base_color: SKY_400.into(),
-                ..default()
-            },
-            extension: BlockoutMaterialExt::default(),
-        })),
+        get_sample_material(SKY_400.into(), &mut standard_materials),
         Mesh3d(generate_plane_mesh(
             &mut meshes,
             plane_size,
@@ -196,13 +189,7 @@ fn setup(
         ),
         Mass(5.0),
         Mesh3d(meshes.add(Cuboid::from_length(mini_plateform_cube_size))),
-        MeshMaterial3d(extended_materials.add(ExtendedMaterial {
-            base: StandardMaterial {
-                base_color: ZINC_200.into(),
-                ..default()
-            },
-            extension: BlockoutMaterialExt::default(),
-        })),
+        get_sample_material(ZINC_200.into(), &mut standard_materials),
         Transform::from_xyz(4.0, (mini_plateform_cube_size / 2.0) + 2.0, 8.0),
     ));
 
@@ -217,13 +204,7 @@ fn setup(
         ),
         Mass(5.0),
         Mesh3d(meshes.add(Cuboid::from_length(small_plateform_cube_size))),
-        MeshMaterial3d(extended_materials.add(ExtendedMaterial {
-            base: StandardMaterial {
-                base_color: ZINC_200.into(),
-                ..default()
-            },
-            extension: BlockoutMaterialExt::default(),
-        })),
+        get_sample_material(ZINC_200.into(), &mut standard_materials),
         Transform::from_xyz(8.0, (small_plateform_cube_size / 2.0) + 2.0, 8.0),
     ));
 
@@ -238,13 +219,7 @@ fn setup(
         ),
         Mass(5.0),
         Mesh3d(meshes.add(Cuboid::from_length(medium_plateform_cube_size))),
-        MeshMaterial3d(extended_materials.add(ExtendedMaterial {
-            base: StandardMaterial {
-                base_color: ZINC_200.into(),
-                ..default()
-            },
-            extension: BlockoutMaterialExt::default(),
-        })),
+        get_sample_material(ZINC_200.into(), &mut standard_materials),
         Transform::from_xyz(16.0, (medium_plateform_cube_size / 2.0) + 2.0, 8.0),
     ));
 
@@ -259,13 +234,27 @@ fn setup(
         ),
         Mass(5.0),
         Mesh3d(meshes.add(Cuboid::from_length(large_plateform_cube_size))),
-        MeshMaterial3d(extended_materials.add(ExtendedMaterial {
-            base: StandardMaterial {
-                base_color: ZINC_200.into(),
-                ..default()
-            },
-            extension: BlockoutMaterialExt::default(),
-        })),
+        get_sample_material(ZINC_200.into(), &mut standard_materials),
         Transform::from_xyz(24.0, (large_plateform_cube_size / 2.0) + 2.0, 8.0),
     ));
+}
+
+pub fn get_sample_material(
+    base_color: Color,
+    standard_materials: &mut ResMut<Assets<StandardMaterial>>,
+) -> MeshMaterial3d<StandardMaterial> {
+    MeshMaterial3d(standard_materials.add(StandardMaterial {
+        base_color,
+        ..default()
+    }))
+
+    /*
+           MeshMaterial3d(extended_materials.add(ExtendedMaterial {
+           base: StandardMaterial {
+               base_color: ZINC_200.into(),
+               ..default()
+           },
+           extension: BlockoutMaterialExt::default(),
+       })),
+    */
 }
