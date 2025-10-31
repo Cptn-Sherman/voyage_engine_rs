@@ -87,7 +87,7 @@ impl Plugin for PlayerPlugin {
             )
                 .chain(),
         );
-        app.add_event::<FootstepEvent>();
+        app.add_message::<FootstepEvent>();
         info!("Initialized Player plugin");
     }
 }
@@ -106,8 +106,8 @@ pub struct PlayerColliderBundle {
 #[derive(Bundle)]
 pub struct PlayerBundle {
     linear_vel: LinearVelocity,
-    external_force: ExternalForce,
-    external_impulse: ExternalImpulse,
+    constant_force: ConstantForce,
+    impulse_force: ConstantLinearAcceleration,
     downward_ray: RayCaster,
     ray_hits: RayHits,
     body: Body,
@@ -136,8 +136,8 @@ pub fn spawn_player(
         .spawn((
             PlayerBundle {
                 linear_vel: LinearVelocity::ZERO,
-                external_force: ExternalForce::new([0.0, 0.0, 0.0].into()),
-                external_impulse: ExternalImpulse::new([0.0, 0.0, 0.0].into()),
+                constant_force: ConstantForce::new(0.0, 0.0, 0.0),
+                impulse_force: ConstantLinearAcceleration::new(0.0, 0.0, 0.0),
                 gravity_scale: GravityScale(1.0),
                 transform: Transform::from_xyz(0.0, 16.0, 0.0),
                 downward_ray: RayCaster::new(Vec3::ZERO, Dir3::NEG_Y),
