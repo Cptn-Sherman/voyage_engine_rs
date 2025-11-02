@@ -155,23 +155,23 @@ pub fn compute_ray_length(
 }
 
 pub fn apply_standing_spring_force(
-    config: Res<PlayerControlConfig>,
-    ignored_entities: Query<Entity, With<IgnoreRayCollision>>,
     mut query: Query<(
         Entity,
+        Forces,
         &mut StandingSpringForce,
-        &mut LinearVelocity,
-        &mut ExternalForce,
+        &mut ConstantForce,
         &mut GravityScale,
         &RayHits,
     )>,
+    config: Res<PlayerControlConfig>,
+    ignored_entities: Query<Entity, With<IgnoreRayCollision>>,
     time: Res<Time>,
 ) {
     for (
         entity,
+        mut forces,
         mut standing_spring_force,
-        mut linear_vel,
-        mut external_force,
+        mut constant_force,
         mut gravity_scale,
         ray_hits,
     ) in &mut query
@@ -196,13 +196,12 @@ pub fn apply_standing_spring_force(
             gravity_scale.0 = 0.0f32;
             apply_spring_force(
                 &config,
-                &mut linear_vel,
-                &mut external_force,
+                &mut constant_force,
+                &mut forces,
                 ray_length,
                 ride_height,
             );
         } else {
-            external_force.clear();
             gravity_scale.0 = 1.0f32;
         }
         // info!("External Force: {}", format_value_vec3(external_force.xyz(), Some(3), true));

@@ -216,6 +216,11 @@ fn set_cursor_grab_mode(
     grab_mode: CursorGrabMode,
     center_cursor: bool,
 ) {
+    
+    cursor_options.grab_mode = grab_mode;
+    cursor_options.visible = ternary!(grab_mode == CursorGrabMode::None, true, false);
+
+    // 
     if center_cursor {
         // set the cursor to the center of the screen.
         let center: Vec2 = Vec2 {
@@ -224,9 +229,6 @@ fn set_cursor_grab_mode(
         };
         window.set_cursor_position(Some(center));
     }
-
-    cursor_options.grab_mode = grab_mode;
-    cursor_options.visible = ternary!(grab_mode == CursorGrabMode::None, true, false);
 
     info!(
         "Setting window grab mode: {}",

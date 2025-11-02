@@ -105,7 +105,6 @@ pub struct PlayerColliderBundle {
 
 #[derive(Bundle)]
 pub struct PlayerBundle {
-    linear_vel: LinearVelocity,
     constant_force: ConstantForce,
     impulse_force: ConstantLinearAcceleration,
     downward_ray: RayCaster,
@@ -135,7 +134,6 @@ pub fn spawn_player(
     commands
         .spawn((
             PlayerBundle {
-                linear_vel: LinearVelocity::ZERO,
                 constant_force: ConstantForce::new(0.0, 0.0, 0.0),
                 impulse_force: ConstantLinearAcceleration::new(0.0, 0.0, 0.0),
                 gravity_scale: GravityScale(1.0),

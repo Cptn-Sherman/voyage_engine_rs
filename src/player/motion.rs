@@ -8,7 +8,7 @@ use bevy::{
     transform::components::Transform,
 };
 
-use avian3d::prelude::*;
+use avian3d::prelude::{forces::ForcesItem, *};
 
 use crate::{
     input::Input,
@@ -37,14 +37,15 @@ pub fn compute_motion(
     mut player_query: Query<
         (
             Entity,
+            Forces,
             &mut StandingSpringForce,
-            &mut LinearVelocity,
-            &mut ExternalImpulse,
+            &mut ConstantForce,
             &mut Transform,
             &mut Motion,
             &mut Stance,
             &Body,
             &RayHits,
+
         ),
         With<Player>,
     >,
@@ -64,9 +65,9 @@ pub fn compute_motion(
 
     let (
         entity,
+        mut forces,
         mut standing_spring,
-        mut linear_vel,
-        mut external_impulse,
+        mut constant_force,
         player_transform,
         mut motion,
         mut stance,
@@ -171,8 +172,8 @@ pub fn compute_motion(
         time.delta_secs(),
     );
 
-    linear_vel.x = motion.linear_velocity_interp.current.x;
-    linear_vel.z = motion.linear_velocity_interp.current.z;
+    constant_force.x = motion.linear_velocity_interp.current.x;
+    constant_force.z = motion.linear_velocity_interp.current.z;
 
     // info!(
     //     "Interpolated Linear Velocity: current {}",
@@ -198,11 +199,11 @@ pub fn compute_motion(
         let ray_length: f32 = compute_ray_length(entity, ignored_entities, ray_hits);
         stance.lockout = player_config.stance_lockout;
         stance.current = StanceType::Airborne;
-        linear_vel.y = 0.0;
+        constant_force.y = 0.0;
 
         apply_jump_force(
             &player_config,
-            &mut external_impulse,
+            &mut forces,
             ray_length,
             &mut stance,
             &mut standing_spring,
@@ -241,7 +242,7 @@ pub fn player_rotation_system(
 
 pub fn apply_jump_force(
     player_config: &Res<PlayerControlConfig>,
-    external_impulse: &mut ExternalImpulse,
+    forces: &mut ForcesItem<'_, '_>,
     ray_length: f32,
     stance: &mut Stance,
     standing_spring: &mut StandingSpringForce,
@@ -262,9 +263,6 @@ pub fn apply_jump_force(
     // maybe instead of half the strength getting added to the up we added it directionally only so you always jump x height but can
     // use more of the timing to aid in forward momentum.
 
-    // remove any previous impulse on the object.
-    external_impulse.clear();
-
     // find the movement vector in the x and z direction.
 
     let jump_direction: Vec3 = motion
@@ -281,7 +279,7 @@ pub fn apply_jump_force(
     );
 
     // apply the jump force.
-    external_impulse.apply_impulse(impulse_vec.into());
+    forces.apply_linear_impulse(impulse_vec.into());
 
     info!(
         "Jumped with {}/{} due to distance to ground, /njump_factor {}, of ray length: {}",
@@ -322,8 +320,8 @@ fn compute_clamped_jump_force_factor(
 
 pub fn apply_spring_force(
     config: &Res<PlayerControlConfig>,
-    linear_vel: &mut LinearVelocity,
-    external_force: &mut ExternalForce,
+    constant_force: &mut ConstantForce,
+    force: &mut ForcesItem<'_, '_>,
     ray_length: f32,
     ride_height: f32,
 ) {
@@ -332,9 +330,9 @@ pub fn apply_spring_force(
     // to find the diference in position.
     let spring_offset: f32 = f32::abs(ray_length) - ride_height;
     let spring_force: f32 =
-        (spring_offset * config.ride_spring_strength) - (-linear_vel.y * config.ride_spring_damper);
+        (spring_offset * config.ride_spring_strength) - (-constant_force.y * config.ride_spring_damper);
 
     /* Now we apply our spring force vector in the direction to return the bodies distance from the ground towards RIDE_HEIGHT. */
-    external_force.clear();
-    external_force.apply_force(Vec3::from((0.0, -spring_force, 0.0)));
+    //TODO: external_force.apply_force(Vec3::from((0.0, -spring_force, 0.0)));
+    force.apply_linear_impulse(Vec3::from((0.0, -spring_force, 0.0)));
 }

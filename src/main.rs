@@ -7,7 +7,6 @@ mod terrain;
 mod user_interface;
 mod utils;
 
-use bevy::anti_alias::taa::TemporalAntiAliasPlugin;
 use bevy::color::palettes::tailwind::{AMBER_400, SKY_400, ZINC_200};
 use bevy::light::{CascadeShadowConfigBuilder, DirectionalLightShadowMap};
 
@@ -52,7 +51,7 @@ fn main() {
             PhysicsDebugPlugin::default(),
             PhysicsPlugins::default(),
             DebugInterfacePlugin,
-            TemporalAntiAliasPlugin,
+            //TemporalAntiAliasPlugin,
             PlayerPlugin,
             AudioPlugin,
             // AtmospherePlugin,
