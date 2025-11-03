@@ -16,7 +16,7 @@ use crate::{
         body::Body,
         stance::{compute_ray_length, IgnoreRayCollision, StandingSpringForce},
     },
-    utils::{exp_decay, format_value_vec3, InterpolatedValue},
+    utils::{exp_decay, format_value_f32, format_value_vec3, InterpolatedValue},
 };
 
 use super::{
@@ -334,5 +334,11 @@ pub fn apply_spring_force(
 
     /* Now we apply our spring force vector in the direction to return the bodies distance from the ground towards RIDE_HEIGHT. */
     //TODO: external_force.apply_force(Vec3::from((0.0, -spring_force, 0.0)));
+    info!(
+        "Applying Spring Force: {} (ray_length: {}, ride_height: {})",
+        format_value_f32(spring_force, Some(3), true),
+        format_value_f32(ray_length, Some(3), true),
+        format_value_f32(ride_height, Some(3), true)
+    );
     force.apply_linear_impulse(Vec3::from((0.0, -spring_force, 0.0)));
 }
