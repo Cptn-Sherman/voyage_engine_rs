@@ -28,10 +28,10 @@ use user_interface::DebugInterfacePlugin;
 
 use std::time::Duration;
 
-use utils::{detect_toggle_cursor, generate_plane_mesh};
+use utils::{detect_toggle_cursor_system, generate_plane_mesh};
 
 use crate::input::{update_input_resource, Input};
-use crate::utils::{close_on_key, format_percentage, initial_grab_cursor};
+use crate::utils::{close_on_key, format_percentage, initial_cursor_center, initial_grab_cursor};
 
 #[derive(Component)]
 struct Sun;
@@ -68,6 +68,7 @@ fn main() {
                 start_background_audio,
                 load_toggle_camera_soundfxs,
                 initial_grab_cursor,
+                initial_cursor_center, // ! Bug: "cursor position can be set only for locked cursor" however, window is locked.
             )
                 .chain(),
         )
@@ -75,7 +76,7 @@ fn main() {
             Update,
             (
                 update_input_resource,
-                detect_toggle_cursor,
+                detect_toggle_cursor_system,
                 swap_camera_target,
                 move_free_camera,
                 play_toggle_camera_soundfx,

@@ -8,6 +8,7 @@ use bevy::{
     log::{info, warn},
     math::{f32, EulerRot, Quat, Vec2, Vec3},
     mesh::{Indices, PrimitiveTopology, VertexAttributeValues},
+    picking::window,
     prelude::{KeyCode, Mesh, Query, Res, ResMut, With},
     window::{CursorGrabMode, CursorOptions, PrimaryWindow, Window},
 };
@@ -172,19 +173,20 @@ pub fn format_value_quat(
 // * --- Cursor Grab ---
 // Start up system used to capture the mouse.
 // ! There is currently a bug in the x11 implementation which causes this to fail on linux and sets the window to monitor 0.
-pub fn initial_grab_cursor(
-    mut primary_window: Query<&mut Window, With<PrimaryWindow>>,
-    cursor_options: Single<&mut CursorOptions>,
-) {
+// ! The initial cursor grab will succeed but the center will fail.
+pub fn initial_grab_cursor(cursor_options: Single<&mut CursorOptions>) {
+    set_cursor_grab_mode(cursor_options, CursorGrabMode::Locked);
+}
+
+pub fn initial_cursor_center(mut primary_window: Query<&mut Window, With<PrimaryWindow>>) {
     if let Ok(mut window) = primary_window.single_mut() {
-        info!("Window Focused: {}", window.focused);
-        set_cursor_grab_mode(&mut window, cursor_options, CursorGrabMode::Locked, true);
+        center_cursor(&mut window);
     } else {
-        warn!("Primary window not found for `initial_grab_cursor`!");
+        warn!("Primary window not found for `initial_cursor_center`!");
     }
 }
 
-pub fn detect_toggle_cursor(
+pub fn detect_toggle_cursor_system(
     mut primary_window: Query<&mut Window, With<PrimaryWindow>>,
     cursor_options: Single<&mut CursorOptions>,
     keys: Res<ButtonInput<KeyCode>>,
@@ -199,41 +201,34 @@ pub fn detect_toggle_cursor(
     }
 }
 
-fn toggle_cursor_grab_mode(window: &mut Window, cursor_options: Single<&mut CursorOptions>) {
-    match cursor_options.grab_mode {
-        CursorGrabMode::None => {
-            set_cursor_grab_mode(window, cursor_options, CursorGrabMode::Locked, true);
-        }
-        _ => {
-            set_cursor_grab_mode(window, cursor_options, CursorGrabMode::None, true);
-        }
-    }
-}
-
-fn set_cursor_grab_mode(
-    window: &mut Window,
-    mut cursor_options: Single<&mut CursorOptions>,
-    grab_mode: CursorGrabMode,
-    center_cursor: bool,
-) {
-    
+fn set_cursor_grab_mode(mut cursor_options: Single<&mut CursorOptions>, grab_mode: CursorGrabMode) {
     cursor_options.grab_mode = grab_mode;
     cursor_options.visible = ternary!(grab_mode == CursorGrabMode::None, true, false);
-
-    // 
-    if center_cursor {
-        // set the cursor to the center of the screen.
-        let center: Vec2 = Vec2 {
-            x: window.width() / 2.,
-            y: window.height() / 2.,
-        };
-        window.set_cursor_position(Some(center));
-    }
-
     info!(
         "Setting window grab mode: {}",
         grab_mode_stringified(&grab_mode)
     );
+}
+
+// Sets the cursor to the center of the window.
+pub fn center_cursor(window: &mut Window) {
+    let center: Vec2 = Vec2 {
+        x: window.width() / 2.,
+        y: window.height() / 2.,
+    };
+    window.set_cursor_position(Some(center));
+}
+
+fn toggle_cursor_grab_mode(window: &mut Window, cursor_options: Single<&mut CursorOptions>) {
+    match cursor_options.grab_mode {
+        CursorGrabMode::None => {
+            set_cursor_grab_mode(cursor_options, CursorGrabMode::Locked);
+            center_cursor(window);
+        }
+        _ => {
+            set_cursor_grab_mode(cursor_options, CursorGrabMode::None);
+        }
+    }
 }
 
 fn grab_mode_stringified(grab_mode: &CursorGrabMode) -> String {
