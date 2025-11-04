@@ -41,7 +41,7 @@ fn main() {
         .init_resource::<Bindings>()
         .insert_resource(RenderAssetBytesPerFrame::new(2_000_000_000))
         .insert_resource(EngineSettings { ..default() })
-        .insert_resource(DirectionalLightShadowMap { size: 4098 })
+        .insert_resource(DirectionalLightShadowMap { size: 4096 })
         .insert_resource(CameraConfig { hdr: true })
         .insert_resource(Input::default())
         .add_plugins((
