@@ -333,7 +333,7 @@ pub fn apply_spring_force(
         (spring_offset * config.ride_spring_strength) - (-constant_force.y * config.ride_spring_damper);
 
     /* Now we apply our spring force vector in the direction to return the bodies distance from the ground towards RIDE_HEIGHT. */
-    //TODO: external_force.apply_force(Vec3::from((0.0, -spring_force, 0.0)));
+    // TODO: external_force.apply_force(Vec3::from((0.0, -spring_force, 0.0)));
     info!(
         "Applying Spring Force: {} (ray_length: {}, ride_height: {})",
         format_value_f32(spring_force, Some(3), true),
