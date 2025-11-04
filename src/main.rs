@@ -46,13 +46,13 @@ fn main() {
         .insert_resource(Input::default())
         .add_plugins((
             DefaultPlugins,
-            // bevy_panic_handler::PanicHandler::new().build(),
             RngPlugin::new().with_rng_seed(0),
             PhysicsDebugPlugin::default(),
             PhysicsPlugins::default(),
             DebugInterfacePlugin,
             PlayerPlugin,
             AudioPlugin,
+            // bevy_panic_handler::PanicHandler::new().build(),
             //TemporalAntiAliasPlugin,
             // AtmospherePlugin,
             // BlockoutPlugin,

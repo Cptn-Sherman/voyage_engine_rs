@@ -1,6 +1,6 @@
 use bevy::{
     ecs::{component::Component, entity::Entity},
-    input::{keyboard::KeyCode, ButtonInput},
+    input::{ButtonInput, keyboard::KeyCode},
     log::{info, warn},
     math::{EulerRot, Quat, Vec3},
     prelude::{Query, Res, With},
@@ -321,7 +321,6 @@ fn compute_clamped_jump_force_factor(
 pub fn apply_spring_force(
     config: &Res<PlayerControlConfig>,
     constant_force: &mut ConstantForce,
-    force: &mut ForcesItem<'_, '_>,
     ray_length: f32,
     ride_height: f32,
 ) {
@@ -330,15 +329,14 @@ pub fn apply_spring_force(
     // to find the diference in position.
     let spring_offset: f32 = f32::abs(ray_length) - ride_height;
     let spring_force: f32 =
-        (spring_offset * config.ride_spring_strength) - (-constant_force.y * config.ride_spring_damper);
+        (spring_offset * config.ride_spring_strength) - (-constant_force.0.y * config.ride_spring_damper);
 
     /* Now we apply our spring force vector in the direction to return the bodies distance from the ground towards RIDE_HEIGHT. */
     // TODO: external_force.apply_force(Vec3::from((0.0, -spring_force, 0.0)));
-    info!(
-        "Applying Spring Force: {} (ray_length: {}, ride_height: {})",
+    info!("Applying Spring Force: {} (ray_length: {}, ride_height: {})",
         format_value_f32(spring_force, Some(3), true),
         format_value_f32(ray_length, Some(3), true),
         format_value_f32(ride_height, Some(3), true)
     );
-    force.apply_linear_impulse(Vec3::from((0.0, -spring_force, 0.0)));
+    constant_force.0.y = -spring_force;
 }

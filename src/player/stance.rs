@@ -157,9 +157,8 @@ pub fn compute_ray_length(
 pub fn apply_standing_spring_force(
     mut query: Query<(
         Entity,
-        Forces,
-        &mut StandingSpringForce,
         &mut ConstantForce,
+        &mut StandingSpringForce,
         &mut GravityScale,
         &RayHits,
     )>,
@@ -169,9 +168,8 @@ pub fn apply_standing_spring_force(
 ) {
     for (
         entity,
-        mut forces,
-        mut standing_spring_force,
         mut constant_force,
+        mut standing_spring_force,
         mut gravity_scale,
         ray_hits,
     ) in &mut query
@@ -194,10 +192,10 @@ pub fn apply_standing_spring_force(
             standing_spring_force.length.current + standing_spring_force.extension;
         if ray_length <= max_ray_length {
             gravity_scale.0 = 0.0f32;
+            info!("Applying Standing Spring Force for Entity: {:?}", entity);
             apply_spring_force(
                 &config,
                 &mut constant_force,
-                &mut forces,
                 ray_length,
                 ride_height,
             );
