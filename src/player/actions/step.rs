@@ -17,6 +17,7 @@ use bevy::{
 use bevy_kira_audio::{Audio, AudioControl, AudioSource};
 use bevy_turborand::{DelegatedRng, GlobalRng};
 
+use crate::utils::format_value::format_value_vec3;
 use crate::{
     camera::{SmoothedCamera, ROTATION_AMOUNT},
     player::{
@@ -26,7 +27,6 @@ use crate::{
         Player,
     },
     ternary,
-    utils::format_value_vec3,
 };
 
 const PLAYBACK_RANGE: f64 = 0.4;
@@ -162,14 +162,14 @@ pub fn tick_footstep(
 
         // info!("Step Speed Scale: {}", step_speed_scale);
 
-        let mut ride_height_offset: f32 = ternary!(
+        let mut _ride_height_offset: f32 = ternary!(
             motion.sprinting,
             config.ride_height_step_offset,
             -config.ride_height_step_offset
         );
 
         if motion.sprinting == true || motion.moving == false {
-            ride_height_offset *= 1.4; // this is kinda arbitrary. but this little bit of kick is applied when you start sprinting from a stand still.
+            _ride_height_offset *= 1.4; // this is kinda arbitrary. but this little bit of kick is applied when you start sprinting from a stand still.
         }
 
         // reduce the time by elaspsed times the scale.

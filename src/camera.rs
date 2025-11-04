@@ -34,6 +34,7 @@ impl Default for CameraConfig {
 }
 
 pub fn create_camera(mut commands: Commands, camera_config: Res<CameraConfig>) {
+    let _ = camera_config;
     commands
         .spawn((
             Camera3d::default(),

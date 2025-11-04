@@ -11,7 +11,7 @@ use bevy::{
 };
 use themes::{BORDER_COLOR, DEFAULT_FONT_PATH};
 
-use crate::utils::format_value_f32;
+use crate::utils::format_value::format_value_f32;
 
 pub struct DebugInterfacePlugin;
 

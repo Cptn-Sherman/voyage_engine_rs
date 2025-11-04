@@ -1,7 +1,7 @@
 use avian3d::prelude::{ConstantForce};
 use bevy::{asset::{AssetServer, Handle}, camera::Camera3d, color::Color, ecs::{component::Component, query::{With, Without}, system::{Commands, Query, Res}}, log::info, math::{EulerRot, Quat}, text::{Font, TextColor, TextFont, TextSpan}, transform::components::Transform, ui::{widget::Text, AlignItems, BackgroundColor, BorderColor, Display, FlexDirection, JustifyContent, Node, PositionType, UiRect, Val}, utils::default};
 
-use crate::{player::{motion::Motion, Player}, user_interface::themes::{BORDER_COLOR, DEFAULT_DEBUG_FONT_PATH}, utils::{format_value_f32, format_value_quat, format_value_vec3}};
+use crate::{player::{motion::Motion, Player}, user_interface::themes::{BORDER_COLOR, DEFAULT_DEBUG_FONT_PATH}, utils::format_value::{format_value_f32, format_value_vec3, format_value_quat}};
 
 pub fn create_player_debug(mut commands: Commands, asset_server: Res<AssetServer>) {
     let default_font: Handle<Font> = asset_server.load(DEFAULT_DEBUG_FONT_PATH);

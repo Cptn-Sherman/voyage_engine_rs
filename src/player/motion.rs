@@ -1,6 +1,6 @@
 use bevy::{
     ecs::{component::Component, entity::Entity},
-    input::{ButtonInput, keyboard::KeyCode},
+    input::{keyboard::KeyCode, ButtonInput},
     log::{info, warn},
     math::{EulerRot, Quat, Vec3},
     prelude::{Query, Res, With},
@@ -14,9 +14,9 @@ use crate::{
     input::Input,
     player::{
         body::Body,
-        stance::{compute_ray_length, IgnoreRayCollision, StandingSpringForce},
+        stance::{IgnoreRayCollision, StandingSpringForce, compute_ray_length},
     },
-    utils::{exp_decay, format_value_f32, format_value_vec3, InterpolatedValue},
+    utils::{InterpolatedValue, exp_decay, format_value::{format_value_f32, format_value_vec3}},
 };
 
 use super::{
@@ -45,7 +45,6 @@ pub fn compute_motion(
             &mut Stance,
             &Body,
             &RayHits,
-
         ),
         With<Player>,
     >,
@@ -328,15 +327,16 @@ pub fn apply_spring_force(
     // Compute this value by subtracting the ray length from the set ride height
     // to find the diference in position.
     let spring_offset: f32 = f32::abs(ray_length) - ride_height;
-    let spring_force: f32 =
-        (spring_offset * config.ride_spring_strength) - (-constant_force.0.y * config.ride_spring_damper);
+    let spring_force: f32 = (spring_offset * config.ride_spring_strength)
+        - (-constant_force.0.y * config.ride_spring_damper);
 
     /* Now we apply our spring force vector in the direction to return the bodies distance from the ground towards RIDE_HEIGHT. */
-    // TODO: external_force.apply_force(Vec3::from((0.0, -spring_force, 0.0)));
-    info!("Applying Spring Force: {} (ray_length: {}, ride_height: {})",
+    info!(
+        "Applying Spring Force: {} (ray_length: {}, ride_height: {})",
         format_value_f32(spring_force, Some(3), true),
         format_value_f32(ray_length, Some(3), true),
         format_value_f32(ride_height, Some(3), true)
     );
+    // TODO: external_force.apply_force(Vec3::from((0.0, -spring_force, 0.0)));
     constant_force.0.y = -spring_force;
 }

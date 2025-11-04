@@ -3,7 +3,7 @@ use bevy::{asset::Handle, color::Color, prelude::{Bundle, Text}, text::{ Font, F
 pub const DEFAULT_FONT_PATH: &str = "fonts/AshlanderPixel_fixed.ttf";
 pub const DEFAULT_DEBUG_FONT_PATH: &str = "fonts/Monocraft.ttf";
 pub const DEFAULT_FONT_SIZE: f32 = 14.0;
-pub const NO_PERCENTAGE: &str = "---.-%";
+
 
 #[allow(dead_code)]
 pub const ORANGE_TEXT_COLOR: Color = Color::hsv(0.34, 1.0, 0.5);
