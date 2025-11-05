@@ -157,6 +157,7 @@ pub fn compute_ray_length(
 pub fn apply_standing_spring_force(
     mut query: Query<(
         Entity,
+        &LinearVelocity,
         &mut ConstantForce,
         &mut StandingSpringForce,
         &mut GravityScale,
@@ -168,6 +169,7 @@ pub fn apply_standing_spring_force(
 ) {
     for (
         entity,
+        linear_velocity,
         mut constant_force,
         mut standing_spring_force,
         mut gravity_scale,
@@ -195,6 +197,7 @@ pub fn apply_standing_spring_force(
             info!("Applying Standing Spring Force for Entity: {:?}", entity);
             apply_spring_force(
                 &config,
+                linear_velocity,
                 &mut constant_force,
                 ray_length,
                 ride_height,

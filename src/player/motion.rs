@@ -37,8 +37,8 @@ pub fn compute_motion(
     mut player_query: Query<
         (
             Entity,
-            Forces,
             &mut StandingSpringForce,
+            &mut LinearVelocity,
             &mut ConstantForce,
             &mut Transform,
             &mut Motion,
@@ -64,8 +64,8 @@ pub fn compute_motion(
 
     let (
         entity,
-        mut forces,
         mut standing_spring,
+        linear_vel,
         mut constant_force,
         player_transform,
         mut motion,
@@ -202,7 +202,6 @@ pub fn compute_motion(
 
         apply_jump_force(
             &player_config,
-            &mut forces,
             ray_length,
             &mut stance,
             &mut standing_spring,
@@ -241,7 +240,6 @@ pub fn player_rotation_system(
 
 pub fn apply_jump_force(
     player_config: &Res<PlayerControlConfig>,
-    forces: &mut ForcesItem<'_, '_>,
     ray_length: f32,
     stance: &mut Stance,
     standing_spring: &mut StandingSpringForce,
@@ -278,7 +276,7 @@ pub fn apply_jump_force(
     );
 
     // apply the jump force.
-    forces.apply_linear_impulse(impulse_vec.into());
+    // forces.apply_linear_impulse(impulse_vec.into());
 
     info!(
         "Jumped with {}/{} due to distance to ground, /njump_factor {}, of ray length: {}",
@@ -319,6 +317,7 @@ fn compute_clamped_jump_force_factor(
 
 pub fn apply_spring_force(
     config: &Res<PlayerControlConfig>,
+    linear_velocity: &LinearVelocity,
     constant_force: &mut ConstantForce,
     ray_length: f32,
     ride_height: f32,
@@ -326,9 +325,10 @@ pub fn apply_spring_force(
     // Find the diference between how close the capsule is to the surface beneath it.
     // Compute this value by subtracting the ray length from the set ride height
     // to find the diference in position.
+    // !Bug: I think the issue at least here is that the -constant_force.0.y should really be the linear velocity of the entity. However, I cannot use linear_velocity directly anymore.
     let spring_offset: f32 = f32::abs(ray_length) - ride_height;
     let spring_force: f32 = (spring_offset * config.ride_spring_strength)
-        - (-constant_force.0.y * config.ride_spring_damper);
+        - (-linear_velocity.0.y * config.ride_spring_damper);
 
     /* Now we apply our spring force vector in the direction to return the bodies distance from the ground towards RIDE_HEIGHT. */
     info!(
@@ -337,6 +337,6 @@ pub fn apply_spring_force(
         format_value_f32(ray_length, Some(3), true),
         format_value_f32(ride_height, Some(3), true)
     );
-    // TODO: external_force.apply_force(Vec3::from((0.0, -spring_force, 0.0)));
+    // external_force.apply_force(Vec3::from((0.0, -spring_force, 0.0)));
     constant_force.0.y = -spring_force;
 }

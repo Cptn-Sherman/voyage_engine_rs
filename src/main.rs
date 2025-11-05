@@ -31,7 +31,8 @@ use std::time::Duration;
 use utils::{detect_toggle_cursor_system, generate_plane_mesh};
 
 use crate::input::{update_input_resource, Input};
-use crate::utils::{close_on_key, format_percentage, initial_cursor_center, initial_grab_cursor};
+use crate::utils::format_value::format_percentage;
+use crate::utils::{close_on_key, initial_cursor_center, initial_grab_cursor};
 
 #[derive(Component)]
 struct Sun;
