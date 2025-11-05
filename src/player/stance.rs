@@ -69,6 +69,7 @@ pub fn update_player_stance(
 
         let ray_length: f32 = compute_ray_length(entity, ignored_entities, ray_hits);
 
+        info!("Stance lockout: {}", stance.lockout);
         // If your locked in you cannot change state.
         if stance.lockout <= 0.0 {
             if ray_length > standing_spring.length.current + config.ray_length_offset {
@@ -194,7 +195,6 @@ pub fn apply_standing_spring_force(
             standing_spring_force.length.current + standing_spring_force.extension;
         if ray_length <= max_ray_length {
             gravity_scale.0 = 0.0f32;
-            info!("Applying Standing Spring Force for Entity: {:?}", entity);
             apply_spring_force(
                 &config,
                 linear_velocity,

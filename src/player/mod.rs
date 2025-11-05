@@ -10,7 +10,7 @@ use avian3d::prelude::*;
 use bevy::{log::info, prelude::*};
 
 use crate::{
-    camera::{smooth_camera, GameCamera},
+    camera::{GameCamera, smooth_camera},
     player::{
         debug::{
             create_player_debug, update_debug_is_moving, update_debug_is_sprinting,
@@ -18,9 +18,8 @@ use crate::{
             update_debug_movement_speed_target, update_debug_movement_vector_current,
             update_debug_movement_vector_decay, update_debug_movement_vector_target,
             update_debug_position, update_debug_rotation,
-        }, motion::player_rotation_system, stance::{
-            apply_standing_spring_force, update_player_stance, IgnoreRayCollision,
-            StandingSpringForce,
+        }, motion::{player_jump_system, player_rotation_system}, stance::{
+            IgnoreRayCollision, StandingSpringForce, apply_standing_spring_force, update_player_stance
         }
     },
     utils::InterpolatedValue,
@@ -28,7 +27,7 @@ use crate::{
 use body::Body;
 use config::PlayerControlConfig;
 use focus::{camera_look_system, Focus};
-use motion::{compute_motion, Motion};
+use motion::{player_motion_system, Motion};
 use stance::{lock_angular_velocity, Stance, StanceType};
 
 pub mod actions;
@@ -61,7 +60,8 @@ impl Plugin for PlayerPlugin {
                 update_player_stance,
                 camera_look_system,
                 player_rotation_system,
-                compute_motion,
+                player_motion_system,
+                player_jump_system,
                 smooth_camera,
                 toggle_crouching,
                 toggle_sprinting,

@@ -8,15 +8,15 @@ use bevy::{
     transform::components::Transform,
 };
 
-use avian3d::prelude::{forces::ForcesItem, *};
+use avian3d::prelude::{ConstantForce, Forces, LinearVelocity, RayHits, RigidBodyForces, forces::ForcesItem};
 
 use crate::{
     input::Input,
     player::{
         body::Body,
-        stance::{IgnoreRayCollision, StandingSpringForce, compute_ray_length},
+        stance::{compute_ray_length, IgnoreRayCollision, StandingSpringForce},
     },
-    utils::{InterpolatedValue, exp_decay, format_value::{format_value_f32, format_value_vec3}},
+    utils::{exp_decay, format_value::format_value_vec3, InterpolatedValue},
 };
 
 use super::{
@@ -33,24 +33,12 @@ pub struct Motion {
     pub moving: bool,
 }
 
-pub fn compute_motion(
+pub fn player_motion_system(
     mut player_query: Query<
-        (
-            Entity,
-            &mut StandingSpringForce,
-            &mut LinearVelocity,
-            &mut ConstantForce,
-            &mut Transform,
-            &mut Motion,
-            &mut Stance,
-            &Body,
-            &RayHits,
-        ),
+        (&mut ConstantForce, &mut Transform, &mut Motion, &Stance),
         With<Player>,
     >,
-    ignored_entities: Query<Entity, With<IgnoreRayCollision>>,
     player_config: Res<PlayerControlConfig>,
-    keys: Res<ButtonInput<KeyCode>>,
     input: Res<Input>,
     time: Res<Time>,
 ) {
@@ -62,17 +50,8 @@ pub fn compute_motion(
         return;
     }
 
-    let (
-        entity,
-        mut standing_spring,
-        linear_vel,
-        mut constant_force,
-        player_transform,
-        mut motion,
-        mut stance,
-        body,
-        ray_hits,
-    ) = player_query.single_mut().expect("We do some errors");
+    let (mut constant_force, player_transform, mut motion, stance) =
+        player_query.single_mut().expect("We do some errors");
 
     // * - COMPUTE CURRENT MOVEMENT SPEED AND LERP -
 
@@ -187,9 +166,32 @@ pub fn compute_motion(
     //     format_value_vec3(linear_vel.0, Some(4), true),
     // );
 
-    // * -   -
+    // * Detected and apply MOVING flag.
+    // set the motion.moving when the magnituted of the movement_vector is greater than some arbitrary small threshold.
+    motion.moving = motion.movement_vector.current.length() >= 0.01;
+}
 
-    // ! BUG:
+pub fn player_jump_system(
+    mut player_query: Query<
+        (
+            Entity,
+            Forces,
+            &mut StandingSpringForce,
+            &mut ConstantForce,
+            &Motion,
+            &mut Stance,
+            &Body,
+            &RayHits,
+        ),
+        With<Player>,
+    >,
+    ignored_entities: Query<Entity, With<IgnoreRayCollision>>,
+    player_config: Res<PlayerControlConfig>,
+    keys: Res<ButtonInput<KeyCode>>,
+) {
+    let (entity, mut forces, mut standing_spring, mut constant_force, motion, mut stance, body, ray_hits) =
+        player_query.single_mut().expect("We do some errors");
+    // * -   - JUMPING LOGIC   -
 
     if stance.current == StanceType::Standing
         && keys.pressed(KeyCode::Space)
@@ -201,6 +203,7 @@ pub fn compute_motion(
         constant_force.y = 0.0;
 
         apply_jump_force(
+            &mut forces,
             &player_config,
             ray_length,
             &mut stance,
@@ -209,15 +212,6 @@ pub fn compute_motion(
             &body,
         );
     }
-
-    // info!(
-    //     "External Impulse: {}",
-    //     format_value_vec3(external_impulse.xyz(), Some(3), true)
-    // );
-
-    // * Detected and apply MOVING flag.
-    // set the motion.moving when the magnituted of the movement_vector is greater than some arbitrary small threshold.
-    motion.moving = motion.movement_vector.current.length() >= 0.01;
 }
 
 // This function and many of its helpers are ripped from, bevy_fly_cam.
@@ -239,6 +233,7 @@ pub fn player_rotation_system(
 }
 
 pub fn apply_jump_force(
+    forces: &mut ForcesItem<'_, '_>,
     player_config: &Res<PlayerControlConfig>,
     ray_length: f32,
     stance: &mut Stance,
@@ -261,7 +256,6 @@ pub fn apply_jump_force(
     // use more of the timing to aid in forward momentum.
 
     // find the movement vector in the x and z direction.
-
     let jump_direction: Vec3 = motion
         .movement_vector
         .current
@@ -276,7 +270,7 @@ pub fn apply_jump_force(
     );
 
     // apply the jump force.
-    // forces.apply_linear_impulse(impulse_vec.into());
+    forces.apply_linear_impulse(impulse_vec.into());
 
     info!(
         "Jumped with {}/{} due to distance to ground, /njump_factor {}, of ray length: {}",
@@ -325,18 +319,17 @@ pub fn apply_spring_force(
     // Find the diference between how close the capsule is to the surface beneath it.
     // Compute this value by subtracting the ray length from the set ride height
     // to find the diference in position.
-    // !Bug: I think the issue at least here is that the -constant_force.0.y should really be the linear velocity of the entity. However, I cannot use linear_velocity directly anymore.
     let spring_offset: f32 = f32::abs(ray_length) - ride_height;
     let spring_force: f32 = (spring_offset * config.ride_spring_strength)
         - (-linear_velocity.0.y * config.ride_spring_damper);
 
     /* Now we apply our spring force vector in the direction to return the bodies distance from the ground towards RIDE_HEIGHT. */
-    info!(
-        "Applying Spring Force: {} (ray_length: {}, ride_height: {})",
-        format_value_f32(spring_force, Some(3), true),
-        format_value_f32(ray_length, Some(3), true),
-        format_value_f32(ride_height, Some(3), true)
-    );
-    // external_force.apply_force(Vec3::from((0.0, -spring_force, 0.0)));
     constant_force.0.y = -spring_force;
+
+    // info!(
+    //     "Applying Spring Force: {} (ray_length: {}, ride_height: {})",
+    //     format_value_f32(spring_force, Some(3), true),
+    //     format_value_f32(ray_length, Some(3), true),
+    //     format_value_f32(ride_height, Some(3), true)
+    // );
 }
