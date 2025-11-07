@@ -8,7 +8,7 @@ mod user_interface;
 mod utils;
 
 use bevy::color::palettes::tailwind::{AMBER_400, SKY_400, ZINC_200};
-use bevy::light::{CascadeShadowConfigBuilder, DirectionalLightShadowMap};
+use bevy::light::{CascadeShadowConfigBuilder, DirectionalLightShadowMap, SunDisk};
 
 use bevy::prelude::*;
 use bevy::render::render_asset::RenderAssetBytesPerFrame;
@@ -128,6 +128,7 @@ fn setup(
             ..default()
             },
             Transform::default().with_rotation(Quat::from_rotation_x(-std::f32::consts::FRAC_PI_4)),
+            SunDisk::default(),
         ))
         .id();
 
