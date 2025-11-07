@@ -14,9 +14,9 @@ use crate::{
     input::Input,
     player::{
         body::Body,
-        stance::{compute_ray_length, IgnoreRayCollision, StandingSpringForce},
+        stance::{IgnoreRayCollision, StandingSpringForce, compute_ray_length},
     },
-    utils::{exp_decay, format_value::format_value_vec3, InterpolatedValue},
+    utils::{InterpolatedValue, exp_decay, format_value::{format_value_vec3}},
 };
 
 use super::{
@@ -35,7 +35,7 @@ pub struct Motion {
 
 pub fn player_motion_system(
     mut player_query: Query<
-        (&mut ConstantForce, &mut Transform, &mut Motion, &Stance),
+        (&mut LinearVelocity, &mut Transform, &mut Motion, &Stance),
         With<Player>,
     >,
     player_config: Res<PlayerControlConfig>,
@@ -50,7 +50,7 @@ pub fn player_motion_system(
         return;
     }
 
-    let (mut constant_force, player_transform, mut motion, stance) =
+    let (mut linear_velocity, player_transform, mut motion, stance) =
         player_query.single_mut().expect("We do some errors");
 
     // * - COMPUTE CURRENT MOVEMENT SPEED AND LERP -
@@ -150,8 +150,8 @@ pub fn player_motion_system(
         time.delta_secs(),
     );
 
-    constant_force.x = motion.linear_velocity_interp.current.x;
-    constant_force.z = motion.linear_velocity_interp.current.z;
+    linear_velocity.x = motion.linear_velocity_interp.current.x;
+    linear_velocity.z = motion.linear_velocity_interp.current.z;
 
     // info!(
     //     "Interpolated Linear Velocity: current {}",
@@ -163,9 +163,10 @@ pub fn player_motion_system(
     // );
     // info!(
     //     "Linear Velocity: {}",
-    //     format_value_vec3(linear_vel.0, Some(4), true),
+    //     format_value_vec3(linear_velocity.0, Some(3), true),
     // );
 
+    // todo: move this to a new system that handles state changes.
     // * Detected and apply MOVING flag.
     // set the motion.moving when the magnituted of the movement_vector is greater than some arbitrary small threshold.
     motion.moving = motion.movement_vector.current.length() >= 0.01;

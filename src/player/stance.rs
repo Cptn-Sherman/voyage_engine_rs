@@ -4,7 +4,8 @@ use super::{
     motion::apply_spring_force,
 };
 use crate::player::config::PlayerControlConfig;
-use crate::utils::{exp_decay, InterpolatedValue};
+use crate::utils::format_value::format_value_f32;
+use crate::utils::{exp_decay, format_value, InterpolatedValue};
 use avian3d::prelude::*;
 use bevy::ecs::message::MessageWriter;
 use bevy::{
@@ -69,19 +70,31 @@ pub fn update_player_stance(
 
         let ray_length: f32 = compute_ray_length(entity, ignored_entities, ray_hits);
 
-        info!("Stance lockout: {}", stance.lockout);
         // If your locked in you cannot change state.
         if stance.lockout <= 0.0 {
+            // info!(
+            //     "Standing Spring Length: {}",
+            //     format_value_f32(standing_spring.length.current, Some(2), false)
+            // );
+            // info!(
+            //     "Ray Length: {}",
+            //     format_value_f32(ray_length, Some(2), false)
+            // );
+
             if ray_length > standing_spring.length.current + config.ray_length_offset {
                 next_stance = StanceType::Airborne;
+            } else if ray_length < standing_spring.length.current {
+                next_stance = StanceType::Standing;
             } else if previous_stance != StanceType::Standing
                 && ray_length < standing_spring.length.current + standing_spring.extension
             {
                 next_stance = StanceType::Landing;
-            } else if ray_length < standing_spring.length.current {
-                next_stance = StanceType::Standing;
             }
         } else if stance.lockout != 0.0 {
+            info!(
+                "Stance lockout: {}",
+                format_value_f32(stance.lockout, Some(2), false)
+            );
             stance.lockout -= time.delta_secs();
             stance.lockout = f32::max(stance.lockout, 0.0);
             if stance.lockout <= 0.0 {
