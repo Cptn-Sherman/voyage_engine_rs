@@ -123,11 +123,11 @@ fn setup(
     let _sun_id = commands
         .spawn((
             DirectionalLight {
-                illuminance: light_consts::lux::RAW_SUNLIGHT,
-                shadows_enabled: true,
-                ..default()
+            illuminance: light_consts::lux::RAW_SUNLIGHT,
+            shadows_enabled: true,
+            ..default()
             },
-            Transform::default(),
+            Transform::default().with_rotation(Quat::from_rotation_x(-std::f32::consts::FRAC_PI_4)),
         ))
         .id();
 
