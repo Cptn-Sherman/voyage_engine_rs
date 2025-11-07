@@ -8,6 +8,7 @@ mod user_interface;
 mod utils;
 
 use bevy::color::palettes::tailwind::{AMBER_400, SKY_400, ZINC_200};
+use bevy::dev_tools::fps_overlay::{FpsOverlayConfig, FpsOverlayPlugin, FrameTimeGraphConfig};
 use bevy::light::{CascadeShadowConfigBuilder, DirectionalLightShadowMap, SunDisk};
 
 use bevy::prelude::*;
@@ -53,6 +54,17 @@ fn main() {
             DebugInterfacePlugin,
             PlayerPlugin,
             AudioPlugin,
+            FpsOverlayPlugin {
+                config: FpsOverlayConfig {
+                    enabled: false, // !Bug: will be fixed in 0.18 release.
+                    frame_time_graph_config: FrameTimeGraphConfig {
+                        enabled: true,
+                        target_fps: 60.0,
+                        ..default()
+                    },
+                    ..default()
+                },
+            },
             // bevy_panic_handler::PanicHandler::new().build(),
             //TemporalAntiAliasPlugin,
             // AtmospherePlugin,
@@ -123,9 +135,9 @@ fn setup(
     let _sun_id = commands
         .spawn((
             DirectionalLight {
-            illuminance: light_consts::lux::RAW_SUNLIGHT,
-            shadows_enabled: true,
-            ..default()
+                illuminance: light_consts::lux::RAW_SUNLIGHT,
+                shadows_enabled: true,
+                ..default()
             },
             Transform::default().with_rotation(Quat::from_rotation_x(-std::f32::consts::FRAC_PI_4)),
             SunDisk::default(),
