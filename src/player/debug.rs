@@ -1,7 +1,29 @@
-use avian3d::prelude::{ConstantForce, LinearVelocity};
-use bevy::{asset::{AssetServer, Handle}, camera::Camera3d, color::Color, ecs::{component::Component, query::{With, Without}, system::{Commands, Query, Res}}, log::info, math::{EulerRot, Quat}, text::{Font, TextColor, TextFont, TextSpan}, transform::components::Transform, ui::{widget::Text, AlignItems, BackgroundColor, BorderColor, Display, FlexDirection, JustifyContent, Node, PositionType, UiRect, Val}, utils::default};
+use avian3d::prelude::LinearVelocity;
+use bevy::{
+    asset::{AssetServer, Handle},
+    camera::Camera3d,
+    color::Color,
+    ecs::{
+        component::Component,
+        query::{With, Without},
+        system::{Commands, Query, Res},
+    },
+    log::info,
+    math::{EulerRot, Quat},
+    text::{Font, TextColor, TextFont, TextSpan},
+    transform::components::Transform,
+    ui::{
+        widget::Text, AlignItems, BackgroundColor, BorderColor, Display, FlexDirection,
+        JustifyContent, Node, PositionType, UiRect, Val,
+    },
+    utils::default,
+};
 
-use crate::{player::{motion::Motion, Player}, user_interface::themes::{BORDER_COLOR, DEFAULT_DEBUG_FONT_PATH}, utils::format_value::{format_value_f32, format_value_vec3, format_value_quat}};
+use crate::{
+    player::{motion::Motion, Player},
+    user_interface::themes::{BORDER_COLOR, DEFAULT_DEBUG_FONT_PATH},
+    utils::format_value::{format_value_f32, format_value_quat, format_value_vec3},
+};
 
 pub fn create_player_debug(mut commands: Commands, asset_server: Res<AssetServer>) {
     let default_font: Handle<Font> = asset_server.load(DEFAULT_DEBUG_FONT_PATH);
@@ -113,22 +135,23 @@ pub fn create_player_debug(mut commands: Commands, asset_server: Res<AssetServer
                                 TextColor(Color::WHITE),
                                 MotionMovementVectorCurrentDebug,
                             ));
-                            
-                            parent
-                            .spawn((
-                                Text::new("target: "),
+                        });
+
+                    parent
+                        .spawn((
+                            Text::new("target:  "),
+                            text_font.clone(),
+                            TextColor(Color::WHITE),
+                        ))
+                        .with_children(|parent| {
+                            parent.spawn((
+                                TextSpan::new("000"),
                                 text_font.clone(),
                                 TextColor(Color::WHITE),
-                            ))
-                            .with_children(|parent| {
-                                parent.spawn((
-                                    TextSpan::new("000"),
-                                    text_font.clone(),
-                                    TextColor(Color::WHITE),
-                                    MotionMovementVectorTargetDebug,
-                                ));
-                            });
+                                MotionMovementVectorTargetDebug,
+                            ));
                         });
+
                     parent
                         .spawn((
                             Text::new("moving: "),
@@ -193,8 +216,6 @@ pub fn create_player_debug(mut commands: Commands, asset_server: Res<AssetServer
 
     info!("Created Player debug");
 }
-
-
 
 #[derive(Component)]
 pub struct MotionPositionDebug;
@@ -270,9 +291,9 @@ pub fn update_debug_movement_vector_decay(
     player_query: Query<&Motion, With<Player>>,
     mut query: Query<&mut TextSpan, With<MotionMovementVectorDecayRateDebug>>,
 ) {
-    let mut _text = query.single_mut();
-    let _player_motion = player_query.single();
-    //text.0 = format_value_vec3(player_motion, Some(4), true);
+    let mut text = query.single_mut().unwrap();
+    let player_motion = player_query.single().unwrap();
+    text.0 = format_value_f32(player_motion.movement_vector.decay, Some(2), true);
 }
 
 #[derive(Component)]
@@ -308,7 +329,7 @@ pub fn update_debug_movement_speed_current(
 ) {
     let mut text = query.single_mut().unwrap();
     let player_motion = player_query.single().unwrap();
-    text.0 = format_value_f32(player_motion.movement_speed.current, Some(4), true);
+    text.0 = format_value_f32(player_motion.movement_speed.current, Some(2), true);
 }
 
 #[derive(Component)]
@@ -320,5 +341,5 @@ pub fn update_debug_movement_speed_target(
 ) {
     let mut text = query.single_mut().unwrap();
     let player_motion = player_query.single().unwrap();
-    text.0 = format_value_f32(player_motion.movement_speed.target, Some(4), true);
+    text.0 = format_value_f32(player_motion.movement_speed.target, Some(2), true);
 }
