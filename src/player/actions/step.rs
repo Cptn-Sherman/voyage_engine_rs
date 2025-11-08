@@ -17,7 +17,7 @@ use bevy::{
 use bevy_kira_audio::{Audio, AudioControl, AudioSource};
 use bevy_turborand::{DelegatedRng, GlobalRng};
 
-use crate::utils::format_value::format_value_vec3;
+use crate::utils::format_value::{self, format_value_f32, format_value_vec3};
 use crate::{
     camera::{SmoothedCamera, ROTATION_AMOUNT},
     player::{
@@ -102,6 +102,10 @@ pub fn load_footstep_sfx(mut commands: Commands, asset_server: Res<AssetServer>)
     commands.insert_resource(FootstepAudioHandle(handle.clone()));
 }
 
+pub const DEFAULT_STEP_VOLUME: f32 = -12.0;
+pub const UNSIGNED_STEP_VOLUME_SPRINT_BONUS: f32 = 2.0;
+pub const UNSIGNED_STEP_VOLUME_UNMOVING_PENALTY: f32 = 4.0;
+
 // todo: move this somewhere more appropriate.
 // ! This should ideally not take in and load a new sound ever time and should be loaded once. ALSO, remove the inability to iterate over all the events this should be solved with an update.
 // ! ALSO GENERALIZE THIS TO ANY SOUND.
@@ -114,7 +118,7 @@ pub fn play_footstep_sfx(
 ) {
     let mut should_play: bool = false;
     let mut panning: f32 = 0.5;
-    let mut volume: f32 = 0.5;
+    let mut volume: f32 = DEFAULT_STEP_VOLUME;
 
     for ev in ev_footstep.read() {
         should_play = true;
@@ -123,6 +127,7 @@ pub fn play_footstep_sfx(
     }
 
     if should_play {
+        info!("Playing footstep with volume: {}", volume);
         let random_playback_rate: f64 = global_rng.f64() * PLAYBACK_RANGE + 0.8;
         audio
             .into_inner()
@@ -174,9 +179,9 @@ pub fn tick_footstep(
 
         // reduce the time by elaspsed times the scale.
         action.delta -= time.delta_secs() * step_speed_scale;
-        let mut vol: f32 = ternary!(motion.moving, 0.75, 0.50);
+        let mut vol: f32 = ternary!(motion.moving, DEFAULT_STEP_VOLUME, DEFAULT_STEP_VOLUME - UNSIGNED_STEP_VOLUME_UNMOVING_PENALTY);
         if motion.sprinting {
-            vol += 0.15;
+            vol += UNSIGNED_STEP_VOLUME_SPRINT_BONUS;
         }
 
         // bump the riding height when the delta is less than the bump threshold.
@@ -198,7 +203,7 @@ pub fn tick_footstep(
             info!(
                 "Leaning: {}, with roll: {}",
                 format_value_vec3(_smoothed_camera.lean.current, Some(2), true),
-                roll
+                format_value_f32(roll, Some(6), true)
             );
         }
 

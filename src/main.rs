@@ -110,7 +110,7 @@ fn start_background_audio(asset_server: Res<AssetServer>, audio: Res<Audio>) {
             Duration::from_millis(18000),
             AudioEasing::InPowf(0.125),
         ))
-        .with_volume(0.15)
+        .with_volume(-20.0)
         .looped();
 }
 

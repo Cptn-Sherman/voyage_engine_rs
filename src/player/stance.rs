@@ -3,9 +3,10 @@ use super::{
     actions::step::{FootstepDirection, FootstepEvent},
     motion::apply_spring_force,
 };
+use crate::player::actions::step::DEFAULT_STEP_VOLUME;
 use crate::player::config::PlayerControlConfig;
 use crate::utils::format_value::format_value_f32;
-use crate::utils::{exp_decay, format_value, InterpolatedValue};
+use crate::utils::{exp_decay, InterpolatedValue};
 use avian3d::prelude::*;
 use bevy::ecs::message::MessageWriter;
 use bevy::{
@@ -91,14 +92,15 @@ pub fn update_player_stance(
                 next_stance = StanceType::Landing;
             }
         } else if stance.lockout != 0.0 {
-            info!(
-                "Stance lockout: {}",
-                format_value_f32(stance.lockout, Some(2), false)
-            );
             stance.lockout -= time.delta_secs();
             stance.lockout = f32::max(stance.lockout, 0.0);
             if stance.lockout <= 0.0 {
-                info!("stance lockout released");
+                info!("Stance lockout: RELEASED");
+            } else {
+                info!(
+                    "Stance lockout: {}",
+                    format_value_f32(stance.lockout, Some(2), false)
+                );
             }
         }
 
@@ -117,7 +119,7 @@ pub fn update_player_stance(
                     // this effect will play centered and will not pan in any direction.
                     ev_footstep.write(FootstepEvent {
                         dir: FootstepDirection::None,
-                        volume: 1.0,
+                        volume: DEFAULT_STEP_VOLUME,
                     });
                 }
                 _ => (),
