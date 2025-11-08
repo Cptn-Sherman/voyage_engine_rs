@@ -120,7 +120,7 @@ fn setup(
     mut standard_materials: ResMut<Assets<StandardMaterial>>,
     //mut extended_materials: ResMut<Assets<ExtendedMaterial<StandardMaterial, BlockoutMaterialExt>>>,
 ) {
-    info!("Percentage Test: {}", format_percentage::<f32>(120.0f32));
+    // info!("Percentage Test: {}", format_percentage::<f32>(120.0f32));
 
     // commands.spawn(InfiniteGridBundle::default());
 
