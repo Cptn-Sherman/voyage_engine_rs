@@ -17,7 +17,7 @@ use bevy::{
 use bevy_kira_audio::{Audio, AudioControl, AudioSource};
 use bevy_turborand::{DelegatedRng, GlobalRng};
 
-use crate::utils::format_value::{self, format_value_f32, format_value_vec3};
+use crate::utils::format_value::{format_value_f32, format_value_vec3};
 use crate::{
     camera::{SmoothedCamera, ROTATION_AMOUNT},
     player::{
