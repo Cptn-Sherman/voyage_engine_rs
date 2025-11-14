@@ -272,3 +272,53 @@ pub fn get_sample_material(
        })),
     */
 }
+
+/// Move a camera front direction along a continuous "infinity" (lemniscate) loop.
+/// - `base_dir`: initial camera forward vector (does not need to be normalized).
+/// - `time`: current time in seconds (e.g. from `Time::elapsed_seconds()`).
+/// - `speed`: loop speed multiplier (1.0 is natural speed, larger is faster).
+/// - `max_angle_x_deg`: maximum yaw angle (degrees) applied around world Y.
+/// - `max_angle_y_deg`: maximum pitch angle (degrees) applied around camera right.
+/// Returns a normalized direction Vec3.
+pub fn infinity_oscillate_direction(
+    base_dir: Vec3,
+    time: f32,
+    speed: f32,
+    max_angle_x_deg: f32,
+    max_angle_y_deg: f32,
+) -> Vec3 {
+    // normalize input direction (safe fallback to zero vector)
+    let base = base_dir.normalize_or_zero();
+
+    // param t moves along the curve
+    let t = time * speed;
+
+    // Bernoulli lemniscate param (bounded, gives ∞-shaped motion)
+    // x = cos(t) / (1 + sin(t)^2)
+    // y = sin(t)*cos(t) / (1 + sin(t)^2)
+    let s = t.sin();
+    let c = t.cos();
+    let denom = 1.0 + s * s;
+    let fx = c / denom;
+    let fy = (s * c) / denom;
+
+    // convert max angles to radians and scale by curve outputs
+    let yaw = max_angle_x_deg.to_radians() * fx;
+    let pitch = max_angle_y_deg.to_radians() * fy;
+
+    // compute camera right axis (fallback if forward is parallel to Y)
+    let mut right = base.cross(Vec3::Y);
+    if right.length_squared() < 1e-6 {
+        right = Vec3::X;
+    } else {
+        right = right.normalize();
+    }
+
+    // apply pitch around the camera right, then yaw around world Y
+    let q_pitch = Quat::from_axis_angle(right, pitch);
+    let q_yaw = Quat::from_axis_angle(Vec3::Y, yaw);
+
+    let dir = q_yaw * (q_pitch * base);
+
+    dir.normalize_or_zero()
+}
